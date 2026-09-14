@@ -12,9 +12,9 @@
 [![This fork's Build Status](https://github.com/wstein/picocli/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/picocli/actions/workflows/ci.yml)
 
 > **This is [wstein](https://github.com/wstein)'s fork of [remkop/picocli](https://github.com/remkop/picocli)**, used to prototype
-> additions before/if they get contributed upstream — e.g. [fish shell completion](https://github.com/wstein/picocli/tree/feat/fish-completion)
-> (not yet merged into this branch). Everything below describes upstream picocli; see
-> [Download (this fork)](#download-this-fork) for how this fork's own builds are released and consumed.
+> additions before/if they get contributed upstream — e.g. [fish shell completion](https://github.com/wstein/picocli/pull/1)
+> (also proposed upstream as [remkop/picocli#2463](https://github.com/remkop/picocli/pull/2463)). Everything below describes
+> upstream picocli; see [Download (this fork)](#download-this-fork) for how this fork's own builds are released and consumed.
 
 # picocli - a mighty tiny command line interface
 
