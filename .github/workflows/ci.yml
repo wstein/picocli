@@ -4,6 +4,13 @@ permissions:
   checks: write
   pull-requests: write
 
+concurrency:
+  # cancel a stale in-progress run (e.g. superseded by a follow-up push or force-push)
+  # for the same branch/PR, instead of letting it keep consuming this fork's limited
+  # concurrent-job quota alongside the new run
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-java-8-plus:
     strategy:
