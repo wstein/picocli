@@ -72,3 +72,33 @@ jobs:
             build/libs/*.jar \
             --title "picocli ${{ steps.vars.outputs.version }}" \
             --generate-notes
+
+      - name: Check out existing flat Maven repo (gh-pages)
+        run: |
+          git fetch origin gh-pages || true
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git worktree add gh-pages-site origin/gh-pages
+          else
+            git worktree add --detach gh-pages-site HEAD
+            git -C gh-pages-site checkout --orphan gh-pages
+            git -C gh-pages-site rm -rf . > /dev/null
+          fi
+          mkdir -p build/fork-maven-repo
+          if [ -d gh-pages-site/maven ]; then
+            cp -r gh-pages-site/maven/. build/fork-maven-repo/
+          fi
+
+      - name: Publish to flat Maven repo (jar + pom only, io.github.wstein:picocli)
+        run: ./gradlew publishForkPublicationToForkRepoRepository --no-daemon
+
+      - name: Push updated flat Maven repo to GitHub Pages
+        run: |
+          rm -rf gh-pages-site/maven
+          mkdir -p gh-pages-site/maven
+          cp -r build/fork-maven-repo/. gh-pages-site/maven/
+          cd gh-pages-site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add maven
+          git commit -m "Publish io.github.wstein:picocli:${{ steps.vars.outputs.version }}" || echo "Nothing to commit"
+          git push origin HEAD:gh-pages

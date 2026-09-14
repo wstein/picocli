@@ -1,0 +1,53 @@
+// Publishes a minimal (jar + pom only) artifact under this fork's own coordinates,
+// for hosting in a self-managed flat Maven repository (see .github/workflows/release.yml).
+// This is additive: it defines a second, independent MavenPublication and does not
+// touch the `release` publication or `staging-deploy` repository configured in
+// publish-mavencentral.gradle, which remain unchanged for potential upstream contribution.
+apply plugin: 'maven-publish'
+
+ext {
+    FORK_GROUP_ID    = project.hasProperty('forkGroupId')    ? forkGroupId    : 'io.github.wstein'
+    FORK_ARTIFACT_ID = project.hasProperty('forkArtifactId') ? forkArtifactId : project.name
+}
+
+publishing {
+    publications {
+        fork(MavenPublication) {
+            from components.java
+            groupId = FORK_GROUP_ID
+            artifactId = FORK_ARTIFACT_ID
+            version = PUBLISH_VERSION
+            pom {
+                packaging = 'jar'
+                name = FORK_ARTIFACT_ID
+                description = project.description
+                url = 'https://github.com/wstein/picocli'
+                inceptionYear = '2018'
+                licenses {
+                    license {
+                        name = "The Apache Software License, version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                        distribution = "repo"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "wstein"
+                        name = "Werner Stein"
+                    }
+                }
+                scm {
+                    url = "https://github.com/wstein/picocli/tree/develop"
+                    connection = 'scm:git:https://github.com/wstein/picocli.git'
+                    developerConnection = 'scm:git:ssh://github.com:wstein/picocli.git'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'forkRepo'
+            url = rootProject.layout.buildDirectory.dir('fork-maven-repo')
+        }
+    }
+}
