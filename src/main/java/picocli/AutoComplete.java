@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class AutoComplete {
     private AutoComplete() { }
 
     /**
-     * Generates a bash completion script for the specified command class.
+     * Generates a bash/zsh or fish completion script for the specified command class.
      * @param args command line options. Specify at least the {@code commandLineFQCN} mandatory parameter, which is
      *      the fully qualified class name of the annotated {@code @Command} class to generate a completion script for.
      *      Other parameters are optional. Specify {@code -h} to see details on the available options.
@@ -104,7 +105,7 @@ public class AutoComplete {
      */
     @Command(name = "picocli.AutoComplete", mixinStandardHelpOptions = true, showAtFileInUsageHelp = true,
             version = "picocli.AutoComplete " + CommandLine.VERSION, sortOptions = false,
-            description = "Generates a bash completion script for the specified command class.",
+            description = "Generates a bash/zsh or fish completion script for the specified command class.",
             footerHeading = "%n@|bold System Properties:|@%n",
             footer = {"Set the following system properties to control the exit code of this program:",
                     "",
@@ -149,8 +150,8 @@ public class AutoComplete {
 
         @Option(names = {"-o", "--completionScript"},
                 description = "Optionally specify the path of the completion script file to generate. " +
-                        "When omitted, a file named '<commandName>_completion' " +
-                        "is generated in the current directory.")
+                        "When omitted, a file named '<commandName>_completion' (or '<commandName>.fish' " +
+                        "when --shell=fish) is generated in the current directory.")
         File autoCompleteScript;
 
         @Option(names = {"-w", "--writeCommandScript"},
@@ -160,6 +161,10 @@ public class AutoComplete {
 
         @Option(names = {"-f", "--force"}, description = "Overwrite existing script files.")
         boolean overwriteIfExists;
+
+        @Option(names = "--shell", description = "The shell to generate a completion script for: ${COMPLETION-CANDIDATES}.",
+                defaultValue = "bash")
+        GenerateCompletion.Shell shell;
 
         @Spec CommandSpec spec;
 
@@ -178,8 +183,9 @@ public class AutoComplete {
                     commandName = cls.getSimpleName().toLowerCase();
                 }
             }
+            boolean isFish = shell == GenerateCompletion.Shell.fish;
             if (autoCompleteScript == null) {
-                autoCompleteScript = new File(commandName + "_completion");
+                autoCompleteScript = new File(isFish ? commandName + ".fish" : commandName + "_completion");
             }
             File commandScript = null;
             if (writeCommandScript) {
@@ -192,7 +198,11 @@ public class AutoComplete {
                 return EXIT_CODE_COMPLETION_SCRIPT_EXISTS;
             }
 
-            AutoComplete.bash(commandName, autoCompleteScript, commandScript, commandLine);
+            if (isFish) {
+                AutoComplete.fish(commandName, autoCompleteScript, commandScript, commandLine);
+            } else {
+                AutoComplete.bash(commandName, autoCompleteScript, commandScript, commandLine);
+            }
             return EXIT_CODE_SUCCESS;
         }
 
@@ -220,22 +230,36 @@ public class AutoComplete {
     @Command(name = "generate-completion", version = "generate-completion " + CommandLine.VERSION,
             mixinStandardHelpOptions = true,
             description = {
-                "Generate bash/zsh completion script for ${ROOT-COMMAND-NAME:-the root command of this command}.",
+                "Generate a bash/zsh or fish completion script for ${ROOT-COMMAND-NAME:-the root command of this command}.",
                 "Run the following command to give `${ROOT-COMMAND-NAME:-$PARENTCOMMAND}` TAB completion in the current shell:",
                 "",
                 "  source <(${PARENT-COMMAND-FULL-NAME:-$PARENTCOMMAND} ${COMMAND-NAME})",
+                "  (or, for fish: ${PARENT-COMMAND-FULL-NAME:-$PARENTCOMMAND} ${COMMAND-NAME} --shell=fish | source)",
                 ""},
             optionListHeading = "Options:%n",
             helpCommand = true
     )
     public static class GenerateCompletion implements Runnable {
 
+        /** The shells for which a completion script can be generated. */
+        public enum Shell {
+            bash {
+                String generate(CommandSpec spec) { return AutoComplete.bash(spec.root().name(), spec.root().commandLine()); }
+            },
+            fish {
+                String generate(CommandSpec spec) { return AutoComplete.fish(spec.root().name(), spec.root().commandLine()); }
+            };
+            abstract String generate(CommandSpec spec);
+        }
+
         @Spec CommandLine.Model.CommandSpec spec;
 
+        @Option(names = "--shell", description = "The shell to generate a completion script for: ${COMPLETION-CANDIDATES}.",
+                defaultValue = "bash")
+        Shell shell;
+
         public void run() {
-            String script = AutoComplete.bash(
-                    spec.root().name(),
-                    spec.root().commandLine());
+            String script = shell.generate(spec);
             // not PrintWriter.println: scripts with Windows line separators fail in strange ways!
             spec.commandLine().getOut().print(script);
             spec.commandLine().getOut().print('\n');
@@ -539,6 +563,167 @@ public class AutoComplete {
         }
         result.append(format(SCRIPT_FOOTER, scriptName));
         return result.toString();
+    }
+
+    private static final String FISH_HEADER = "" +
+            "# %1$s fish shell completion\n" +
+            "# Generated by picocli version %2$s: https://picocli.info/\n" +
+            "# Install by saving to ~/.config/fish/completions/%1$s.fish, or run:\n" +
+            "#   %1$s generate-completion --shell=fish | source\n";
+
+    /**
+     * Generates and returns the source code for a fish completion script for the specified picocli-based application.
+     * <p>Fish's {@code complete} builtin is declarative: unlike {@link #bash(String, CommandLine) bash}, this does not
+     * generate any shell functions. Each option, positional parameter and subcommand becomes its own
+     * {@code complete -c} line, scoped to the right place in the command hierarchy with {@code -n} conditions built
+     * around fish's {@code __fish_seen_subcommand_from} helper function.</p>
+     * @param scriptName the name of the command to generate a fish completion script for
+     * @param commandLine the {@code CommandLine} instance for the command line application
+     * @return source code for a fish completion script
+     * @since 4.8
+     */
+    public static String fish(String scriptName, CommandLine commandLine) {
+        if (scriptName == null)  { throw new NullPointerException("scriptName"); }
+        if (commandLine == null) { throw new NullPointerException("commandLine"); }
+        scriptName = sanitizeScriptName(scriptName);
+        StringBuilder result = new StringBuilder();
+        result.append(format(FISH_HEADER, scriptName, CommandLine.VERSION));
+        // erase any completions registered earlier for this command, so re-sourcing the script is idempotent
+        result.append("complete -c '").append(fishQuote(scriptName)).append("' -e\n");
+        generateFishCompletions(scriptName, "", commandLine, result);
+        return result.toString();
+    }
+
+    /**
+     * Generates source code for a fish completion script for the specified picocli-based application,
+     * and writes this script to the specified {@code out} file, and optionally writes an invocation script
+     * to the specified {@code command} file.
+     * @param scriptName the name of the command to generate a fish completion script for
+     * @param commandLine the {@code CommandLine} instance for the command line application
+     * @param out the file to write the fish completion script source code to
+     * @param command the file to write a helper script to that invokes the command, or {@code null} if no helper script file should be written
+     * @throws IOException if a problem occurred writing to the specified files
+     * @since 4.8
+     */
+    public static void fish(String scriptName, File out, File command, CommandLine commandLine) throws IOException {
+        String autoCompleteScript = fish(scriptName, commandLine);
+        Writer completionWriter = null;
+        Writer scriptWriter = null;
+        try {
+            completionWriter = new FileWriter(out);
+            completionWriter.write(autoCompleteScript);
+
+            if (command != null) {
+                scriptWriter = new FileWriter(command);
+                scriptWriter.write("" +
+                        "#!/usr/bin/env bash\n" +
+                        "\n" +
+                        "LIBS=path/to/libs\n" +
+                        "CP=\"${LIBS}/myApp.jar\"\n" +
+                        "java -cp \"${CP}\" '" + ((Object) commandLine.getCommand()).getClass().getName() + "' $@");
+            }
+        } finally {
+            if (completionWriter != null) { completionWriter.close(); }
+            if (scriptWriter != null)     { scriptWriter.close(); }
+        }
+    }
+
+    /**
+     * Recursively emits {@code complete} lines for the options, positional parameters and subcommands of
+     * {@code commandLine}. {@code condition} is the (possibly empty) {@code -n '...'} guard(s) that scope the
+     * already-emitted ancestors' completions to this point in the command hierarchy; this method extends it with
+     * a guard for {@code commandLine} itself before recursing into its subcommands.
+     */
+    private static void generateFishCompletions(String scriptName, String condition, CommandLine commandLine, StringBuilder out) {
+        CommandSpec spec = commandLine.getCommandSpec();
+
+        // group subcommands by their target CommandLine, so aliases of the same subcommand share one condition
+        Map<CommandLine, List<String>> children = new LinkedHashMap<CommandLine, List<String>>();
+        for (Map.Entry<String, CommandLine> entry : commandLine.getSubcommands().entrySet()) {
+            if (entry.getValue().getCommandSpec().usageMessage().hidden()) { continue; } // skip hidden subcommands
+            List<String> names = children.get(entry.getValue());
+            if (names == null) { children.put(entry.getValue(), names = new ArrayList<String>()); }
+            names.add(entry.getKey());
+        }
+        List<String> allChildNames = new ArrayList<String>();
+        for (List<String> names : children.values()) { allChildNames.addAll(names); }
+
+        // this command's own options/positionals stop being suggested once the user has drilled into a subcommand
+        String notDrilledDown = allChildNames.isEmpty() ? "" :
+                " -n '" + fishQuote("not __fish_seen_subcommand_from " + concat(" ", allChildNames)) + "'";
+        String ownCondition = condition + notDrilledDown;
+
+        for (OptionSpec option : spec.options()) {
+            if (option.hidden()) { continue; } // skip hidden options
+            appendFishArgCompletion(scriptName, ownCondition, option, out);
+        }
+        for (PositionalParamSpec positional : spec.positionalParameters()) {
+            if (positional.hidden()) { continue; } // skip hidden positional parameters
+            appendFishArgCompletion(scriptName, ownCondition, positional, out);
+        }
+        for (Map.Entry<CommandLine, List<String>> entry : children.entrySet()) {
+            CommandLine child = entry.getKey();
+            String namesJoined = concat(" ", entry.getValue());
+
+            out.append("complete -c '").append(fishQuote(scriptName)).append('\'').append(ownCondition)
+                    .append(" -f -a '").append(fishQuote(namesJoined)).append('\'');
+            appendFishDescription(child.getCommandSpec().usageMessage().description(), out);
+            out.append('\n');
+
+            String childCondition = condition + " -n '" + fishQuote("__fish_seen_subcommand_from " + namesJoined) + "'";
+            generateFishCompletions(scriptName, childCondition, child, out);
+        }
+    }
+
+    private static void appendFishArgCompletion(String scriptName, String condition, ArgSpec arg, StringBuilder out) {
+        boolean isOption = arg instanceof OptionSpec;
+        Iterable<String> candidates = fishCandidates(arg);
+        if (!isOption && candidates == null) {
+            return; // no useful completion to add for this positional parameter; fall back to fish's default (file) completion
+        }
+
+        out.append("complete -c '").append(fishQuote(scriptName)).append('\'').append(condition);
+        if (isOption) {
+            for (String name : ((OptionSpec) arg).names()) {
+                if (name.startsWith("--"))     { out.append(" -l '").append(fishQuote(name.substring(2))).append('\''); }
+                else if (name.startsWith("-")) { out.append(" -s '").append(fishQuote(name.substring(1))).append('\''); }
+                else                           { out.append(" -o '").append(fishQuote(name)).append('\''); }
+            }
+        }
+        if (candidates != null) {
+            out.append(isOption ? " -x" : " -f").append(" -a '").append(fishQuote(concat(" ", toList(candidates)))).append('\'');
+        } else if (arg.arity().max() > 0) {
+            out.append(" -r"); // requires a value; let fish fall back to its default (file) completion for it
+        }
+        appendFishDescription(arg.description(), out);
+        out.append('\n');
+    }
+
+    /** Returns completion candidates for the given option/positional, or {@code null} if none are known. */
+    private static Iterable<String> fishCandidates(ArgSpec arg) {
+        if (arg.completionCandidates() != null) { return arg.completionCandidates(); }
+        Class<?> type = arg.typeInfo().isMultiValue() ? arg.typeInfo().getAuxiliaryTypes()[0] : arg.type();
+        if (type.equals(InetAddress.class)) {
+            return Collections.singletonList("(__fish_print_hostnames)");
+        }
+        return null;
+    }
+
+    private static void appendFishDescription(String[] description, StringBuilder out) {
+        if (description.length > 0 && description[0].length() > 0) {
+            out.append(" -d '").append(fishQuote(description[0])).append('\'');
+        }
+    }
+
+    private static List<String> toList(Iterable<String> iterable) {
+        List<String> result = new ArrayList<String>();
+        for (String s : iterable) { result.add(s); }
+        return result;
+    }
+
+    /** Escapes a value for use inside a single-quoted fish string. */
+    private static String fishQuote(String value) {
+        return value.replace("\\", "\\\\").replace("'", "\\'");
     }
 
     private static List<CommandDescriptor> createHierarchy(String scriptName, CommandLine commandLine) {
