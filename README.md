@@ -9,6 +9,13 @@
 [![Follow @picocli](https://img.shields.io/twitter/follow/picocli.svg?style=social)](https://twitter.com/intent/follow?screen_name=picocli)
 [![Follow picocli on StackShare](https://img.shields.io/badge/Follow%20on-StackShare-blue.svg?logo=stackshare&style=flat)](https://stackshare.io/picocli)
 
+[![This fork's Build Status](https://github.com/wstein/picocli/actions/workflows/ci.yml/badge.svg)](https://github.com/wstein/picocli/actions/workflows/ci.yml)
+
+> **This is [wstein](https://github.com/wstein)'s fork of [remkop/picocli](https://github.com/remkop/picocli)**, used to prototype
+> additions before/if they get contributed upstream — e.g. [fish shell completion](https://github.com/wstein/picocli/tree/feat/fish-completion)
+> (not yet merged into this branch). Everything below describes upstream picocli; see
+> [Download (this fork)](#download-this-fork) for how this fork's own builds are released and consumed.
+
 # picocli - a mighty tiny command line interface
 
 Picocli aims to be the easiest-to-use way to create rich command line applications that can run on and off the JVM.
@@ -78,7 +85,8 @@ that includes a `PicocliSpringFactory` and Spring Boot auto-configuration to use
 The user manual has examples of integrating with [Guice](https://picocli.info/#_guice_example), [Spring Boot](https://picocli.info/#_spring_boot_example), [Micronaut](https://picocli.info/#_micronaut_example), [Quarkus](https://picocli.info/#_quarkus_example) and with containers that comply to [CDI 2.0 specification](https://picocli.info/#_cdi_2_0_jsr_365) (JSR 365).
 
 ### Releases
-* [All Releases](https://github.com/remkop/picocli/releases)
+* This fork's releases: [wstein/picocli releases](https://github.com/wstein/picocli/releases) (see [Download (this fork)](#download-this-fork))
+* [All (upstream) Releases](https://github.com/remkop/picocli/releases)
 * Latest: 4.7.7 [Release Notes](https://github.com/remkop/picocli/releases/tag/v4.7.7)
 * Older: Picocli 4.0 [Release Notes](https://github.com/remkop/picocli/releases/tag/v4.0.0)
 * Older: Picocli 3.0 [Release Notes](https://github.com/remkop/picocli/releases/tag/v3.0.0)
@@ -407,4 +415,23 @@ libraryDependencies += "info.picocli" % "picocli" % "4.7.7"
 ```
 //DEPS info.picocli:picocli:4.7.7
 ```
+
+### Download (this fork)
+This fork is not published to Maven Central. Its [Release workflow](.github/workflows/release.yml) publishes two ways
+instead, under the fork-specific coordinates `io.github.wstein:picocli` (attributed to this fork, distinct from
+upstream's `info.picocli:picocli`):
+
+* Jars attached to [GitHub Releases](https://github.com/wstein/picocli/releases).
+* A self-hosted flat Maven repository on GitHub Pages:
+  ```groovy
+  repositories {
+      maven { url 'https://wstein.github.io/picocli/maven' }
+  }
+  dependencies {
+      implementation 'io.github.wstein:picocli:<version>'
+  }
+  ```
+
+No version has been released from this fork yet — both distribution channels are dormant until a `vX.Y.Z` tag is
+pushed or the Release workflow is run manually.
 
