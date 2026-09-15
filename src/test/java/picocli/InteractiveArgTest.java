@@ -77,24 +77,6 @@ public class InteractiveArgTest {
             }
         }
 
-        static Capture multiInputValue(String input) {
-            Capture result = new Capture(null);
-            System.setIn(inputStream(input));
-            return result;
-        }
-
-        private static ByteArrayInputStream inputStream(final String value) {
-            return new ByteArrayInputStream(value.getBytes()) {
-                int count;
-
-                @Override
-                public synchronized int read(byte[] b, int off, int len) {
-                    System.arraycopy(value.getBytes(), 0, b, off, value.length());
-                    return (count++ % 3) == 0 ? value.length() : -1;
-                }
-            };
-        }
-
         String out() {
             return baos.toString();
         }
@@ -306,7 +288,7 @@ public class InteractiveArgTest {
         Streams streams = new Streams();
         System.setProperty("picocli.trace", "DEBUG");
         try {
-            Capture capture = Capture.multiInputValue("1234567890");
+            Capture capture = new Capture("123\n456\n");
             App app = new App();
             CommandLine cmd = new CommandLine(app);
             ParseResult result = cmd.parseArgs("-x", "-x");
@@ -314,11 +296,11 @@ public class InteractiveArgTest {
             assertThat(specX.toString(), containsString("App.x"));
 
             assertEquals("Enter value for -x (Pwd): Enter value for -x (Pwd): ", capture.out());
-            assertEquals(Arrays.asList(1234567890, 1234567890), app.x);
+            assertEquals(Arrays.asList(123, 456), app.x);
             assertEquals(0, app.z);
 
             String trace = capture.err();
-            assertThat(trace, containsString("User entered 10 characters"));
+            assertThat(trace, containsString("User entered 3 characters"));
             assertThat(trace, containsString(
                 "Adding *** (masked interactive value) to " + specX.toString()
                     + " for option -x on " + app.getClass().getSimpleName()));
@@ -346,7 +328,7 @@ public class InteractiveArgTest {
         Streams streams = new Streams();
         System.setProperty("picocli.trace", "DEBUG");
         try {
-            Capture capture = Capture.multiInputValue("1234567890");
+            Capture capture = new Capture("1234567890\n1234567890\n");
             App app = new App();
             CommandLine cmd = new CommandLine(app);
             ParseResult result = cmd.parseArgs("-x", "-x");
@@ -382,7 +364,7 @@ public class InteractiveArgTest {
 
         Streams streams = new Streams();
         try {
-            Capture capture = Capture.multiInputValue("123");
+            Capture capture = new Capture("123\n123\n");
             App app = new App();
             CommandLine cmd = new CommandLine(app);
             cmd.parseArgs("-x", "-x");
@@ -408,7 +390,7 @@ public class InteractiveArgTest {
 
         Streams streams = new Streams();
         try {
-            Capture capture = Capture.multiInputValue("123");
+            Capture capture = new Capture("123\n123\n");
             App app = new App();
             CommandLine cmd = new CommandLine(app);
             cmd.parseArgs("-x", "-x");
@@ -864,7 +846,7 @@ public class InteractiveArgTest {
 
         Streams streams = new Streams();
         try {
-            Capture capture = Capture.multiInputValue("123");
+            Capture capture = new Capture("123\n123\n");
             App app = new App();
             CommandLine cmd = new CommandLine(app);
             cmd.parseArgs("999");

@@ -13426,6 +13426,7 @@ public class CommandLine {
         private int interactiveCount;
         private boolean endOfOptions;
         private ParseResult.Builder parseResultBuilder;
+        private BufferedReader interactiveInputReader;
 
         Interpreter() { registerBuiltInConverters(); }
 
@@ -15052,10 +15053,11 @@ public class CommandLine {
             }
         }
         char[] readUserInputWithEchoing() {
-            InputStreamReader isr = new InputStreamReader(System.in);
-            BufferedReader in = new BufferedReader(isr);
+            if (interactiveInputReader == null) {
+                interactiveInputReader = new BufferedReader(new InputStreamReader(System.in));
+            }
             try {
-                String input = in.readLine();
+                String input = interactiveInputReader.readLine();
                 return input == null ? new char[0] : input.toCharArray();
             } catch (IOException e) {
                 throw new IllegalStateException(e);
