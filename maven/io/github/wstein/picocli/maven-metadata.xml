@@ -3,11 +3,12 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>picocli</artifactId>
   <versioning>
-    <latest>4.7.8</latest>
-    <release>4.7.8</release>
+    <latest>4.7.9</latest>
+    <release>4.7.9</release>
     <versions>
       <version>4.7.8</version>
+      <version>4.7.9</version>
     </versions>
-    <lastUpdated>20260914103926</lastUpdated>
+    <lastUpdated>20260915104127</lastUpdated>
   </versioning>
 </metadata>
