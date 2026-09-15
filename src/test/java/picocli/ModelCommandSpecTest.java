@@ -1165,14 +1165,18 @@ public class ModelCommandSpecTest {
     @Test
     public void testCommandSpecAddSubcommand_DisallowsDuplicateSubcommandNames() {
         CommandSpec spec = CommandSpec.wrapWithoutInspection(null);
-        CommandSpec sub = CommandSpec.wrapWithoutInspection(null);
+        CommandLine original = new CommandLine(CommandSpec.wrapWithoutInspection(null));
 
-        spec.addSubcommand("a", new CommandLine(sub));
+        spec.addSubcommand("a", original);
+        CommandLine duplicate = new CommandLine(CommandSpec.wrapWithoutInspection(null));
         try {
-            spec.addSubcommand("a", new CommandLine(sub));
+            spec.addSubcommand("a", duplicate);
+            fail("Expected DuplicateNameException");
         } catch (InitializationException ex) {
             assertEquals("Another subcommand named 'a' already exists for command '<main class>'", ex.getMessage());
         }
+        assertSame(original, spec.subcommands().get("a"));
+        assertFalse(spec.subcommands().containsValue(duplicate));
     }
 
     @Test
@@ -1186,9 +1190,11 @@ public class ModelCommandSpecTest {
         sub2.aliases("a");
         try {
             spec.addSubcommand("x", new CommandLine(sub2));
+            fail("Expected DuplicateNameException");
         } catch (InitializationException ex) {
             assertEquals("Alias 'a' for subcommand 'x' is already used by another subcommand of '<main class>'", ex.getMessage());
         }
+        assertEquals(Collections.singleton("a"), spec.subcommands().keySet());
     }
 
     @Test

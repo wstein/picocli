@@ -6584,9 +6584,8 @@ public class CommandLine {
                 String actualName = validateSubcommandName(interpolator.interpolateCommandName(name), subSpec);
                 Tracer t = CommandLine.tracer();
                 if (t.isDebug()) {t.debug("Adding subcommand '%s' to '%s'", actualName, this.qualifiedName());}
-                String previousName = commands.getCaseSensitiveKey(actualName);
-                CommandLine previous = commands.put(actualName, subCommandLine);
-                if (previous != null && previous != subCommandLine) { throw new DuplicateNameException("Another subcommand named '" + previousName + "' already exists for command '" + this.name() + "'"); }
+                validateSubcommandNames(actualName, subCommandLine, subSpec.aliases());
+                commands.put(actualName, subCommandLine);
                 if (subSpec.name == null) { subSpec.name(actualName); }
                 subSpec.parent(this);
                 for (String alias : subSpec.aliases()) {
@@ -6611,13 +6610,22 @@ public class CommandLine {
                 }
                 return this;
             }
+            private void validateSubcommandNames(String actualName, CommandLine subCommandLine, String[] aliases) {
+                String previousName = commands.getCaseSensitiveKey(actualName);
+                CommandLine previous = commands.get(actualName);
+                if (previous != null && previous != subCommandLine) { throw new DuplicateNameException("Another subcommand named '" + previousName + "' already exists for command '" + this.name() + "'"); }
+                for (String alias : aliases) {
+                    String interpolatedAlias = interpolator.interpolate(alias);
+                    CommandLine previousAliasCommand = commands.get(interpolatedAlias);
+                    if (previousAliasCommand != null && previousAliasCommand != subCommandLine) {
+                        throw new DuplicateNameException("Alias '" + alias + "' for subcommand '" + actualName + "' is already used by another subcommand of '" + name() + "'");
+                    }
+                }
+            }
             private void addAlias(String alias, String name, CommandLine subCommandLine, Tracer t) {
                 CommandSpec subSpec = subCommandLine.getCommandSpec();
                 if (t.isDebug()) {t.debug("Adding alias '%s' for '%s'", (subSpec.parent() == null ? "" : subSpec.parent().qualifiedName() + " ") + alias, subSpec.qualifiedName());}
-                CommandLine previous = commands.put(interpolator.interpolate(alias), subCommandLine);
-                if (previous != null && previous != subCommandLine) {
-                    throw new DuplicateNameException("Alias '" + alias + "' for subcommand '" + name + "' is already used by another subcommand of '" + name() + "'");
-                }
+                commands.put(interpolator.interpolate(alias), subCommandLine);
             }
             private void removeAlias(String alias, CommandLine subCommandLine, Tracer t) {
                 CommandSpec subSpec = subCommandLine.getCommandSpec();
