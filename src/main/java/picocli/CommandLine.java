@@ -6855,7 +6855,15 @@ public class CommandLine {
                             tracer.debug("Option %s is negatable, but has no negative form.", name);
                         } else {
                             tracer.debug("Option %s is negatable, registering negative name %s.", name, negatedName);
-                            negatedOptionsByNameMap.put(negatedName, option);
+                            String existingName = negatedOptionsByNameMap.getCaseSensitiveKey(negatedName);
+                            OptionSpec existing = negatedOptionsByNameMap.put(negatedName, option);
+                            if (existing == null) {
+                                existingName = optionsByNameMap.getCaseSensitiveKey(negatedName);
+                                existing = optionsByNameMap.get(negatedName);
+                            }
+                            if (existing != null) {
+                                throw DuplicateOptionAnnotationsException.create(existingName, option, existing);
+                            }
                         }
                     }
                 }
