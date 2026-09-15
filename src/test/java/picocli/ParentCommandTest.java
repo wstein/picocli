@@ -128,4 +128,20 @@ public class ParentCommandTest {
             assertEquals(expected, ex.getMessage());
         }
     }
+
+    @Test
+    public void testParentCommandCannotAlsoBeOption() {
+        class InvalidSubcommand {
+            @ParentCommand
+            @Option(names = "-x")
+            Object parent;
+        }
+
+        try {
+            new CommandLine(new InvalidSubcommand());
+            fail("Expected DuplicateOptionAnnotationsException");
+        } catch (CommandLine.DuplicateOptionAnnotationsException ex) {
+            assertTrue(ex.getMessage().contains("@Option and @ParentCommand"));
+        }
+    }
 }

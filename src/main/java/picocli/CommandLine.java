@@ -11998,7 +11998,7 @@ public class CommandLine {
                 if (member == null || (predicate != null && !predicate.test(member))) { return false; }
                 boolean result = false;
                 if (member.isMixin()) {
-                    assertNoDuplicateAnnotations(member, Mixin.class, Option.class, Parameters.class, Unmatched.class, Spec.class, ArgGroup.class);
+                    assertNoDuplicateAnnotations(member, Mixin.class, Option.class, Parameters.class, Unmatched.class, Spec.class, ArgGroup.class, ParentCommand.class);
                     if (groupBuilder != null) {
                         throw new InitializationException("@Mixins are not supported on @ArgGroups");
                         // TODO groupBuilder.addMixin(member.getMixinName(), buildMixinForMember(member, factory));
@@ -12014,7 +12014,7 @@ public class CommandLine {
                     result = true;
                 }
                 if (member.isArgGroup()) {
-                    assertNoDuplicateAnnotations(member, ArgGroup.class, Spec.class, Parameters.class, Option.class, Unmatched.class, Mixin.class);
+                    assertNoDuplicateAnnotations(member, ArgGroup.class, Spec.class, Parameters.class, Option.class, Unmatched.class, Mixin.class, ParentCommand.class);
                     if (groupBuilder != null) {
                         groupBuilder.addSubgroup(buildArgGroupForMember(member, factory, commandSpec));
                     } else {
@@ -12023,7 +12023,7 @@ public class CommandLine {
                     return true;
                 }
                 if (member.isUnmatched()) {
-                    assertNoDuplicateAnnotations(member, Unmatched.class, Mixin.class, Option.class, Parameters.class, Spec.class, ArgGroup.class);
+                    assertNoDuplicateAnnotations(member, Unmatched.class, Mixin.class, Option.class, Parameters.class, Spec.class, ArgGroup.class, ParentCommand.class);
                     if (groupBuilder != null) {
                         // we don't support @Unmatched on @ArgGroup class members...
                         throw new InitializationException("@Unmatched are not supported on @ArgGroups");
@@ -12053,6 +12053,7 @@ public class CommandLine {
                     }
                 }
                 if (member.isParentCommand()) {
+                    validateParentCommand(member);
                     commandSpec.addParentCommandElement(member);
                 }
                 return result;
@@ -12079,9 +12080,9 @@ public class CommandLine {
             private static void validateArgSpecMember(TypedMember member) {
                 if (!member.isArgSpec()) { throw new IllegalStateException("Bug: validateArgSpecMember() should only be called with an @Option or @Parameters member"); }
                 if (member.isOption()) {
-                    assertNoDuplicateAnnotations(member, Option.class, Unmatched.class, Mixin.class, Parameters.class, Spec.class, ArgGroup.class);
+                    assertNoDuplicateAnnotations(member, Option.class, Unmatched.class, Mixin.class, Parameters.class, Spec.class, ArgGroup.class, ParentCommand.class);
                 } else {
-                    assertNoDuplicateAnnotations(member, Parameters.class, Option.class, Unmatched.class, Mixin.class, Spec.class, ArgGroup.class);
+                    assertNoDuplicateAnnotations(member, Parameters.class, Option.class, Unmatched.class, Mixin.class, Spec.class, ArgGroup.class, ParentCommand.class);
                 }
                 if (!(member.accessible instanceof Field)) { return; }
                 Field field = (Field) member.accessible;
@@ -12103,10 +12104,13 @@ public class CommandLine {
             @SuppressWarnings("unchecked")
             private static void validateInjectSpec(TypedMember member) {
                 if (!member.isSpec()) { throw new IllegalStateException("Bug: validateInjectSpec() should only be called with @Spec members"); }
-                assertNoDuplicateAnnotations(member, Spec.class, Parameters.class, Option.class, Unmatched.class, Mixin.class, ArgGroup.class);
+                assertNoDuplicateAnnotations(member, Spec.class, Parameters.class, Option.class, Unmatched.class, Mixin.class, ArgGroup.class, ParentCommand.class);
                 if (!CommandSpec.class.getName().equals(member.getTypeInfo().getClassName())) {
                     throw new InitializationException("@picocli.CommandLine.Spec annotation is only supported on fields of type " + CommandSpec.class.getName());
                 }
+            }
+            private static void validateParentCommand(TypedMember member) {
+                assertNoDuplicateAnnotations(member, ParentCommand.class, Parameters.class, Option.class, Unmatched.class, Mixin.class, Spec.class, ArgGroup.class);
             }
             @SuppressWarnings("unchecked") //warning: [unchecked] Possible heap pollution from parameterized vararg type Class<? extends Annotation>
             private static void assertNoDuplicateAnnotations(TypedMember member, Class<? extends Annotation> myAnnotation, Class<? extends Annotation>... forbidden) {
