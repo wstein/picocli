@@ -15022,6 +15022,7 @@ public class CommandLine {
                 String standardPrompt = empty(desc) ? String.format("Enter value for %s: ", name) : String.format("Enter value for %s (%s): ", name, desc);
                 String prompt = empty(argSpec.prompt()) ? standardPrompt : argSpec.prompt();
                 System.out.print(prompt);
+                System.out.flush();
             }
 
             try {

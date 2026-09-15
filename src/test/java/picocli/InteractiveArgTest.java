@@ -43,7 +43,7 @@ public class InteractiveArgTest {
 
         void reset() {
             System.setOut(out);
-            System.setOut(err);
+            System.setErr(err);
             System.setIn(in);
             Help.Ansi.tty = isTTY;
         }
@@ -52,6 +52,7 @@ public class InteractiveArgTest {
     static class Capture {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ByteArrayOutputStream errBaos = new ByteArrayOutputStream();
+        int outFlushCount;
 
         Capture() {
             this(null);
@@ -62,7 +63,13 @@ public class InteractiveArgTest {
         }
 
         Capture(String input, boolean isTTY) {
-            System.setOut(new PrintStream(baos));
+            System.setOut(new PrintStream(baos) {
+                @Override
+                public void flush() {
+                    super.flush();
+                    outFlushCount++;
+                }
+            });
             System.setErr(new PrintStream(errBaos));
             Help.Ansi.tty = isTTY;
             if (input != null) {
@@ -122,6 +129,7 @@ public class InteractiveArgTest {
             assertThat(specX.toString(), containsString("App.x"));
 
             assertEquals("Enter value for -x (Pwd): ", capture.out());
+            assertTrue(capture.outFlushCount > 0);
             assertEquals(1234567890, app.x);
             assertEquals(0, app.z);
 
