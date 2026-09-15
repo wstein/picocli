@@ -6784,19 +6784,12 @@ public class CommandLine {
              * @return this CommandSpec for method chaining
              * @throws DuplicateOptionAnnotationsException if any of the names of the specified option is the same as the name of another option */
             public CommandSpec addOption(OptionSpec option) {
+                if (options.contains(option)) { return this; }
                 Tracer tracer = CommandLine.tracer();
-                for (String name : interpolator.interpolate(option.names())) { // cannot be null or empty
-                    String existingName = optionsByNameMap.getCaseSensitiveKey(name);
-                    OptionSpec existing = optionsByNameMap.put(name, option);
-                    if (existing != null && !existing.equals(option)/* equals check needed after fix for #2149 */) { // since 4.0 ArgGroups: an option cannot be in multiple groups
-                        throw DuplicateOptionAnnotationsException.create(existingName, option, existing);
-                    }
-                    // #1022 checks if negated options exist with the same name
-                    String existingNegatedName = negatedOptionsByNameMap.getCaseSensitiveKey(name);
-                    OptionSpec existingNegated = negatedOptionsByNameMap.get(name);
-                    if (existingNegated != null && existingNegated != option) {
-                        throw DuplicateOptionAnnotationsException.create(existingNegatedName, option, existingNegated);
-                    }
+                String[] names = interpolator.interpolate(option.names());
+                validateOptionNames(option, names);
+                for (String name : names) { // cannot be null or empty
+                    optionsByNameMap.put(name, option);
                     if (name.length() == 2 && name.startsWith("-")) { posixOptionsByKeyMap.put(name.charAt(1), option); }
                 }
                 options.add(option);
@@ -6813,26 +6806,48 @@ public class CommandLine {
                 return addArg(option);
             }
 
+            private void validateOptionNames(OptionSpec option, String[] names) {
+                Set<String> positiveNames = new HashSet<String>(Arrays.asList(names));
+                for (String name : names) {
+                    String existingName = optionsByNameMap.getCaseSensitiveKey(name);
+                    OptionSpec existing = optionsByNameMap.get(name);
+                    if (existing != null && !existing.equals(option)) { // since 4.0 ArgGroups: an option cannot be in multiple groups
+                        throw DuplicateOptionAnnotationsException.create(existingName, option, existing);
+                    }
+                    String existingNegatedName = negatedOptionsByNameMap.getCaseSensitiveKey(name);
+                    OptionSpec existingNegated = negatedOptionsByNameMap.get(name);
+                    if (existingNegated != null && existingNegated != option) {
+                        throw DuplicateOptionAnnotationsException.create(existingNegatedName, option, existingNegated);
+                    }
+                }
+                if (!option.negatable()) { return; }
+                if (!option.typeInfo().isBoolean() && !option.typeInfo().isOptional()) {
+                    throw new InitializationException("Only boolean options can be negatable, but " + option + " is of type " + option.typeInfo().getClassName());
+                }
+                for (String name : names) {
+                    String negatedName = negatableOptionTransformer().makeNegative(name, this);
+                    if (name.equals(negatedName)) { continue; }
+                    String existingName = negatedOptionsByNameMap.getCaseSensitiveKey(negatedName);
+                    OptionSpec existing = negatedOptionsByNameMap.get(negatedName);
+                    if (existing == null) {
+                        existingName = optionsByNameMap.getCaseSensitiveKey(negatedName);
+                        existing = optionsByNameMap.get(negatedName);
+                    }
+                    if (existing != null || positiveNames.contains(negatedName)) {
+                        throw DuplicateOptionAnnotationsException.create(existingName == null ? negatedName : existingName, option, existing == null ? option : existing);
+                    }
+                }
+            }
+
             private void addOptionNegative(OptionSpec option, Tracer tracer) {
                 if (option.negatable()) {
-                    if (!option.typeInfo().isBoolean() && !option.typeInfo().isOptional()) { // #1108
-                        throw new InitializationException("Only boolean options can be negatable, but " + option + " is of type " + option.typeInfo().getClassName());
-                    }
                     for (String name : interpolator.interpolate(option.names())) { // cannot be null or empty
                         String negatedName = negatableOptionTransformer().makeNegative(name, this);
                         if (name.equals(negatedName)) {
                             tracer.debug("Option %s is negatable, but has no negative form.", name);
                         } else {
                             tracer.debug("Option %s is negatable, registering negative name %s.", name, negatedName);
-                            String existingName = negatedOptionsByNameMap.getCaseSensitiveKey(negatedName);
-                            OptionSpec existing = negatedOptionsByNameMap.put(negatedName, option);
-                            if (existing == null) {
-                                existingName = optionsByNameMap.getCaseSensitiveKey(negatedName);
-                                existing = optionsByNameMap.get(negatedName);
-                            }
-                            if (existing != null) {
-                                throw DuplicateOptionAnnotationsException.create(existingName, option, existing);
-                            }
+                            negatedOptionsByNameMap.put(negatedName, option);
                         }
                     }
                 }

@@ -1192,6 +1192,40 @@ public class ModelCommandSpecTest {
     }
 
     @Test
+    public void testCommandSpecAddOption_DuplicateNameLeavesModelUnchanged() {
+        CommandSpec spec = CommandSpec.create();
+        OptionSpec original = OptionSpec.builder("-x").build();
+        OptionSpec duplicate = OptionSpec.builder("--new", "-x").build();
+        spec.addOption(original);
+
+        try {
+            spec.addOption(duplicate);
+            fail("Expected DuplicateOptionAnnotationsException");
+        } catch (CommandLine.DuplicateOptionAnnotationsException expected) {
+            // expected
+        }
+
+        assertSame(original, spec.optionsMap().get("-x"));
+        assertFalse(spec.optionsMap().containsKey("--new"));
+        assertEquals(Collections.singletonList(original), spec.options());
+        assertEquals(Collections.singletonList(original), spec.args());
+    }
+
+    @Test
+    public void testCommandSpecAddOption_SameSpecIsIdempotent() {
+        CommandSpec spec = CommandSpec.create();
+        OptionSpec option = OptionSpec.builder("-x").build();
+
+        spec.addOption(option);
+        spec.addOption(option);
+        spec.remove(option);
+
+        assertTrue(spec.options().isEmpty());
+        assertTrue(spec.args().isEmpty());
+        assertTrue(spec.optionsMap().isEmpty());
+    }
+
+    @Test
     public void testCommandSpecAddSubcommand_SubcommandInheritsResourceBundle() {
         ResourceBundle rb = ResourceBundle.getBundle("picocli.SharedMessages");
         CommandSpec spec = CommandSpec.wrapWithoutInspection(null);
