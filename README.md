@@ -432,6 +432,17 @@ upstream's `info.picocli:picocli`):
   }
   ```
 
-No version has been released from this fork yet — both distribution channels are dormant until a `vX.Y.Z` tag is
-pushed or the Release workflow is run manually.
+The same GitHub Pages site also hosts generated **Javadoc** for this module and for
+[`picocli-jsonspec`](picocli-jsonspec/README.md) (below), and the **JSON Schema** for
+picocli-jsonspec's format — see the [landing page](https://wstein.github.io/picocli/) for links to
+all of it.
+
+### picocli-jsonspec (this fork)
+[`picocli-jsonspec`](picocli-jsonspec/README.md) is a fork-specific module: it builds a picocli
+`CommandSpec` from JSON or from a small DSL, exports any `CommandSpec` back to JSON, and merges
+one or more such specs into a host CLI as subcommands — without an annotated Java class. Meant for
+giving a beautiful, help-and-completion-enabled picocli front end to a third-party tool whose own
+CLI isn't human-friendly. See its [README](picocli-jsonspec/README.md) for the DSL grammar and
+JSON field reference, or the [JSON Schema](https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json)
+and [Javadoc](https://wstein.github.io/picocli/apidocs/picocli-jsonspec/).
 
