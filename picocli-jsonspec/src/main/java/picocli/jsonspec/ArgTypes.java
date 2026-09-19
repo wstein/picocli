@@ -1,8 +1,10 @@
 package picocli.jsonspec;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Maps between the short type names used in a JSON spec or the DSL (e.g. {@code "boolean"},
@@ -32,10 +34,15 @@ final class ArgTypes {
         }
     }
 
+    /** Returns the supported type names (the vocabulary accepted by {@link #toClass(String)}), e.g. for validation or error messages. */
+    static Set<String> names() {
+        return Collections.unmodifiableSet(TYPES_BY_NAME.keySet());
+    }
+
     static Class<?> toClass(String typeName) {
         Class<?> type = TYPES_BY_NAME.get(typeName);
         if (type == null) {
-            throw new IllegalArgumentException("Unknown type \"" + typeName + "\": supported types are " + TYPES_BY_NAME.keySet());
+            throw new IllegalArgumentException("Unknown type \"" + typeName + "\": supported types are " + names());
         }
         return type;
     }
