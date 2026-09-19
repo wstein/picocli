@@ -444,5 +444,6 @@ one or more such specs into a host CLI as subcommands — without an annotated J
 giving a beautiful, help-and-completion-enabled picocli front end to a third-party tool whose own
 CLI isn't human-friendly. See its [README](picocli-jsonspec/README.md) for the DSL grammar and
 JSON field reference, or the [JSON Schema](https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json)
-and [Javadoc](https://wstein.github.io/picocli/apidocs/picocli-jsonspec/).
+(latest; permanently-kept per-version copies at `.../jsonspec/schema/<version>/...`) and
+[Javadoc](https://wstein.github.io/picocli/apidocs/picocli-jsonspec/).
 

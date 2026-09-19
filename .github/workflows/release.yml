@@ -105,9 +105,14 @@ jobs:
           cp -r build/docs/apidocs/. gh-pages-site/apidocs/picocli/
           cp -r picocli-jsonspec/build/docs/apidocs/. gh-pages-site/apidocs/picocli-jsonspec/
 
-          rm -rf gh-pages-site/jsonspec
-          mkdir -p gh-pages-site/jsonspec/schema
-          cp picocli-jsonspec/src/main/resources/picocli/jsonspec/command-spec.schema.json gh-pages-site/jsonspec/schema/
+          # jsonspec/schema is NOT wiped: unlike apidocs (always "latest" only), every version's
+          # schema is kept permanently, mirroring how maven/ accumulates every released jar.
+          SCHEMA_SRC=picocli-jsonspec/src/main/resources/picocli/jsonspec/command-spec.schema.json
+          LATEST_URL="https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json"
+          VERSIONED_URL="https://wstein.github.io/picocli/jsonspec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
+          mkdir -p "gh-pages-site/jsonspec/schema/${{ steps.vars.outputs.version }}"
+          cp "$SCHEMA_SRC" gh-pages-site/jsonspec/schema/command-spec.schema.json
+          sed "s#$LATEST_URL#$VERSIONED_URL#" "$SCHEMA_SRC" > "gh-pages-site/jsonspec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
 
           cp gh-pages/index.html gh-pages-site/index.html
 

@@ -12,7 +12,9 @@ subcommand is actually executed (shell out, API call, whatever) is entirely up t
 command's `run()`/`call()` — this module only builds the combined model.
 
 - **JSON format reference:** [`command-spec.schema.json`](src/main/resources/picocli/jsonspec/command-spec.schema.json)
-  (also published at <https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json>)
+  (also published at <https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json>,
+  which always tracks the latest release — pin `.../jsonspec/schema/<version>/command-spec.schema.json`,
+  e.g. `.../jsonspec/schema/4.8.0/...`, for a specific release's exact schema, kept permanently)
 - **Javadoc:** <https://wstein.github.io/picocli/apidocs/picocli-jsonspec/>
 - **Full worked example:** [`flix.dsl`](src/test/resources/picocli/jsonspec/fixtures/flix.dsl) /
   [`flix.json`](src/test/resources/picocli/jsonspec/fixtures/flix.json), exercised end to end by
