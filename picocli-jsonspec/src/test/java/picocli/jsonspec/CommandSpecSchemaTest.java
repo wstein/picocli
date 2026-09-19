@@ -56,6 +56,18 @@ public class CommandSpecSchemaTest {
         assertTrue(schema.containsKey("$defs"));
     }
 
+    /**
+     * The checked-in schema's {@code $id} is the *unversioned* "latest" URL. The release
+     * workflow (.github/workflows/release.yml) derives each release's pinned copy by a plain
+     * text substitution of this exact literal into
+     * {@code .../jsonspec/schema/<version>/command-spec.schema.json} -- if this URL ever
+     * changes, that substitution must be updated too.
+     */
+    @Test
+    public void schemaIdIsTheUnversionedLatestUrl() {
+        assertEquals("https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json", schema().get("$id"));
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     public void schemaTypeEnumMatchesArgTypes() {
