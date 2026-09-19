@@ -16,8 +16,8 @@ import java.util.Map;
  * <p>This lets a CLI be defined without an annotated Java class: for example, to give a
  * beautiful, help-and-completion-enabled picocli front end to a third-party tool whose own
  * CLI is not human-friendly, describe that tool's commands/options/positional parameters as
- * JSON (or generate that JSON from the {@linkplain picocli.jsonspec.dsl lightweight DSL}) and
- * build a {@code CommandSpec} from it with {@link #read(String)}.</p>
+ * JSON (or write it directly in the {@link CommandSpecDsl lightweight DSL}) and build a
+ * {@code CommandSpec} from it with {@link #read(String)}.</p>
  * <p>{@link #write(CommandSpec)} does the reverse for <em>any</em> {@code CommandSpec},
  * including ones built from annotated classes, e.g. for documentation or tooling that wants a
  * machine-readable description of a command's options.</p>
