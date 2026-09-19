@@ -1,4 +1,5 @@
 {
+  "$schema": "https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json",
   "name": "flix",
   "description": [
     "The Flix programming language"

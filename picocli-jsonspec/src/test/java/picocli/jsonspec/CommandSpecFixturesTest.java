@@ -4,11 +4,13 @@ import org.junit.Test;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParseResult;
+import picocli.jsonspec.json.Json;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,13 +41,28 @@ public class CommandSpecFixturesTest {
         }
     }
 
+    /**
+     * Compares parsed JSON trees rather than raw text, and ignores an optional top-level
+     * {@code "$schema"} hint (the conventional editor-validation key some tools add to JSON
+     * files on save) since {@link CommandSpecJson#write} never emits one and it carries no
+     * meaning for {@link CommandSpecJson#read}.
+     */
+    @SuppressWarnings("unchecked")
+    private static Object withoutSchemaHint(String json) {
+        Object parsed = Json.parse(json);
+        if (parsed instanceof Map) {
+            ((Map<String, Object>) parsed).remove("$schema");
+        }
+        return parsed;
+    }
+
     @Test
     public void dslFixtureCompilesToTheJsonFixture() {
         CommandSpec spec = CommandSpecDsl.parse(readFixture("flix.dsl"));
 
         String actualJson = CommandSpecJson.write(spec);
 
-        assertEquals(readFixture("flix.json"), actualJson);
+        assertEquals(withoutSchemaHint(readFixture("flix.json")), withoutSchemaHint(actualJson));
     }
 
     @Test

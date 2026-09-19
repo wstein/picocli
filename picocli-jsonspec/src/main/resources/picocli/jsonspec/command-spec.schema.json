@@ -9,6 +9,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "$schema": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional editor-validation hint (the conventional key many JSON tools add/read for autocomplete, e.g. pointing at this very schema's $id). Ignored by CommandSpecJson.read() and never emitted by CommandSpecJson.write()."
+        },
         "name": {
           "type": "string",
           "description": "The command's name. Optional at the document root (an unnamed root keeps picocli's own default); required on every entry inside \"subcommands\", since CommandSpecMerger and ordinary use both need it to address the subcommand."
