@@ -33,7 +33,57 @@ public final class CommandSpecJson {
         if (!(parsed instanceof Map)) {
             throw new IllegalArgumentException("Expected a JSON object describing a command, got: " + json);
         }
-        return readCommand((Map<String, Object>) parsed);
+        Map<String, Object> root = (Map<String, Object>) parsed;
+        Definitions definitions = Definitions.from((Map<String, Object>) root.get("definitions"));
+        return readCommand(root, definitions);
+    }
+
+    /**
+     * The document-root {@code "definitions"} dictionary: named option/positional-param
+     * templates that a command's own {@code options}/{@code positionalParams} array can
+     * reference by name (a plain JSON string) instead of repeating the full definition. Only
+     * {@link #read} understands this; {@link #write} always emits fully-inlined objects.
+     */
+    private static final class Definitions {
+        static final Definitions EMPTY = new Definitions(java.util.Collections.<String, Map<String, Object>>emptyMap(),
+                java.util.Collections.<String, Map<String, Object>>emptyMap());
+
+        final Map<String, Map<String, Object>> options;
+        final Map<String, Map<String, Object>> positionalParams;
+
+        Definitions(Map<String, Map<String, Object>> options, Map<String, Map<String, Object>> positionalParams) {
+            this.options = options;
+            this.positionalParams = positionalParams;
+        }
+
+        @SuppressWarnings("unchecked")
+        static Definitions from(Map<String, Object> json) {
+            if (json == null) { return EMPTY; }
+            return new Definitions(
+                    (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("options")),
+                    (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("positionalParams")));
+        }
+
+        @SuppressWarnings("unchecked")
+        private static Map<String, Object> mapOrEmpty(Object value) {
+            return value == null ? java.util.Collections.<String, Object>emptyMap() : (Map<String, Object>) value;
+        }
+
+        Map<String, Object> resolveOption(String name) {
+            Map<String, Object> def = options.get(name);
+            if (def == null) {
+                throw new IllegalArgumentException("Reference to undefined option \"" + name + "\": not found in \"definitions.options\"");
+            }
+            return def;
+        }
+
+        Map<String, Object> resolvePositional(String label) {
+            Map<String, Object> def = positionalParams.get(label);
+            if (def == null) {
+                throw new IllegalArgumentException("Reference to undefined positional parameter \"" + label + "\": not found in \"definitions.positionalParams\"");
+            }
+            return def;
+        }
     }
 
     /** Serializes the given {@link CommandSpec} (with any nested subcommands) to JSON text. */
@@ -44,7 +94,7 @@ public final class CommandSpecJson {
     // ---- reading: JSON -> CommandSpec ----
 
     @SuppressWarnings("unchecked")
-    private static CommandSpec readCommand(Map<String, Object> json) {
+    private static CommandSpec readCommand(Map<String, Object> json, Definitions definitions) {
         CommandSpec spec = CommandSpec.create();
         String name = (String) json.get("name");
         if (name != null) {
@@ -56,14 +106,20 @@ public final class CommandSpecJson {
         }
 
         for (Object option : listOrEmpty(json.get("options"))) {
-            spec.addOption(readOption((Map<String, Object>) option));
+            Map<String, Object> optionJson = option instanceof String
+                    ? definitions.resolveOption((String) option)
+                    : (Map<String, Object>) option;
+            spec.addOption(readOption(optionJson));
         }
         for (Object positional : listOrEmpty(json.get("positionalParams"))) {
-            spec.addPositional(readPositional((Map<String, Object>) positional));
+            Map<String, Object> positionalJson = positional instanceof String
+                    ? definitions.resolvePositional((String) positional)
+                    : (Map<String, Object>) positional;
+            spec.addPositional(readPositional(positionalJson));
         }
         for (Object subcommand : listOrEmpty(json.get("subcommands"))) {
             Map<String, Object> subJson = (Map<String, Object>) subcommand;
-            CommandSpec subSpec = readCommand(subJson);
+            CommandSpec subSpec = readCommand(subJson, definitions);
             spec.addSubcommand(subSpec.name(), subSpec);
         }
         return spec;
