@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -40,14 +41,31 @@ public class FlixExampleTest {
                 flix.subcommands().keySet());
     }
 
+    /**
+     * {@code --help}/{@code --version} are meta-options that make sense with no command at all;
+     * {@code --listen} is confirmed (empirically, {@code ./flixw --listen 8099}) to start its
+     * WebSocket server standalone, with no subcommand, so it belongs here too rather than under
+     * any specific subcommand.
+     */
     @Test
-    public void topLevelOnlyHasTheTrueGlobalMetaOptions() throws IOException {
+    public void topLevelOnlyHasTheOptionsThatWorkWithoutACommand() throws IOException {
         CommandSpec flix = CommandSpecDsl.parse(readExample());
 
         Set<String> topLevelOptionNames = new HashSet<String>();
         for (CommandLine.Model.OptionSpec option : flix.options()) { topLevelOptionNames.add(option.longestName()); }
 
-        assertEquals(new HashSet<String>(Arrays.asList("--help", "--version")), topLevelOptionNames);
+        assertEquals(new HashSet<String>(Arrays.asList("--help", "--version", "--listen")), topLevelOptionNames);
+    }
+
+    @Test
+    public void listenWorksWithNoSubcommand() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        CommandLine cmd = new CommandLine(flix);
+
+        ParseResult result = cmd.parseArgs("--listen", "8099");
+
+        assertFalse(result.hasSubcommand());
+        assertEquals(8099, (int) result.matchedOptionValue("--listen", 0));
     }
 
     @Test

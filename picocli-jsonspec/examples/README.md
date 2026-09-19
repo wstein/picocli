@@ -34,6 +34,12 @@ reasoning:
   top level only, matching scopt's own structure (declared outside any command's `.children()`,
   so they must precede the command name in the real tool too — `flix --help build` doesn't work
   in flix any more than it would here).
+- **`--listen`**: also top level, with no subcommand at all — confirmed empirically
+  (`./flixw --listen 8099` starts the WebSocket server standalone, printing
+  `WebSocket server listening on: ws://localhost:8099` with no command verb involved). This
+  was originally guessed as a `repl`-scoped option in an earlier draft of this file; that guess
+  was wrong, which is exactly why it's worth verifying judgment calls like this against actual
+  usage rather than trusting inference from `--help` text or source structure alone.
 - **`--github-token`, `--no-install`**: govern dependency resolution. Attached to every command
   that needs the project's dependency graph resolved: `check`, `build`, `build-jar`,
   `build-fatjar`, `build-pkg`, `doc`, `run`, `test`, `repl`, and `outdated` (which must talk to
@@ -49,10 +55,6 @@ reasoning:
   executable: `build-jar`, `build-fatjar`, `run`.
 - **`--args`**: only `run` — it's specifically "arguments passed to main".
 - **`--yes`**: only where a prompt is plausible: `init`, `build-pkg`, `release`.
-- **`--listen`**: assigned to `repl` as the most plausible fit (a persistent/remote REPL server);
-  flix's `--help` text doesn't actually say which command this pairs with, so treat this one as
-  the least certain judgment call in the file — if you're building a real flix proxy, verify this
-  against actual usage before relying on it.
 - **The 14 `--Xbenchmark-*`/`--Xlib`/`--Xprint-*`/`--Xsummary`/`--Xfuzzer`/`--Xsubeffecting`/
   `--Xchaos-monkey`/`--Xiterations`/`--Xno-deprecated` experimental compiler flags**: attached
   only to the four core dev-loop commands that actually invoke the compiler pipeline end to end

@@ -16,6 +16,7 @@
 command flix "The Flix Programming Language 0.60.0" {
   option --help : boolean "prints this usage information."
   option --version : boolean "prints the version number."
+  option --listen : int "starts the socket server and listens on the given port."
 
   command init "creates a new project in the current directory." {
     option --yes : boolean "automatically answer yes to all prompts."
@@ -143,7 +144,6 @@ command flix "The Flix Programming Language 0.60.0" {
   }
 
   command repl "starts a repl for the current project, or provided Flix source files." {
-    option --listen : int "starts the socket server and listens on the given port."
     option --github-token : String "API key to use for GitHub dependency resolution."
     option --no-install : boolean "disables automatic installation of dependencies."
     option --threads : int "number of threads to use for compilation."
