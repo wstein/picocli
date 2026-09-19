@@ -26,7 +26,8 @@ import java.util.List;
  * <p>A positional parameter's bare {@code &lt;label&gt;} is wrapped as {@code "&lt;label&gt;"} to
  * form its {@linkplain PositionalParamSpec#paramLabel() paramLabel}, matching picocli's own
  * convention for annotated fields. Supported {@code &lt;type&gt;} names are the same as
- * {@link CommandSpecJson}'s (currently scalar types only).</p>
+ * {@link CommandSpecJson}'s (currently scalar types only). A {@code //} starts a line comment,
+ * running to end of line; it is not recognized inside a quoted string.</p>
  * <p>Example:</p>
  * <pre>
  * command flix "The Flix programming language" {
@@ -77,7 +78,7 @@ public final class CommandSpecDsl {
         }
 
         private Token next() {
-            skipWhitespace();
+            skipInsignificant();
             if (pos >= text.length()) { return new Token(TokenKind.EOF, ""); }
             char c = text.charAt(pos);
             switch (c) {
@@ -91,8 +92,16 @@ public final class CommandSpecDsl {
             }
         }
 
-        private void skipWhitespace() {
-            while (pos < text.length() && Character.isWhitespace(text.charAt(pos))) { pos++; }
+        /** Skips whitespace and {@code //} line comments (to end of line), repeating until neither remains. */
+        private void skipInsignificant() {
+            while (true) {
+                while (pos < text.length() && Character.isWhitespace(text.charAt(pos))) { pos++; }
+                if (pos + 1 < text.length() && text.charAt(pos) == '/' && text.charAt(pos + 1) == '/') {
+                    while (pos < text.length() && text.charAt(pos) != '\n') { pos++; }
+                } else {
+                    break;
+                }
+            }
         }
 
         private Token readString() {

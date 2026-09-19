@@ -123,6 +123,29 @@ public class CommandSpecDslTest {
     }
 
     @Test
+    public void skipsLineComments() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "// a leading comment\n" +
+                "command flix { // trailing comment after the opening brace\n" +
+                "  // a comment on its own line\n" +
+                "  option -v, --verbose : boolean // trailing comment after a declaration\n" +
+                "}\n" +
+                "// a trailing comment at the very end");
+
+        assertEquals("flix", spec.name());
+        assertEquals(1, spec.options().size());
+        assertEquals("--verbose", spec.options().get(0).longestName());
+    }
+
+    @Test
+    public void lineCommentDoesNotAffectSlashesInsideAString() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix \"see https://example.org/docs for more\" {}");
+
+        assertArrayEquals(new String[] {"see https://example.org/docs for more"}, spec.usageMessage().description());
+    }
+
+    @Test
     public void rejectsMissingBrace() {
         try {
             CommandSpecDsl.parse("command flix { option -v : boolean");
