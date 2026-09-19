@@ -11,14 +11,24 @@ let picocli handle parsing, validation, `--help`, and shell completion. How a me
 subcommand is actually executed (shell out, API call, whatever) is entirely up to your own
 command's `run()`/`call()` — this module only builds the combined model.
 
+- **JSON format reference:** [`command-spec.schema.json`](src/main/resources/picocli/jsonspec/command-spec.schema.json)
+  (also published at <https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json>)
+- **Javadoc:** <https://wstein.github.io/picocli/apidocs/picocli-jsonspec/>
+- **Full worked example:** [`flix.dsl`](src/test/resources/picocli/jsonspec/fixtures/flix.dsl) /
+  [`flix.json`](src/test/resources/picocli/jsonspec/fixtures/flix.json), exercised end to end by
+  `CommandSpecFixturesTest`
+
 ## The DSL
 
 ```
 command flix "The Flix programming language" {
   option -v, --verbose : boolean "Enable verbose output"
+  option -o, --output : String "Output directory" default=out
+  option -t, --target : String "Compilation target" required arity=1
 
   command build "Compile the project" {
     option --release : boolean "Optimize for release"
+    positional files : File "Input files to compile" arity=0..*
   }
   command run "Run the project" {
     positional args : String "Program arguments" arity=0..*
@@ -30,9 +40,38 @@ command flix "The Flix programming language" {
 CommandSpec flixSpec = CommandSpecDsl.parse(dslText);
 ```
 
-A positional's bare label (`args`) becomes its `paramLabel` (`<args>`), matching picocli's own
-convention for annotated fields. Option/positional attributes: `default=<value>`, `required`,
-`arity=<range>`, all optional and in any order after the type/description.
+### Grammar
+
+```
+spec        := command
+command     := 'command' name [string] '{' member* '}'
+member      := option | positional | command
+option      := 'option' name (',' name)* ':' type [string] attr*
+positional  := 'positional' name ':' type [string] attr*
+attr        := 'default' '=' value
+             | 'required'
+             | 'arity' '=' value
+name, type,
+value       := word            // any run of non-whitespace characters other than { } : , = "
+string      := '"' ... '"'     // escapes: \" \\ \n \t
+```
+
+Notes:
+
+- `command`/`option`/`positional`/`default`/`required`/`arity` are the only reserved words, and
+  only where the grammar expects one (an option/positional name may otherwise be any word,
+  including one that happens to read `arity` — the parser only treats them as keywords at the
+  start of a member or inside an attribute list).
+- The `string` right after a name/type is that command/option/positional's `description` (a
+  single line). There is currently no syntax for multiple description lines in the DSL (use JSON
+  for that, via a `"description"` array).
+- A positional's bare `name` (e.g. `files`) becomes its `paramLabel` wrapped in angle brackets
+  (`<files>`), matching picocli's own convention for annotated fields.
+- `type` is one of the names in [`ArgTypes`](src/main/java/picocli/jsonspec/ArgTypes.java)'s
+  vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File` (see the schema's
+  `$defs.type.enum`, which is tested to stay in sync with the actual reader).
+- `attr*` may appear in any order and are all optional; `required` takes no value, `default=` and
+  `arity=` do.
 
 ## JSON
 
@@ -44,20 +83,68 @@ String json = CommandSpecJson.write(flixSpec);      // e.g. for docs, a web UI, 
 CommandSpec sameSpec = CommandSpecJson.read(json);   // read it back
 ```
 
-JSON shape (a `CommandSpecJson.write()` output looks like this):
+`CommandSpecJson.write()` of the DSL example above produces exactly this (also checked into
+[`flix.json`](src/test/resources/picocli/jsonspec/fixtures/flix.json), enforced by
+`CommandSpecFixturesTest`):
 
 ```json
 {
   "name": "flix",
   "description": ["The Flix programming language"],
   "options": [
-    { "names": ["-v", "--verbose"], "type": "boolean", "arity": "0" }
+    { "names": ["-v", "--verbose"], "type": "boolean", "description": ["Enable verbose output"], "arity": "0" },
+    { "names": ["-o", "--output"], "type": "String", "description": ["Output directory"], "defaultValue": "out", "arity": "1" },
+    { "names": ["-t", "--target"], "type": "String", "description": ["Compilation target"], "required": true, "arity": "1" }
   ],
   "subcommands": [
-    { "name": "build", "options": [ { "names": ["--release"], "type": "boolean", "arity": "0" } ] }
+    {
+      "name": "build",
+      "description": ["Compile the project"],
+      "options": [
+        { "names": ["--release"], "type": "boolean", "description": ["Optimize for release"], "arity": "0" }
+      ],
+      "positionalParams": [
+        { "paramLabel": "<files>", "type": "File", "description": ["Input files to compile"], "arity": "0..*" }
+      ]
+    },
+    {
+      "name": "run",
+      "description": ["Run the project"],
+      "positionalParams": [
+        { "paramLabel": "<args>", "type": "String", "description": ["Program arguments"], "arity": "0..*" }
+      ]
+    }
   ]
 }
 ```
+
+### Field reference
+
+The formal, versioned reference is the JSON Schema (linked above); this table is a quick summary.
+
+**Command object** (the document root, and every entry in `subcommands`):
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | only inside `subcommands` | Root may omit it (keeps picocli's own placeholder name). |
+| `description` | string[] | no | One entry per usage-help line. |
+| `options` | option[] | no | |
+| `positionalParams` | positionalParam[] | no | |
+| `subcommands` | command[] | no | Recursive; each entry requires `name`. |
+
+**Option object** (`options[]`):
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `names` | string[] | **yes**, ≥1 | e.g. `["-v", "--verbose"]`. |
+| `type` | string | no | One of the `ArgTypes` names. |
+| `description` | string[] | no | |
+| `defaultValue` | string | no | See the "not required if it has a default" note below. |
+| `required` | boolean | no, default `false` | An option with a `defaultValue` is reported as not required by picocli regardless of this flag (`ArgSpec#required()`'s documented "#261" behavior) — don't set both expecting `required` to win. |
+| `arity` | string | no | e.g. `"0"`, `"1"`, `"0..1"`, `"1..*"`, `"0..*"`; parsed by `Range.valueOf(String)`. |
+
+**Positional param object** (`positionalParams[]`): same fields as an option except `names` is
+replaced by an optional `paramLabel` (string, defaults to picocli's own `"PARAM"`).
 
 ## Merging into a host CLI
 
@@ -79,6 +166,12 @@ subcommand.
 - No execution wiring is provided or assumed: a merged-in subcommand has no `run()`/`call()`
   of its own. Attach one via the host command's own dispatch logic (e.g. an `IExecutionStrategy`
   that recognizes commands originating from an imported spec and shells out accordingly).
+- A hungry (unbounded-arity) positional at the *same* command level as subcommands can compete
+  with a subcommand name for the same token, and a `defaultValue` that's textually identical to
+  a subcommand/option name can likewise be rejected when picocli applies it — both are picocli's
+  own parser being conservative about ambiguous input, not bugs in this module. Avoid the
+  collision (e.g. put file-consuming positionals on the subcommand that needs them, as `flix
+  build` does above, and pick default values that don't double as command/option names).
 
-See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecMergerTest`) for
-more complete, runnable examples.
+See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecMergerTest`,
+`CommandSpecFixturesTest`, `CommandSpecSchemaTest`) for more complete, runnable examples.
