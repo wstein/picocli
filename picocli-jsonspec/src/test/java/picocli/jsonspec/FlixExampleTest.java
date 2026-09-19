@@ -1,0 +1,89 @@
+package picocli.jsonspec;
+
+import org.junit.Test;
+import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.ParseResult;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Sanity-checks {@code examples/flix-0.60.0.dsl} -- a realistic, hand-curated spec for the real
+ * flix CLI, kept at the module root (not under src/test/resources) so it stays easy to browse on
+ * GitHub as documentation in its own right. Loaded here via a path relative to the module
+ * directory, which is Gradle's default test working directory for this project.
+ */
+public class FlixExampleTest {
+
+    private static String readExample() throws IOException {
+        File file = new File("examples/flix-0.60.0.dsl");
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void parsesIntoTheDocumentedCommandSet() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+
+        assertEquals("flix", flix.name());
+        assertEquals(new HashSet<String>(Arrays.asList(
+                "init", "check", "build", "build-jar", "build-fatjar", "build-pkg", "doc",
+                "run", "test", "repl", "lsp", "lsp-vscode", "release", "outdated")),
+                flix.subcommands().keySet());
+    }
+
+    @Test
+    public void topLevelOnlyHasTheTrueGlobalMetaOptions() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+
+        Set<String> topLevelOptionNames = new HashSet<String>();
+        for (CommandLine.Model.OptionSpec option : flix.options()) { topLevelOptionNames.add(option.longestName()); }
+
+        assertEquals(new HashSet<String>(Arrays.asList("--help", "--version")), topLevelOptionNames);
+    }
+
+    @Test
+    public void runAcceptsArgsAndEntrypointButBuildPkgDoesNot() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+
+        CommandSpec run = flix.subcommands().get("run").getCommandSpec();
+        assertTrue(run.findOption("--args") != null);
+        assertTrue(run.findOption("--entrypoint") != null);
+
+        CommandSpec buildPkg = flix.subcommands().get("build-pkg").getCommandSpec();
+        assertEquals(null, buildPkg.findOption("--args"));
+        assertEquals(null, buildPkg.findOption("--entrypoint"));
+    }
+
+    @Test
+    public void lspVscodeHasARequiredPortPositional() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+
+        CommandSpec lspVscode = flix.subcommands().get("lsp-vscode").getCommandSpec();
+        assertEquals(1, lspVscode.positionalParameters().size());
+        assertEquals("<port>", lspVscode.positionalParameters().get(0).paramLabel());
+        assertTrue(lspVscode.positionalParameters().get(0).required());
+    }
+
+    @Test
+    public void builtCommandLineActuallyParsesARealisticInvocation() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        CommandLine cmd = new CommandLine(flix);
+
+        ParseResult result = cmd.parseArgs("run", "--entrypoint", "Main.main", "--args", "hello world", "Main.flix");
+
+        assertTrue(result.hasSubcommand());
+        ParseResult run = result.subcommand();
+        assertEquals("Main.main", run.matchedOptionValue("--entrypoint", (String) null));
+        assertEquals("hello world", run.matchedOptionValue("--args", (String) null));
+        assertEquals(1, run.matchedPositionals().size());
+    }
+}
