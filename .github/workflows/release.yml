@@ -91,14 +91,29 @@ jobs:
       - name: Publish to flat Maven repo (jar + pom only, io.github.wstein:picocli)
         run: ./gradlew publishForkPublicationToForkRepoRepository --no-daemon
 
-      - name: Push updated flat Maven repo to GitHub Pages
+      - name: Generate javadoc
+        run: ./gradlew :javadoc :picocli-jsonspec:javadoc --no-daemon
+
+      - name: Push updated site to GitHub Pages
         run: |
           rm -rf gh-pages-site/maven
           mkdir -p gh-pages-site/maven
           cp -r build/fork-maven-repo/. gh-pages-site/maven/
+
+          rm -rf gh-pages-site/apidocs
+          mkdir -p gh-pages-site/apidocs/picocli gh-pages-site/apidocs/picocli-jsonspec
+          cp -r build/docs/apidocs/. gh-pages-site/apidocs/picocli/
+          cp -r picocli-jsonspec/build/docs/apidocs/. gh-pages-site/apidocs/picocli-jsonspec/
+
+          rm -rf gh-pages-site/jsonspec
+          mkdir -p gh-pages-site/jsonspec/schema
+          cp picocli-jsonspec/src/main/resources/picocli/jsonspec/command-spec.schema.json gh-pages-site/jsonspec/schema/
+
+          cp gh-pages/index.html gh-pages-site/index.html
+
           cd gh-pages-site
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add maven
-          git commit -m "Publish io.github.wstein:picocli:${{ steps.vars.outputs.version }}" || echo "Nothing to commit"
+          git add maven apidocs jsonspec index.html
+          git commit -m "Publish io.github.wstein:picocli:${{ steps.vars.outputs.version }} (maven, javadoc, jsonspec schema, site)" || echo "Nothing to commit"
           git push origin HEAD:gh-pages
