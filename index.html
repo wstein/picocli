@@ -17,7 +17,8 @@
   This is a small self-hosted flat Maven repository for
   <a href="https://github.com/wstein/picocli">wstein/picocli</a>, a personal fork of
   <a href="https://github.com/remkop/picocli">remkop/picocli</a> used to prototype additions
-  (e.g. fish shell completion) before/if they get contributed upstream.
+  (e.g. fish shell completion, the <code>picocli-jsonspec</code> module below) before/if they
+  get contributed upstream.
 </p>
 <p>It is <strong>not</strong> affiliated with the official <code>info.picocli:picocli</code> releases on Maven Central.</p>
 
@@ -29,11 +30,27 @@ dependencies {
     implementation 'io.github.wstein:picocli:&lt;version&gt;'
 }</pre>
 
+<h2>Documentation</h2>
+<ul>
+  <li><a href="apidocs/picocli/">Javadoc — picocli (core)</a></li>
+  <li><a href="apidocs/picocli-jsonspec/">Javadoc — picocli-jsonspec</a></li>
+  <li><a href="maven/io/github/wstein/picocli/maven-metadata.xml">maven-metadata.xml</a> (lists published versions)</li>
+  <li><a href="https://github.com/wstein/picocli/releases">GitHub Releases</a> (jars attached directly)</li>
+  <li><a href="https://github.com/wstein/picocli/blob/develop/.github/workflows/release.yml">release workflow source</a></li>
+</ul>
+
+<h2>picocli-jsonspec</h2>
 <p>
-  Browse: <a href="maven/io/github/wstein/picocli/maven-metadata.xml">maven-metadata.xml</a>
-  (lists published versions) &middot;
-  <a href="https://github.com/wstein/picocli/releases">GitHub Releases</a> (jars attached directly) &middot;
-  <a href="https://github.com/wstein/picocli/blob/develop/.github/workflows/release.yml">release workflow source</a>
+  Build a picocli <code>CommandSpec</code> from JSON or from a small DSL, export any
+  <code>CommandSpec</code> back to JSON, and merge one or more such specs into a host CLI as
+  subcommands — without an annotated Java class. Meant for giving a beautiful,
+  help-and-completion-enabled picocli front end to a third-party tool whose own CLI isn't
+  human-friendly.
 </p>
+<ul>
+  <li><a href="https://github.com/wstein/picocli/tree/develop/picocli-jsonspec">Module README</a> (DSL grammar, JSON field reference, worked example)</li>
+  <li><a href="jsonspec/schema/command-spec.schema.json">JSON Schema</a> for the JSON format</li>
+  <li><a href="apidocs/picocli-jsonspec/">Javadoc</a></li>
+</ul>
 </body>
 </html>
