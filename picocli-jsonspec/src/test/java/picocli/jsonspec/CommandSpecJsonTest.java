@@ -1,0 +1,152 @@
+package picocli.jsonspec;
+
+import org.junit.Test;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.OptionSpec;
+import picocli.CommandLine.Model.PositionalParamSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.ParseResult;
+import picocli.CommandLine.Parameters;
+
+import java.io.File;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class CommandSpecJsonTest {
+
+    @Test
+    public void readsNameAndDescription() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"description\": [\"The Flix programming language\"] }");
+        assertEquals("flix", spec.name());
+        assertArrayEquals(new String[] {"The Flix programming language"}, spec.usageMessage().description());
+    }
+
+    @Test
+    public void readsOptions() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"-v\", \"--verbose\"], \"type\": \"boolean\", \"description\": [\"Enable verbose output\"] }," +
+                "{ \"names\": [\"-o\", \"--output\"], \"type\": \"String\", \"defaultValue\": \"build\" }," +
+                "{ \"names\": [\"-t\", \"--target\"], \"type\": \"String\", \"required\": true, \"arity\": \"1\" }" +
+                "]}");
+
+        assertEquals(3, spec.options().size());
+        OptionSpec verbose = spec.findOption("--verbose");
+        assertArrayEquals(new String[] {"-v", "--verbose"}, verbose.names());
+        assertEquals(boolean.class, verbose.type());
+        assertFalse(verbose.required());
+
+        OptionSpec output = spec.findOption("--output");
+        assertEquals(String.class, output.type());
+        assertEquals("build", output.defaultValue());
+        assertFalse(output.required());
+
+        OptionSpec target = spec.findOption("--target");
+        assertTrue(target.required());
+        assertEquals("1", target.arity().toString());
+    }
+
+    @Test
+    public void readsPositionalParams() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"positionalParams\": [" +
+                "{ \"paramLabel\": \"<files>\", \"type\": \"File\", \"arity\": \"0..*\", \"description\": [\"Input files\"] }" +
+                "]}");
+
+        assertEquals(1, spec.positionalParameters().size());
+        PositionalParamSpec files = spec.positionalParameters().get(0);
+        assertEquals("<files>", files.paramLabel());
+        assertEquals(File.class, files.type());
+        assertEquals("0..*", files.arity().toString());
+        assertArrayEquals(new String[] {"Input files"}, files.description());
+    }
+
+    @Test
+    public void readsNestedSubcommands() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"subcommands\": [" +
+                "{ \"name\": \"build\", \"description\": [\"Compile the project\"], \"options\": [" +
+                "  { \"names\": [\"--release\"], \"type\": \"boolean\" } ] }," +
+                "{ \"name\": \"run\", \"positionalParams\": [ { \"paramLabel\": \"<args>\", \"type\": \"String\", \"arity\": \"0..*\" } ] }" +
+                "]}");
+
+        assertEquals(2, spec.subcommands().size());
+        CommandSpec build = spec.subcommands().get("build").getCommandSpec();
+        assertEquals("build", build.name());
+        assertArrayEquals(new String[] {"Compile the project"}, build.usageMessage().description());
+        assertEquals(1, build.options().size());
+        assertEquals("--release", build.options().get(0).longestName());
+
+        CommandSpec run = spec.subcommands().get("run").getCommandSpec();
+        assertEquals(1, run.positionalParameters().size());
+    }
+
+    @Test
+    public void builtCommandLineActuallyParsesArguments() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
+                "\"options\": [ { \"names\": [\"-v\", \"--verbose\"], \"type\": \"boolean\" } ], " +
+                "\"positionalParams\": [ { \"paramLabel\": \"<files>\", \"type\": \"String\", \"arity\": \"0..*\" } ], " +
+                "\"subcommands\": [ { \"name\": \"build\", \"options\": [ { \"names\": [\"--release\"], \"type\": \"boolean\" } ] } ] }");
+
+        CommandLine cmd = new CommandLine(spec);
+        ParseResult result = cmd.parseArgs("build", "--release");
+        assertTrue(result.hasSubcommand());
+        ParseResult sub = result.subcommand();
+        assertTrue(sub.matchedOptionValue("--release", Boolean.FALSE));
+    }
+
+    @Test
+    public void rejectsUnknownType() {
+        try {
+            CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [ { \"names\": [\"-x\"], \"type\": \"Frobnicator\" } ] }");
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("Frobnicator"));
+        }
+    }
+
+    @Command(name = "greet", description = "Greets the given names",
+            subcommands = { CommandSpecJsonTest.LoudSubcommand.class })
+    static class GreetCommand {
+        @Option(names = {"-g", "--greeting"}, description = "The greeting phrase", defaultValue = "Hello")
+        String greeting;
+
+        @Parameters(paramLabel = "<name>", description = "Name to greet", arity = "1")
+        String name;
+    }
+
+    @Command(name = "loud", description = "Shouts the greeting")
+    static class LoudSubcommand {
+        @Option(names = "--volume")
+        int volume;
+    }
+
+    @Test
+    public void writesAnnotationBasedCommandSpecToJson() {
+        CommandSpec spec = new CommandLine(new GreetCommand()).getCommandSpec();
+
+        String json = CommandSpecJson.write(spec);
+
+        CommandSpec roundTripped = CommandSpecJson.read(json);
+        assertEquals("greet", roundTripped.name());
+        assertArrayEquals(new String[] {"Greets the given names"}, roundTripped.usageMessage().description());
+
+        OptionSpec greeting = roundTripped.findOption("--greeting");
+        assertArrayEquals(new String[] {"-g", "--greeting"}, greeting.names());
+        assertEquals(String.class, greeting.type());
+        assertEquals("Hello", greeting.defaultValue());
+
+        assertEquals(1, roundTripped.positionalParameters().size());
+        assertEquals("<name>", roundTripped.positionalParameters().get(0).paramLabel());
+        assertEquals("1", roundTripped.positionalParameters().get(0).arity().toString());
+
+        assertEquals(Arrays.asList("loud"), Arrays.asList(roundTripped.subcommands().keySet().toArray()));
+        CommandSpec loud = roundTripped.subcommands().get("loud").getCommandSpec();
+        assertEquals("--volume", loud.options().get(0).longestName());
+        assertEquals(int.class, loud.options().get(0).type());
+    }
+}
