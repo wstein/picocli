@@ -6,7 +6,6 @@ import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 import picocli.jsonspec.json.Json;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,7 +80,7 @@ public final class CommandSpecJson {
 
         OptionSpec.Builder builder = OptionSpec.builder(names);
         String type = (String) json.get("type");
-        if (type != null) { builder.type(typeNameToClass(type)); }
+        if (type != null) { builder.type(ArgTypes.toClass(type)); }
         String[] description = readStringArray(json.get("description"));
         if (description != null) { builder.description(description); }
         Object defaultValue = json.get("defaultValue");
@@ -98,7 +97,7 @@ public final class CommandSpecJson {
         String paramLabel = (String) json.get("paramLabel");
         if (paramLabel != null) { builder.paramLabel(paramLabel); }
         String type = (String) json.get("type");
-        if (type != null) { builder.type(typeNameToClass(type)); }
+        if (type != null) { builder.type(ArgTypes.toClass(type)); }
         String[] description = readStringArray(json.get("description"));
         if (description != null) { builder.description(description); }
         Object defaultValue = json.get("defaultValue");
@@ -156,7 +155,7 @@ public final class CommandSpecJson {
     }
 
     private static void putCommonArgSpecFields(Map<String, Object> json, picocli.CommandLine.Model.ArgSpec arg) {
-        json.put("type", classToTypeName(arg.type()));
+        json.put("type", ArgTypes.toName(arg.type()));
         putDescriptionIfPresent(json, arg.description());
         if (arg.defaultValue() != null) {
             json.put("defaultValue", arg.defaultValue());
@@ -185,34 +184,5 @@ public final class CommandSpecJson {
 
     private static List<?> listOrEmpty(Object value) {
         return value == null ? java.util.Collections.emptyList() : (List<?>) value;
-    }
-
-    private static final Map<String, Class<?>> TYPES_BY_NAME = new LinkedHashMap<String, Class<?>>();
-    static {
-        TYPES_BY_NAME.put("String", String.class);
-        TYPES_BY_NAME.put("boolean", boolean.class);
-        TYPES_BY_NAME.put("int", int.class);
-        TYPES_BY_NAME.put("long", long.class);
-        TYPES_BY_NAME.put("double", double.class);
-        TYPES_BY_NAME.put("File", File.class);
-    }
-    private static final Map<Class<?>, String> NAMES_BY_TYPE = new LinkedHashMap<Class<?>, String>();
-    static {
-        for (Map.Entry<String, Class<?>> entry : TYPES_BY_NAME.entrySet()) {
-            NAMES_BY_TYPE.put(entry.getValue(), entry.getKey());
-        }
-    }
-
-    private static Class<?> typeNameToClass(String typeName) {
-        Class<?> type = TYPES_BY_NAME.get(typeName);
-        if (type == null) {
-            throw new IllegalArgumentException("Unknown type \"" + typeName + "\": supported types are " + TYPES_BY_NAME.keySet());
-        }
-        return type;
-    }
-
-    private static String classToTypeName(Class<?> type) {
-        String name = NAMES_BY_TYPE.get(type);
-        return name != null ? name : type.getSimpleName();
     }
 }
