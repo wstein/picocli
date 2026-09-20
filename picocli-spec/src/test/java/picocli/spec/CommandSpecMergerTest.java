@@ -77,6 +77,30 @@ public class CommandSpecMergerTest {
     }
 
     @Test
+    public void chainingIsSemanticallyEquivalentToVarargsAndMergeAll() {
+        CommandSpec varargs = CommandSpecMerger.merge(uberSpec(), flixSpec(), otherToolSpec());
+        CommandSpec chained = CommandSpecMerger.merge(CommandSpecMerger.merge(uberSpec(), flixSpec()), otherToolSpec());
+        CommandSpec all = CommandSpecMerger.mergeAll(uberSpec(), java.util.Arrays.asList(flixSpec(), otherToolSpec()));
+
+        assertEquals(varargs.subcommands().keySet(), chained.subcommands().keySet());
+        assertEquals(varargs.subcommands().keySet(), all.subcommands().keySet());
+
+        for (String subName : varargs.subcommands().keySet()) {
+            CommandSpec varargsSub = varargs.subcommands().get(subName).getCommandSpec();
+            CommandSpec chainedSub = chained.subcommands().get(subName).getCommandSpec();
+            CommandSpec allSub = all.subcommands().get(subName).getCommandSpec();
+
+            assertEquals(varargsSub.options().size(), chainedSub.options().size());
+            assertEquals(varargsSub.options().size(), allSub.options().size());
+        }
+
+        String[] testArgs = {"--config", "cfg.json", "flix", "build", "--release"};
+        assertTrue(new CommandLine(varargs).parseArgs(testArgs).subcommand().subcommand().matchedOptionValue("--release", Boolean.FALSE));
+        assertTrue(new CommandLine(chained).parseArgs(testArgs).subcommand().subcommand().matchedOptionValue("--release", Boolean.FALSE));
+        assertTrue(new CommandLine(all).parseArgs(testArgs).subcommand().subcommand().matchedOptionValue("--release", Boolean.FALSE));
+    }
+
+    @Test
     public void rejectsDuplicateSubcommandName() {
         CommandSpec uber = CommandSpecMerger.merge(uberSpec(), flixSpec());
         try {
