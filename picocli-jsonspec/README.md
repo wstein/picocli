@@ -16,7 +16,7 @@ command's `run()`/`call()` — this module only builds the combined model.
   which always tracks the latest release — pin `.../jsonspec/schema/<version>/command-spec.schema.json`,
   e.g. `.../jsonspec/schema/4.8.0/...`, for a specific release's exact schema, kept permanently)
 - **Javadoc:** <https://wstein.github.io/picocli/apidocs/picocli-jsonspec/>
-- **Full worked example:** [`flix.dsl`](src/test/resources/picocli/jsonspec/fixtures/flix.dsl) /
+- **Full worked example:** [`flix.picocli`](src/test/resources/picocli/jsonspec/fixtures/flix.picocli) /
   [`flix.json`](src/test/resources/picocli/jsonspec/fixtures/flix.json), exercised end to end by
   `CommandSpecFixturesTest`
 
@@ -149,7 +149,7 @@ array entry may then be either a full object (as before) or a plain string namin
 }
 ```
 
-See [`flix-0.60.0.dsl`](examples/flix-0.60.0.dsl) for a realistic file built around this — 24
+See [`flix-0.60.0.picocli`](examples/flix-0.60.0.picocli) for a realistic file built around this — 24
 shared options/positionals defined once and referenced from up to 10 commands each.
 
 ## Grouping options (`group`)
@@ -284,7 +284,7 @@ an array of ordinary argGroup objects), and a `"use"` array accepted alongside `
 }
 ```
 
-See [`flix-0.60.0.dsl`](examples/flix-0.60.0.dsl) for the real `xflags` bundle (14 experimental
+See [`flix-0.60.0.picocli`](examples/flix-0.60.0.picocli) for the real `xflags` bundle (14 experimental
 flags plus their hidden group heading) reused by `check`/`build`/`run`/`test` with a single
 `use xflags` each.
 

@@ -58,7 +58,7 @@ public class CommandSpecFixturesTest {
 
     @Test
     public void dslFixtureCompilesToTheJsonFixture() {
-        CommandSpec spec = CommandSpecDsl.parse(readFixture("flix.dsl"));
+        CommandSpec spec = CommandSpecDsl.parse(readFixture("flix.picocli"));
 
         String actualJson = CommandSpecJson.write(spec);
 
@@ -68,7 +68,7 @@ public class CommandSpecFixturesTest {
     @Test
     public void jsonFixtureReadsBackToAnEquivalentCommandSpec() {
         CommandSpec fromJson = CommandSpecJson.read(readFixture("flix.json"));
-        CommandSpec fromDsl = CommandSpecDsl.parse(readFixture("flix.dsl"));
+        CommandSpec fromDsl = CommandSpecDsl.parse(readFixture("flix.picocli"));
 
         assertEquals(CommandSpecJson.write(fromDsl), CommandSpecJson.write(fromJson));
     }

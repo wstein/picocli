@@ -18,7 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Sanity-checks {@code examples/flix-0.60.0.dsl} -- a realistic, hand-curated spec for the real
+ * Sanity-checks {@code examples/flix-0.60.0.picocli} -- a realistic, hand-curated spec for the real
  * flix CLI, kept at the module root (not under src/test/resources) so it stays easy to browse on
  * GitHub as documentation in its own right. Loaded here via a path relative to the module
  * directory, which is Gradle's default test working directory for this project.
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class FlixExampleTest {
 
     private static String readExample() throws IOException {
-        File file = new File("examples/flix-0.60.0.dsl");
+        File file = new File("examples/flix-0.60.0.picocli");
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 

@@ -4,7 +4,7 @@ Real-world specs, kept here (not under `src/test/resources`) so they stay easy t
 on GitHub as documentation in their own right. Each is still sanity-checked by a test in
 `src/test/java/picocli/jsonspec/` (see `FlixExampleTest`).
 
-## `flix-0.60.0.dsl`
+## `flix-0.60.0.picocli`
 
 A picocli-jsonspec DSL spec for the real [flix](https://flix.dev) CLI, built from:
 
