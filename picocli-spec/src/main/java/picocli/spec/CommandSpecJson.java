@@ -10,9 +10,12 @@ import picocli.CommandLine.Model.PositionalParamSpec;
 import picocli.spec.json.Json;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reads a picocli {@link CommandSpec} from JSON, and writes a {@link CommandSpec} to JSON.
@@ -324,6 +327,10 @@ public final class CommandSpecJson {
             CommandSpec subSpec = readCommand(subJson, definitions);
             spec.addSubcommand(subSpec.name(), subSpec);
         }
+        Object mixinHelp = json.get("mixinStandardHelpOptions");
+        if (mixinHelp != null && (Boolean) mixinHelp) {
+            spec.mixinStandardHelpOptions(true);
+        }
         return spec;
     }
 
@@ -458,10 +465,23 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("name", spec.name());
         putDescriptionIfPresent(json, spec.usageMessage().description());
+        if (spec.mixinStandardHelpOptions()) {
+            json.put("mixinStandardHelpOptions", Boolean.TRUE);
+        }
+
+        Set<OptionSpec> standardHelpOptions = Collections.emptySet();
+        if (spec.mixinStandardHelpOptions()) {
+            CommandSpec helpMixin = spec.mixins().get("mixinStandardHelpOptions");
+            if (helpMixin != null) {
+                standardHelpOptions = new HashSet<OptionSpec>(helpMixin.options());
+            }
+        }
 
         List<Object> options = new ArrayList<Object>();
         for (OptionSpec option : spec.options()) {
-            if (option.group() == null && !option.inherited()) { options.add(writeOption(option)); }
+            if (option.group() == null && !option.inherited() && !standardHelpOptions.contains(option)) {
+                options.add(writeOption(option));
+            }
         }
         if (!options.isEmpty()) { json.put("options", options); }
 

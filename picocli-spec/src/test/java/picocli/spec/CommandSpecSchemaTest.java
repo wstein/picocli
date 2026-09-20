@@ -62,6 +62,19 @@ public class CommandSpecSchemaTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void commandSchemaDeclaresMixinStandardHelpOptions() {
+        Map<String, Object> schema = schema();
+        Map<String, Object> defs = (Map<String, Object>) schema.get("$defs");
+        Map<String, Object> commandProperties = (Map<String, Object>) ((Map<String, Object>) defs.get("command")).get("properties");
+
+        assertTrue(commandProperties.containsKey("mixinStandardHelpOptions"));
+        Map<String, Object> prop = (Map<String, Object>) commandProperties.get("mixinStandardHelpOptions");
+        assertEquals("boolean", prop.get("type"));
+        assertEquals(Boolean.FALSE, prop.get("default"));
+    }
+
+    @Test
     public void schemaIsWellFormedJson() {
         Map<String, Object> schema = schema();
         assertEquals("https://json-schema.org/draft/2020-12/schema", schema.get("$schema"));

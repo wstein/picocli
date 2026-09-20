@@ -19,6 +19,11 @@
           "description": "The command's name. Optional at the document root (an unnamed root keeps picocli's own default); required on every entry inside \"subcommands\", since CommandSpecMerger and ordinary use both need it to address the subcommand."
         },
         "description": { "$ref": "#/$defs/descriptionLines" },
+        "mixinStandardHelpOptions": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sets whether the standard help options (-h, --help and -V, --version) should be mixed in with this command. Equivalent to picocli's @Command(mixinStandardHelpOptions = true)."
+        },
         "options": {
           "type": "array",
           "items": { "anyOf": [ { "$ref": "#/$defs/option" }, { "$ref": "#/$defs/definitionReference" } ] }

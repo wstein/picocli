@@ -17,6 +17,7 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -286,5 +287,58 @@ public class CommandSpecJsonTest {
         assertTrue(json.contains("\"$schema\": \"" + CommandSpecJson.SCHEMA_URL + "\""));
         Map<String, Object> map = (Map<String, Object>) picocli.spec.json.Json.parse(json);
         assertEquals(CommandSpecJson.SCHEMA_URL, map.get("$schema"));
+    }
+
+    @Test
+    public void readsMixinStandardHelpOptionsOnCommand() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"app\", \"mixinStandardHelpOptions\": true }");
+        assertTrue(spec.mixinStandardHelpOptions());
+
+        OptionSpec help = spec.findOption("--help");
+        assertNotNull(help);
+        assertTrue(help.usageHelp());
+        assertArrayEquals(new String[] {"-h", "--help"}, help.names());
+
+        OptionSpec version = spec.findOption("--version");
+        assertNotNull(version);
+        assertTrue(version.versionHelp());
+        assertArrayEquals(new String[] {"-V", "--version"}, version.names());
+
+        CommandLine cmd = new CommandLine(spec);
+        ParseResult helpResult = cmd.parseArgs("-h");
+        assertTrue(helpResult.isUsageHelpRequested());
+
+        ParseResult versionResult = cmd.parseArgs("-V");
+        assertTrue(versionResult.isVersionHelpRequested());
+    }
+
+    @Test
+    public void readsMixinStandardHelpOptionsOnSubcommand() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"app\", \"subcommands\": [" +
+                "{ \"name\": \"sub\", \"mixinStandardHelpOptions\": true }" +
+                "] }");
+
+        assertFalse(spec.mixinStandardHelpOptions());
+        CommandSpec sub = spec.subcommands().get("sub").getCommandSpec();
+        assertTrue(sub.mixinStandardHelpOptions());
+        assertNotNull(sub.findOption("--help"));
+        assertNotNull(sub.findOption("--version"));
+    }
+
+    @Test
+    public void writesMixinStandardHelpOptionsAndOmitsStandardOptionsFromFlatList() {
+        CommandSpec spec = CommandSpec.create().name("app");
+        spec.mixinStandardHelpOptions(true);
+        spec.addOption(OptionSpec.builder("-v", "--verbose").type(boolean.class).build());
+
+        String json = CommandSpecJson.write(spec);
+        assertTrue(json.contains("\"mixinStandardHelpOptions\": true"));
+
+        CommandSpec read = CommandSpecJson.read(json);
+        assertTrue(read.mixinStandardHelpOptions());
+        assertNotNull(read.findOption("--verbose"));
+        assertNotNull(read.findOption("--help"));
+        assertNotNull(read.findOption("--version"));
+        assertEquals(3, read.options().size());
     }
 }
