@@ -181,6 +181,8 @@ public final class CommandSpecJson {
         if (usageHelp != null) { builder.usageHelp((Boolean) usageHelp); }
         Object versionHelp = json.get("versionHelp");
         if (versionHelp != null) { builder.versionHelp((Boolean) versionHelp); }
+        Object hidden = json.get("hidden");
+        if (hidden != null) { builder.hidden((Boolean) hidden); }
         if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
         return builder.build();
     }
@@ -199,6 +201,8 @@ public final class CommandSpecJson {
         if (required != null) { builder.required((Boolean) required); }
         String arity = (String) json.get("arity");
         if (arity != null) { builder.arity(arity); }
+        Object hidden = json.get("hidden");
+        if (hidden != null) { builder.hidden((Boolean) hidden); }
         if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
         return builder.build();
     }
@@ -291,6 +295,9 @@ public final class CommandSpecJson {
             json.put("required", Boolean.TRUE);
         }
         json.put("arity", arg.arity().toString());
+        if (arg.hidden()) {
+            json.put("hidden", Boolean.TRUE);
+        }
         if (arg.scopeType() == picocli.CommandLine.ScopeType.INHERIT) {
             json.put("scope", "inherit");
         }

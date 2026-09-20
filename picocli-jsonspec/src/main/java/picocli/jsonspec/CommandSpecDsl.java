@@ -88,14 +88,18 @@ public final class CommandSpecDsl {
      */
     private static final class Definitions {
         static final Definitions EMPTY = new Definitions(
-                Collections.<String, OptionSpec>emptyMap(), Collections.<String, PositionalParamSpec>emptyMap());
+                Collections.<String, OptionSpec>emptyMap(), Collections.<String, PositionalParamSpec>emptyMap(),
+                Collections.<String, Collection>emptyMap());
 
         final Map<String, OptionSpec> options;
         final Map<String, PositionalParamSpec> positionalParams;
+        final Map<String, Collection> collections;
 
-        Definitions(Map<String, OptionSpec> options, Map<String, PositionalParamSpec> positionalParams) {
+        Definitions(Map<String, OptionSpec> options, Map<String, PositionalParamSpec> positionalParams,
+                    Map<String, Collection> collections) {
             this.options = options;
             this.positionalParams = positionalParams;
+            this.collections = collections;
         }
 
         OptionSpec resolveOption(String name) {
@@ -113,6 +117,52 @@ public final class CommandSpecDsl {
             }
             return PositionalParamSpec.builder(def).build();
         }
+
+        Collection resolveCollection(String name) {
+            Collection collection = collections.get(name);
+            if (collection == null) {
+                throw new DslParseException("Reference to undefined collection \"" + name + "\": not declared in the definitions block");
+            }
+            return collection;
+        }
+    }
+
+    /** A named, reusable bundle of already-defined option/positional names, expanded by a {@code use} statement. */
+    private static final class Collection {
+        final List<String> optionNames;
+        final List<String> positionalLabels;
+
+        Collection(List<String> optionNames, List<String> positionalLabels) {
+            this.optionNames = optionNames;
+            this.positionalLabels = positionalLabels;
+        }
+    }
+
+    /**
+     * Where a parsed option/positional/group ends up: either a {@link CommandSpec} (a command
+     * body) or an {@link ArgGroupSpec.Builder} (a group body). Lets {@code parseGroup} and
+     * {@code use}-expansion be written once and used in both contexts.
+     */
+    private interface ArgSink {
+        void addOption(OptionSpec option);
+        void addPositional(PositionalParamSpec positional);
+        void addGroup(ArgGroupSpec group);
+    }
+
+    private static final class CommandArgSink implements ArgSink {
+        private final CommandSpec spec;
+        CommandArgSink(CommandSpec spec) { this.spec = spec; }
+        public void addOption(OptionSpec option) { spec.addOption(option); }
+        public void addPositional(PositionalParamSpec positional) { spec.addPositional(positional); }
+        public void addGroup(ArgGroupSpec group) { spec.addArgGroup(group); }
+    }
+
+    private static final class GroupArgSink implements ArgSink {
+        private final ArgGroupSpec.Builder builder;
+        GroupArgSink(ArgGroupSpec.Builder builder) { this.builder = builder; }
+        public void addOption(OptionSpec option) { builder.addArg(option); }
+        public void addPositional(PositionalParamSpec positional) { builder.addArg(positional); }
+        public void addGroup(ArgGroupSpec group) { builder.addSubgroup(group); }
     }
 
     // ---- lexer ----
@@ -255,6 +305,7 @@ public final class CommandSpecDsl {
             expect(TokenKind.LBRACE, "'{'");
             Map<String, OptionSpec> options = new LinkedHashMap<String, OptionSpec>();
             Map<String, PositionalParamSpec> positionalParams = new LinkedHashMap<String, PositionalParamSpec>();
+            Map<String, Collection> collections = new LinkedHashMap<String, Collection>();
             while (!check(TokenKind.RBRACE)) {
                 if (checkWord("option")) {
                     OptionSpec option = parseOption(Definitions.EMPTY);
@@ -262,12 +313,44 @@ public final class CommandSpecDsl {
                 } else if (checkWord("positional")) {
                     PositionalParamSpec positional = parsePositional(Definitions.EMPTY);
                     positionalParams.put(unwrapParamLabel(positional.paramLabel()), positional);
+                } else if (checkWord("collection")) {
+                    // Definitions available so far -- a collection may only bundle options/positionals
+                    // already defined earlier in this same block, by bare reference (no ':').
+                    Definitions soFar = new Definitions(options, positionalParams, collections);
+                    advance();
+                    String collectionName = expectWord();
+                    expect(TokenKind.LBRACE, "'{'");
+                    List<String> optionNames = new ArrayList<String>();
+                    List<String> positionalLabels = new ArrayList<String>();
+                    while (!check(TokenKind.RBRACE)) {
+                        if (checkWord("option")) {
+                            advance();
+                            String name = expectWord();
+                            if (check(TokenKind.COLON)) {
+                                throw new DslParseException("Collection members must be bare references to already-defined options (no ':'); found a definition for \"" + name + "\"");
+                            }
+                            soFar.resolveOption(name); // validates existence; discarded, re-resolved fresh at each "use"
+                            optionNames.add(name);
+                        } else if (checkWord("positional")) {
+                            advance();
+                            String label = expectWord();
+                            if (check(TokenKind.COLON)) {
+                                throw new DslParseException("Collection members must be bare references to already-defined positional parameters (no ':'); found a definition for \"" + label + "\"");
+                            }
+                            soFar.resolvePositional(label);
+                            positionalLabels.add(label);
+                        } else {
+                            throw new DslParseException("Expected 'option' or 'positional' but found '" + current().text + "'");
+                        }
+                    }
+                    expect(TokenKind.RBRACE, "'}'");
+                    collections.put(collectionName, new Collection(optionNames, positionalLabels));
                 } else {
-                    throw new DslParseException("Expected 'option' or 'positional' but found '" + current().text + "'");
+                    throw new DslParseException("Expected 'option', 'positional', or 'collection' but found '" + current().text + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
-            return new Definitions(options, positionalParams);
+            return new Definitions(options, positionalParams, collections);
         }
 
         private String unwrapParamLabel(String paramLabel) {
@@ -284,32 +367,68 @@ public final class CommandSpecDsl {
                 spec.usageMessage().description(advance().text);
             }
             expect(TokenKind.LBRACE, "'{'");
+            ArgSink sink = new CommandArgSink(spec);
             while (!check(TokenKind.RBRACE)) {
                 if (!check(TokenKind.WORD)) {
-                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'command' but found '" + current().text + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', or 'command' but found '" + current().text + "'");
                 }
                 String keyword = current().text;
-                if ("option".equals(keyword)) {
-                    spec.addOption(parseOption(definitions));
-                } else if ("positional".equals(keyword)) {
-                    spec.addPositional(parsePositional(definitions));
-                } else if ("group".equals(keyword)) {
-                    spec.addArgGroup(parseGroup(definitions));
-                } else if ("command".equals(keyword)) {
+                if ("command".equals(keyword)) {
                     CommandSpec sub = parseCommand(definitions);
                     spec.addSubcommand(sub.name(), sub);
+                } else if (isMemberKeyword(keyword)) {
+                    parseMember(definitions, sink);
                 } else {
-                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'command' but found '" + keyword + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', or 'command' but found '" + keyword + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
             return spec;
         }
 
+        private boolean isMemberKeyword(String keyword) {
+            return "option".equals(keyword) || "positional".equals(keyword) || "group".equals(keyword) || "use".equals(keyword);
+        }
+
+        /** Parses one {@code option}/{@code positional}/{@code group}/{@code use} statement into {@code sink}. */
+        private void parseMember(Definitions definitions, ArgSink sink) {
+            String keyword = current().text;
+            if ("option".equals(keyword)) {
+                sink.addOption(parseOption(definitions));
+            } else if ("positional".equals(keyword)) {
+                sink.addPositional(parsePositional(definitions));
+            } else if ("group".equals(keyword)) {
+                parseGroup(definitions, sink);
+            } else if ("use".equals(keyword)) {
+                expandCollection(definitions, sink);
+            } else {
+                throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + keyword + "'");
+            }
+        }
+
+        /** {@code use <name>}: expands every member of a {@code definitions}-block {@code collection} into {@code sink}, each freshly resolved/cloned. */
+        private void expandCollection(Definitions definitions, ArgSink sink) {
+            expectKeyword("use");
+            String name = expectWord();
+            Collection collection = definitions.resolveCollection(name);
+            for (String optionName : collection.optionNames) {
+                sink.addOption(definitions.resolveOption(optionName));
+            }
+            for (String label : collection.positionalLabels) {
+                sink.addPositional(definitions.resolvePositional(label));
+            }
+        }
+
         /**
-         * {@code group ('exclusive'|'cooperative') ['multiplicity' '=' value] [string] '{' ( option | positional | group )* '}'}
+         * {@code group ('exclusive'|'cooperative') ['multiplicity' '=' value | 'hidden']* [string] '{' ( option | positional | group | use )* '}'}
+         * <p>A {@code hidden} group is never actually built as a real {@link ArgGroupSpec}: verified
+         * empirically that a group whose every member is hidden still leaves visible artifacts in
+         * usage help (an orphaned heading, and, regardless of heading, a stray empty "[]" in the
+         * synopsis for the group itself). Instead, {@code hidden} flattens the group's members --
+         * each forced hidden, recursively including any nested subgroups' members -- directly into
+         * {@code sink}, so nothing group-shaped ever reaches picocli's rendering for it.</p>
          */
-        private ArgGroupSpec parseGroup(Definitions definitions) {
+        private void parseGroup(Definitions definitions, ArgSink sink) {
             expectKeyword("group");
             String kind = expectWord();
             boolean exclusive;
@@ -321,33 +440,64 @@ public final class CommandSpecDsl {
                 throw new DslParseException("Expected 'exclusive' or 'cooperative' but found '" + kind + "'");
             }
 
+            String multiplicity = null;
+            boolean hidden = false;
+            while (checkWord("multiplicity") || checkWord("hidden")) {
+                String attr = advance().text;
+                if ("hidden".equals(attr)) {
+                    hidden = true;
+                } else {
+                    expect(TokenKind.EQUALS, "'='");
+                    multiplicity = expectWordOrString();
+                }
+            }
+            String heading = check(TokenKind.STRING) ? advance().text : null;
+
+            if (hidden) {
+                expect(TokenKind.LBRACE, "'{'");
+                while (!check(TokenKind.RBRACE)) {
+                    if (!check(TokenKind.WORD) || !isMemberKeyword(current().text)) {
+                        throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + current().text + "'");
+                    }
+                    parseMember(definitions, new HidingArgSink(sink));
+                }
+                expect(TokenKind.RBRACE, "'}'");
+                return;
+            }
+
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
-            if (checkWord("multiplicity")) {
-                advance();
-                expect(TokenKind.EQUALS, "'='");
-                builder.multiplicity(expectWordOrString());
-            }
-            if (check(TokenKind.STRING)) {
-                builder.heading(advance().text);
-            }
+            if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (heading != null) { builder.heading(heading); }
+            ArgSink groupSink = new GroupArgSink(builder);
             expect(TokenKind.LBRACE, "'{'");
             while (!check(TokenKind.RBRACE)) {
-                if (!check(TokenKind.WORD)) {
-                    throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + current().text + "'");
+                if (!check(TokenKind.WORD) || !isMemberKeyword(current().text)) {
+                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + current().text + "'");
                 }
-                String keyword = current().text;
-                if ("option".equals(keyword)) {
-                    builder.addArg(parseOption(definitions));
-                } else if ("positional".equals(keyword)) {
-                    builder.addArg(parsePositional(definitions));
-                } else if ("group".equals(keyword)) {
-                    builder.addSubgroup(parseGroup(definitions));
-                } else {
-                    throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + keyword + "'");
-                }
+                parseMember(definitions, groupSink);
             }
             expect(TokenKind.RBRACE, "'}'");
-            return builder.build();
+            sink.addGroup(builder.build());
+        }
+
+        /**
+         * Wraps another {@link ArgSink}, forcing every option/positional added through it to
+         * {@code hidden}. A nested (non-hidden-declared) subgroup reaching {@link #addGroup} is
+         * flattened too, recursively -- once any ancestor group is hidden, nothing group-shaped
+         * may reach picocli, so a subgroup's own exclusive/cooperative/multiplicity is discarded
+         * rather than preserved as a real nested {@link ArgGroupSpec}.
+         */
+        private static final class HidingArgSink implements ArgSink {
+            private final ArgSink delegate;
+            HidingArgSink(ArgSink delegate) { this.delegate = delegate; }
+            public void addOption(OptionSpec option) { delegate.addOption(OptionSpec.builder(option).hidden(true).build()); }
+            public void addPositional(PositionalParamSpec positional) { delegate.addPositional(PositionalParamSpec.builder(positional).hidden(true).build()); }
+            public void addGroup(ArgGroupSpec group) {
+                for (picocli.CommandLine.Model.ArgSpec arg : group.args()) {
+                    if (arg.isOption()) { addOption((OptionSpec) arg); } else { addPositional((PositionalParamSpec) arg); }
+                }
+                for (ArgGroupSpec subgroup : group.subgroups()) { addGroup(subgroup); }
+            }
         }
 
         private OptionSpec parseOption(Definitions definitions) {
@@ -372,7 +522,7 @@ public final class CommandSpecDsl {
                 builder.description(advance().text);
             }
             while (checkWord("default") || checkWord("required") || checkWord("arity")
-                    || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit")) {
+                    || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit") || checkWord("hidden")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
@@ -382,6 +532,8 @@ public final class CommandSpecDsl {
                     builder.versionHelp(true);
                 } else if ("inherit".equals(attr)) {
                     builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
+                } else if ("hidden".equals(attr)) {
+                    builder.hidden(true);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();
@@ -406,12 +558,14 @@ public final class CommandSpecDsl {
             if (check(TokenKind.STRING)) {
                 builder.description(advance().text);
             }
-            while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit")) {
+            while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit") || checkWord("hidden")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
                 } else if ("inherit".equals(attr)) {
                     builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
+                } else if ("hidden".equals(attr)) {
+                    builder.hidden(true);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();

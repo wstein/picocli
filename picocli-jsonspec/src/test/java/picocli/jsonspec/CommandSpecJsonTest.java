@@ -132,6 +132,22 @@ public class CommandSpecJsonTest {
     }
 
     @Test
+    public void readsAndWritesHiddenOnOptionsAndPositionals() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
+                "\"options\": [ { \"names\": [\"--Xfoo\"], \"type\": \"boolean\", \"hidden\": true }, " +
+                "{ \"names\": [\"--bar\"], \"type\": \"boolean\" } ], " +
+                "\"positionalParams\": [ { \"paramLabel\": \"<secret>\", \"type\": \"String\", \"hidden\": true } ] }");
+
+        assertTrue(spec.findOption("--Xfoo").hidden());
+        assertFalse(spec.findOption("--bar").hidden());
+        assertTrue(spec.positionalParameters().get(0).hidden());
+
+        String json = CommandSpecJson.write(spec);
+        assertTrue(json.contains("\"hidden\": true"));
+        assertTrue(CommandSpecJson.read(json).findOption("--Xfoo").hidden());
+    }
+
+    @Test
     public void readsInheritScopeOnOptionsAndPositionals() {
         CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
                 "\"options\": [ { \"names\": [\"--verbose\"], \"type\": \"boolean\", \"scope\": \"inherit\" }, " +

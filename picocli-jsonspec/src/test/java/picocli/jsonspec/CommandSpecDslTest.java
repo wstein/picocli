@@ -31,6 +31,29 @@ public class CommandSpecDslTest {
     }
 
     @Test
+    public void hiddenAttributeHidesFromDefaultHelpButOptionStillWorks() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option --Xfoo : boolean hidden\n" +
+                "  option --bar : boolean\n" +
+                "}");
+
+        assertTrue(spec.findOption("--Xfoo").hidden());
+        assertFalse(spec.findOption("--bar").hidden());
+
+        CommandLine cmd = new CommandLine(spec);
+        ParseResult result = cmd.parseArgs("--Xfoo");
+        assertTrue(result.matchedOptionValue("--Xfoo", Boolean.FALSE));
+    }
+
+    @Test
+    public void hiddenAttributeWorksOnPositionalsToo() {
+        CommandSpec spec = CommandSpecDsl.parse("command flix { positional secret : String hidden }");
+
+        assertTrue(spec.positionalParameters().get(0).hidden());
+    }
+
+    @Test
     public void inheritAttributeSetsScopeTypeInherit() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "command flix {\n" +
