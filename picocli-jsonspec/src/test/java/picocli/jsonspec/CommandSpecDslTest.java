@@ -31,6 +31,32 @@ public class CommandSpecDslTest {
     }
 
     @Test
+    public void parsesUsageHelpAndVersionHelpAttributes() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option --help : boolean \"prints usage\" usageHelp\n" +
+                "  option --version : boolean versionHelp\n" +
+                "  option --json : boolean\n" +
+                "}");
+
+        assertTrue(spec.findOption("--help").usageHelp());
+        assertFalse(spec.findOption("--help").versionHelp());
+        assertTrue(spec.findOption("--version").versionHelp());
+        assertFalse(spec.findOption("--json").usageHelp());
+    }
+
+    @Test
+    public void usageHelpActuallyShortCircuitsExecution() {
+        CommandSpec spec = CommandSpecDsl.parse("command flix { option --help : boolean usageHelp }");
+
+        CommandLine cmd = new CommandLine(spec);
+        int exitCode = cmd.execute("--help");
+
+        assertEquals(0, exitCode);
+        assertTrue(cmd.getParseResult().isUsageHelpRequested());
+    }
+
+    @Test
     public void parsesOptionsWithNamesTypeDescriptionAndAttributes() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "command flix {\n" +

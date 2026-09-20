@@ -42,8 +42,8 @@ definitions {
 }
 
 command flix "The Flix Programming Language 0.60.0" {
-  option --help : boolean "prints this usage information."
-  option --version : boolean "prints the version number."
+  option --help : boolean "prints this usage information." usageHelp
+  option --version : boolean "prints the version number." versionHelp
   option --listen : int "starts the socket server and listens on the given port."
 
   command init "creates a new project in the current directory." {

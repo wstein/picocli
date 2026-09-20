@@ -51,6 +51,17 @@ public class CommandSpecSchemaTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void optionSchemaDeclaresUsageHelpAndVersionHelp() {
+        Map<String, Object> schema = schema();
+        Map<String, Object> defs = (Map<String, Object>) schema.get("$defs");
+        Map<String, Object> optionProperties = (Map<String, Object>) ((Map<String, Object>) defs.get("option")).get("properties");
+
+        assertTrue(optionProperties.containsKey("usageHelp"));
+        assertTrue(optionProperties.containsKey("versionHelp"));
+    }
+
+    @Test
     public void schemaIsWellFormedJson() {
         Map<String, Object> schema = schema();
         assertEquals("https://json-schema.org/draft/2020-12/schema", schema.get("$schema"));

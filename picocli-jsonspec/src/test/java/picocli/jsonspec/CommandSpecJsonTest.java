@@ -132,6 +132,46 @@ public class CommandSpecJsonTest {
     }
 
     @Test
+    public void readsUsageHelpAndVersionHelpFlags() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"--help\"], \"type\": \"boolean\", \"usageHelp\": true }," +
+                "{ \"names\": [\"--version\"], \"type\": \"boolean\", \"versionHelp\": true }," +
+                "{ \"names\": [\"--json\"], \"type\": \"boolean\" }" +
+                "]}");
+
+        assertTrue(spec.findOption("--help").usageHelp());
+        assertFalse(spec.findOption("--help").versionHelp());
+        assertTrue(spec.findOption("--version").versionHelp());
+        assertFalse(spec.findOption("--json").usageHelp());
+        assertFalse(spec.findOption("--json").versionHelp());
+    }
+
+    @Test
+    public void writingUsageHelpAndVersionHelpRoundTrips() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"--help\"], \"type\": \"boolean\", \"usageHelp\": true }" +
+                "]}");
+
+        String json = CommandSpecJson.write(spec);
+
+        assertTrue(json.contains("\"usageHelp\": true"));
+        assertTrue(CommandSpecJson.read(json).findOption("--help").usageHelp());
+    }
+
+    @Test
+    public void usageHelpActuallyShortCircuitsExecution() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"--help\"], \"type\": \"boolean\", \"usageHelp\": true }" +
+                "]}");
+
+        CommandLine cmd = new CommandLine(spec);
+        int exitCode = cmd.execute("--help");
+
+        assertEquals(0, exitCode);
+        assertTrue(cmd.getParseResult().isUsageHelpRequested());
+    }
+
+    @Test
     public void rejectsUnknownType() {
         try {
             CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [ { \"names\": [\"-x\"], \"type\": \"Frobnicator\" } ] }");

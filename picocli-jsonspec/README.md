@@ -54,6 +54,8 @@ positional  := 'positional' name ( ':' type [string] attr* )?
 attr        := 'default' '=' value
              | 'required'
              | 'arity' '=' value
+             | 'usageHelp'    // options only
+             | 'versionHelp'  // options only
 name, type,
 value       := word            // any run of non-whitespace characters other than { } : , = "
 string      := '"' ... '"'     // escapes: \" \\ \n \t
@@ -78,8 +80,12 @@ Notes:
   vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File` — optionally
   suffixed with `[]` for a multi-value array type, e.g. `File[]` (see the schema's
   `$defs.type.pattern`, which is tested to stay in sync with the actual reader).
-- `attr*` may appear in any order and are all optional; `required` takes no value, `default=` and
-  `arity=` do.
+- `attr*` may appear in any order and are all optional; `required`/`usageHelp`/`versionHelp` take
+  no value, `default=` and `arity=` do.
+- `usageHelp`/`versionHelp` mark an option as picocli's built-in usage-/version-help option:
+  matching it on the command line auto-prints the usage/version message and short-circuits
+  execution (`CommandLine#execute` returns before running any `Runnable`/`Callable`). Positional
+  parameters have no equivalent in picocli, so `positional` doesn't accept these two attributes.
 
 ## Reusing an option/positional across commands (`definitions`)
 
@@ -202,6 +208,8 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 | `defaultValue` | string | no | See the "not required if it has a default" note below. |
 | `required` | boolean | no, default `false` | An option with a `defaultValue` is reported as not required by picocli regardless of this flag (`ArgSpec#required()`'s documented "#261" behavior) — don't set both expecting `required` to win. |
 | `arity` | string | no | e.g. `"0"`, `"1"`, `"0..1"`, `"1..*"`, `"0..*"`; parsed by `Range.valueOf(String)`. |
+| `usageHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in usage-help option (auto-prints and short-circuits execution). |
+| `versionHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in version-help option. |
 
 **Positional param object** (`positionalParams[]`, or a value in `definitions.positionalParams`):
 same fields as an option except `names` is replaced by an optional `paramLabel` (string, defaults

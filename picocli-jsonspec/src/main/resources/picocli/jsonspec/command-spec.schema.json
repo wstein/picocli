@@ -74,7 +74,17 @@
         "description": { "$ref": "#/$defs/descriptionLines" },
         "defaultValue": { "$ref": "#/$defs/defaultValue" },
         "required": { "$ref": "#/$defs/required" },
-        "arity": { "$ref": "#/$defs/arity" }
+        "arity": { "$ref": "#/$defs/arity" },
+        "usageHelp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks this as picocli's built-in usage-help option: matching it auto-prints the usage message and short-circuits execution (CommandLine#execute returns before running any Runnable/Callable). Options only -- picocli has no positional-parameter equivalent."
+        },
+        "versionHelp": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks this as picocli's built-in version-help option: matching it auto-prints the version message and short-circuits execution. Options only."
+        }
       }
     },
     "positionalParam": {

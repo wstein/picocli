@@ -319,10 +319,15 @@ public final class CommandSpecDsl {
             if (check(TokenKind.STRING)) {
                 builder.description(advance().text);
             }
-            while (checkWord("default") || checkWord("required") || checkWord("arity")) {
+            while (checkWord("default") || checkWord("required") || checkWord("arity")
+                    || checkWord("usageHelp") || checkWord("versionHelp")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
+                } else if ("usageHelp".equals(attr)) {
+                    builder.usageHelp(true);
+                } else if ("versionHelp".equals(attr)) {
+                    builder.versionHelp(true);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();

@@ -145,6 +145,10 @@ public final class CommandSpecJson {
         if (required != null) { builder.required((Boolean) required); }
         String arity = (String) json.get("arity");
         if (arity != null) { builder.arity(arity); }
+        Object usageHelp = json.get("usageHelp");
+        if (usageHelp != null) { builder.usageHelp((Boolean) usageHelp); }
+        Object versionHelp = json.get("versionHelp");
+        if (versionHelp != null) { builder.versionHelp((Boolean) versionHelp); }
         return builder.build();
     }
 
@@ -200,6 +204,8 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("names", new ArrayList<Object>(java.util.Arrays.asList(option.names())));
         putCommonArgSpecFields(json, option);
+        if (option.usageHelp()) { json.put("usageHelp", Boolean.TRUE); }
+        if (option.versionHelp()) { json.put("versionHelp", Boolean.TRUE); }
         return json;
     }
 
