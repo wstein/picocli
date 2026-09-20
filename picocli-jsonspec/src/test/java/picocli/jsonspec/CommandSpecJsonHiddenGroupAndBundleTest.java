@@ -7,7 +7,7 @@ import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -17,10 +17,12 @@ import static org.junit.Assert.fail;
 /** JSON equivalents of {@link CommandSpecDslHiddenGroupTest} and {@link CommandSpecDslBundleTest}. */
 public class CommandSpecJsonHiddenGroupAndBundleTest {
 
-    private static String usageOf(CommandSpec spec) {
+    // PrintStream(OutputStream, boolean, Charset) and ByteArrayOutputStream#toString(Charset) are
+    // Java 10+; this module targets Java 8, so the String-encoding-name overloads are used instead.
+    private static String usageOf(CommandSpec spec) throws UnsupportedEncodingException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        new CommandLine(spec).usage(new PrintStream(out, true, StandardCharsets.UTF_8), CommandLine.Help.Ansi.OFF);
-        return out.toString(StandardCharsets.UTF_8);
+        new CommandLine(spec).usage(new PrintStream(out, true, "UTF-8"), CommandLine.Help.Ansi.OFF);
+        return out.toString("UTF-8");
     }
 
     @Test
@@ -38,7 +40,7 @@ public class CommandSpecJsonHiddenGroupAndBundleTest {
     }
 
     @Test
-    public void hiddenArgGroupProducesNoHeadingAndNoStrayBracket() {
+    public void hiddenArgGroupProducesNoHeadingAndNoStrayBracket() throws UnsupportedEncodingException {
         CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
                 "\"options\": [ { \"names\": [\"--normal\"], \"type\": \"boolean\" } ], " +
                 "\"argGroups\": [ { \"exclusive\": false, \"hidden\": true, \"heading\": \"Experimental\", \"options\": [" +
