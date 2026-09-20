@@ -123,4 +123,26 @@ public class FlixExampleTest {
         File[] files = build.matchedPositionalValue(0, new File[0]);
         assertEquals(3, files.length);
     }
+
+    /**
+     * The 14 experimental --X* flags are grouped under a heading matching real flix's own
+     * "--help" output ("The following options are experimental:"), rather than listed flat --
+     * grouping is cooperative (not mutually exclusive) and imposes no restriction on how many
+     * may be used together, verified below alongside the heading itself.
+     */
+    @Test
+    public void experimentalFlagsAreGroupedUnderTheRealFlixHeading() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        CommandSpec check = flix.subcommands().get("check").getCommandSpec();
+
+        assertEquals(1, check.argGroups().size());
+        assertTrue(check.argGroups().get(0).heading().contains("The following options are experimental:"));
+        assertTrue(check.findOption("--Xiterations") != null);
+
+        CommandLine cmd = new CommandLine(flix);
+        ParseResult result = cmd.parseArgs("check", "--Xfuzzer", "--Xchaos-monkey");
+        ParseResult checkResult = result.subcommand();
+        assertTrue(checkResult.matchedOptionValue("--Xfuzzer", Boolean.FALSE));
+        assertTrue(checkResult.matchedOptionValue("--Xchaos-monkey", Boolean.FALSE));
+    }
 }

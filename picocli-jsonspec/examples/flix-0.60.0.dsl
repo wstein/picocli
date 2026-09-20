@@ -1,5 +1,5 @@
 // Realistic picocli-jsonspec DSL for the real flix CLI (v0.60.0), based on:
-//   fish❯ ./flixw -- --help
+// ./flixw -- --help
 // and structural analysis of flix's own scopt-based parser (Main.scala), which declares most
 // options as global (parsed before any command, not restricted to it). scopt itself does not
 // scope these to specific commands -- the assignment below is this proxy's own curation, picking
@@ -57,20 +57,22 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    option --Xbenchmark-code-size
-    option --Xbenchmark-incremental
-    option --Xbenchmark-phases
-    option --Xbenchmark-frontend
-    option --Xbenchmark-throughput
-    option --Xlib
-    option --Xno-deprecated
-    option --Xprint-phases
-    option --Xsummary
-    option --Xfuzzer
-    option --Xprint-typer
-    option --Xsubeffecting
-    option --Xchaos-monkey
-    option --Xiterations
+    group cooperative "The following options are experimental:%n" {
+      option --Xbenchmark-code-size
+      option --Xbenchmark-incremental
+      option --Xbenchmark-phases
+      option --Xbenchmark-frontend
+      option --Xbenchmark-throughput
+      option --Xlib
+      option --Xno-deprecated
+      option --Xprint-phases
+      option --Xsummary
+      option --Xfuzzer
+      option --Xprint-typer
+      option --Xsubeffecting
+      option --Xchaos-monkey
+      option --Xiterations
+    }
     positional files
   }
 
@@ -80,20 +82,22 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    option --Xbenchmark-code-size
-    option --Xbenchmark-incremental
-    option --Xbenchmark-phases
-    option --Xbenchmark-frontend
-    option --Xbenchmark-throughput
-    option --Xlib
-    option --Xno-deprecated
-    option --Xprint-phases
-    option --Xsummary
-    option --Xfuzzer
-    option --Xprint-typer
-    option --Xsubeffecting
-    option --Xchaos-monkey
-    option --Xiterations
+    group cooperative "The following options are experimental:%n" {
+      option --Xbenchmark-code-size
+      option --Xbenchmark-incremental
+      option --Xbenchmark-phases
+      option --Xbenchmark-frontend
+      option --Xbenchmark-throughput
+      option --Xlib
+      option --Xno-deprecated
+      option --Xprint-phases
+      option --Xsummary
+      option --Xfuzzer
+      option --Xprint-typer
+      option --Xsubeffecting
+      option --Xchaos-monkey
+      option --Xiterations
+    }
     positional files
   }
 
@@ -132,20 +136,22 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    option --Xbenchmark-code-size
-    option --Xbenchmark-incremental
-    option --Xbenchmark-phases
-    option --Xbenchmark-frontend
-    option --Xbenchmark-throughput
-    option --Xlib
-    option --Xno-deprecated
-    option --Xprint-phases
-    option --Xsummary
-    option --Xfuzzer
-    option --Xprint-typer
-    option --Xsubeffecting
-    option --Xchaos-monkey
-    option --Xiterations
+    group cooperative "The following options are experimental:%n" {
+      option --Xbenchmark-code-size
+      option --Xbenchmark-incremental
+      option --Xbenchmark-phases
+      option --Xbenchmark-frontend
+      option --Xbenchmark-throughput
+      option --Xlib
+      option --Xno-deprecated
+      option --Xprint-phases
+      option --Xsummary
+      option --Xfuzzer
+      option --Xprint-typer
+      option --Xsubeffecting
+      option --Xchaos-monkey
+      option --Xiterations
+    }
     positional files
   }
 
@@ -155,20 +161,22 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    option --Xbenchmark-code-size
-    option --Xbenchmark-incremental
-    option --Xbenchmark-phases
-    option --Xbenchmark-frontend
-    option --Xbenchmark-throughput
-    option --Xlib
-    option --Xno-deprecated
-    option --Xprint-phases
-    option --Xsummary
-    option --Xfuzzer
-    option --Xprint-typer
-    option --Xsubeffecting
-    option --Xchaos-monkey
-    option --Xiterations
+    group cooperative "The following options are experimental:%n" {
+      option --Xbenchmark-code-size
+      option --Xbenchmark-incremental
+      option --Xbenchmark-phases
+      option --Xbenchmark-frontend
+      option --Xbenchmark-throughput
+      option --Xlib
+      option --Xno-deprecated
+      option --Xprint-phases
+      option --Xsummary
+      option --Xfuzzer
+      option --Xprint-typer
+      option --Xsubeffecting
+      option --Xchaos-monkey
+      option --Xiterations
+    }
     positional files
   }
 
