@@ -26,7 +26,7 @@ definitions {
 
   // Not part of real flix's own --help; this proxy's own addition, paired with hiding the
   // --X* flags below. Its *behavior* -- actually printing them -- can't be expressed in a
-  // declarative spec; see FlixExperimentalHelp for the runtime side of this.
+  // declarative spec; see FlixExperimentalHelpTest for the runtime side of this.
   option --Xhelp : boolean "shows the experimental options for this command."
 
   option --Xbenchmark-code-size : boolean "[experimental] benchmarks the size of the generated JVM files."

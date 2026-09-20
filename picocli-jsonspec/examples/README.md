@@ -74,8 +74,10 @@ reasoning:
   the only effect is the usage-help section heading (and, as a side effect, the synopsis line
   brackets the 14 as a visual unit too). `hidden` keeps them out of default `--help`/synopsis
   entirely; `--Xhelp` (this proxy's own addition, paired with the hidden group) is meant to reveal
-  them on demand — see the DSL file's own comment on `--Xhelp` for what's still just a plan vs.
-  actually implemented. `check`/`build`/`test` turn out to have *identical* bodies (`compileOptions`
+  them on demand — a declarative spec can only mark it as a plain boolean option, not wire up
+  *what happens* when it's matched; see `FlixExperimentalHelpTest` for a host CLI's own dispatch
+  logic doing exactly that (printing the matched command's hidden `--X*` options via picocli's
+  `Help.optionListExcludingGroups`). `check`/`build`/`test` turn out to have *identical* bodies (`compileOptions`
   + `--explain` + `--json` + `--Xhelp` + `xflags` + `files`), so that whole shape is itself bundled
   as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.
 - **`<file>...`** (modeled as a `positional files : File ... arity=0..*`): attached to `check`,
