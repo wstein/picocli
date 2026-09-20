@@ -2,12 +2,9 @@ plugins {
     id 'java'
     // Pinned to the last com.gradleup.shadow release still buildable under Java 8 and Gradle
     // 8.x: 9.x requires Gradle 9 and Java 17 just to run the plugin (not merely to target Java
-    // 17 bytecode), and even 8.3.10+ raised the minimum to Java 11. This multi-project build
-    // can't assume either -- the CI matrix builds the whole repo under Java 6/7 too, and this
-    // module's own sourceCompatibility below still supports that. "apply false" only resolves
-    // the plugin onto the classpath; it is actually applied conditionally, further down, so a
-    // Java 6/7 build never loads an incompatible plugin class.
-    id 'com.gradleup.shadow' version '8.3.9' apply false
+    // 17 bytecode), and even 8.3.10+ raised the minimum to Java 11. The CI matrix's lowest JDK
+    // is 8, so neither can be assumed.
+    id 'com.gradleup.shadow' version '8.3.9'
 }
 
 group = 'info.picocli'
@@ -16,13 +13,8 @@ version = "$projectVersion"
 ext.moduleName = 'info.picocli.spec.tool'
 
 java {
-    if (!JavaVersion.current().isJava9Compatible()) {
-        sourceCompatibility = JavaVersion.VERSION_1_6
-        targetCompatibility = JavaVersion.VERSION_1_6
-    } else { // from Java 9 and up
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
@@ -42,18 +34,14 @@ jar {
     }
 }
 
-if (JavaVersion.current().isJava8Compatible()) {
-    apply plugin: 'com.gradleup.shadow'
-
-    // Bundles picocli + picocli-codegen + picocli-spec + this module's own classes into one
-    // self-contained, directly runnable jar: `java -jar picocli-spec-tool-<version>-all.jar ...`
-    // needs nothing else on the classpath. Not wired into "assemble" by this plugin version on
-    // its own -- done explicitly below -- so plain "build"/"assemble" produce it too.
-    shadowJar {
-        archiveClassifier.set('all')
-        manifest {
-            attributes 'Main-Class': 'picocli.spec.tool.SpecToolApp'
-        }
+// Bundles picocli + picocli-codegen + picocli-spec + this module's own classes into one
+// self-contained, directly runnable jar: `java -jar picocli-spec-tool-<version>-all.jar ...`
+// needs nothing else on the classpath. Not wired into "assemble" by this plugin version on
+// its own -- done explicitly below -- so plain "build"/"assemble" produce it too.
+shadowJar {
+    archiveClassifier.set('all')
+    manifest {
+        attributes 'Main-Class': 'picocli.spec.tool.SpecToolApp'
     }
-    tasks.named('assemble') { dependsOn shadowJar }
 }
+tasks.named('assemble') { dependsOn shadowJar }
