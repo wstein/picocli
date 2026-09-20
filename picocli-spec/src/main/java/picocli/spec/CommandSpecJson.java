@@ -315,6 +315,12 @@ public final class CommandSpecJson {
         }
         for (Object subcommand : listOrEmpty(json.get("subcommands"))) {
             Map<String, Object> subJson = (Map<String, Object>) subcommand;
+            if (subJson.containsKey("definitions")) {
+                throw new IllegalArgumentException("Subcommand \"" + subJson.get("name")
+                        + "\" has a nested \"definitions\" block, but definitions are only read at the"
+                        + " document root; move those entries to the document root's \"definitions\","
+                        + " from where every command can reference them.");
+            }
             CommandSpec subSpec = readCommand(subJson, definitions);
             spec.addSubcommand(subSpec.name(), subSpec);
         }

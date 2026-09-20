@@ -123,4 +123,34 @@ public class CommandSpecJsonDefinitionsTest {
         assertFalse(written.contains("\"definitions\""));
         assertTrue(written.contains("\"enables json output.\""));
     }
+
+    @Test
+    public void rejectsADefinitionsBlockNestedInASubcommand() {
+        try {
+            CommandSpecJson.read("{ \"name\": \"flix\", \"subcommands\": [" +
+                    "{ \"name\": \"check\", \"definitions\": { \"options\": {" +
+                    "\"--explain\": { \"names\": [\"--explain\"], \"type\": \"boolean\" }" +
+                    "} }, \"options\": [\"--explain\"] }" +
+                    "]}");
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            String message = expected.getMessage();
+            assertTrue(message, message.contains("\"definitions\""));
+            assertTrue(message, message.contains("check"));
+            assertTrue(message, message.contains("document root"));
+        }
+    }
+
+    @Test
+    public void rejectsADefinitionsBlockNestedInADeeplyNestedSubcommand() {
+        try {
+            CommandSpecJson.read("{ \"name\": \"flix\", \"subcommands\": [" +
+                    "{ \"name\": \"check\", \"subcommands\": [" +
+                    "{ \"name\": \"deep\", \"definitions\": { \"options\": {} } }" +
+                    "] }]}");
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("deep"));
+        }
+    }
 }

@@ -44,7 +44,7 @@
         "definitions": {
           "type": "object",
           "additionalProperties": false,
-          "description": "Named option/positional-param templates that this document's options/positionalParams arrays can reference by (string) name instead of inlining, reducing duplication when many commands share the same option. Only actually read at the DOCUMENT ROOT: CommandSpecJson.read() does not look for a nested \"definitions\" on a subcommand object, so while this schema (for simplicity) does not forbid one there, it would be silently inert.",
+          "description": "Named option/positional-param templates that this document's options/positionalParams arrays can reference by (string) name instead of inlining, reducing duplication when many commands share the same option. Only valid at the DOCUMENT ROOT: CommandSpecJson.read() rejects a nested \"definitions\" on a subcommand object, and \"namedCommand\" below forbids one for the same reason.",
           "properties": {
             "options": {
               "type": "object",
@@ -147,7 +147,8 @@
     "namedCommand": {
       "allOf": [ { "$ref": "#/$defs/command" } ],
       "required": ["name"],
-      "description": "Stricter than the reader: CommandSpecJson.read() does not actually reject an unnamed subcommand entry (it falls back to picocli's placeholder command name), but that is almost always a mistake."
+      "not": { "required": ["definitions"] },
+      "description": "Stricter than the reader: CommandSpecJson.read() does not actually reject an unnamed subcommand entry (it falls back to picocli's placeholder command name), but that is almost always a mistake. A nested \"definitions\" block is forbidden here and the reader rejects it too: definitions are only read at the document root."
     },
     "option": {
       "type": "object",
