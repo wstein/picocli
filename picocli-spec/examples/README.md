@@ -110,9 +110,9 @@ reasoning:
 ## `flix-0.76.2.picocli`
 
 A picocli-spec DSL spec for the same real [flix](https://flix.dev) CLI, at a much later
-version. Built differently from `flix-0.60.0.picocli`: no `flixw` binary was available in this
-environment to run `--help` against, so this file is curated entirely from reading flix's actual
-source at git tag [`v0.76.2`](https://github.com/flix/flix/tree/v0.76.2) —
+version. Built differently from `flix-0.60.0.picocli`: no `flixw` binary was available when this
+file was first written, so it was curated entirely from reading flix's actual source at git tag
+[`v0.76.2`](https://github.com/flix/flix/tree/v0.76.2) —
 [`Main.scala`](https://github.com/flix/flix/blob/v0.76.2/main/src/ca/uwaterloo/flix/Main.scala)
 for the scopt declarations (option/command names, `--help` text, verbatim) and
 [`Bootstrap.scala`](https://github.com/flix/flix/blob/v0.76.2/main/src/ca/uwaterloo/flix/api/Bootstrap.scala)
@@ -120,7 +120,11 @@ for what each command's implementation actually does with each option — necess
 only records which text is a *global* option, never which subcommands actually consult it, or
 whether a subcommand even accepts file arguments at all. Reading the implementation instead of
 just the option declarations surfaced real per-command differences a `--help` transcription alone
-would have missed.
+would have missed. The actual flix-0.76.2 jar was later obtained and every finding below was
+confirmed by running it directly — `--help`, plus exercising `build`/`run`/`repl`/`check`/`test`/
+`doc`/`format` with a loose file argument, `--version --json`, `check --json`, `--listen`
+standalone, and `init --yes`/`build-pkg` — matching flix-0.60.0.picocli's own empirical bar, not
+just source-inference.
 
 ### New commands since 0.60.0
 
@@ -141,7 +145,8 @@ present to its own users.
 
 Reading `Bootstrap.scala` rather than trusting `--help` text and command descriptions alone turned
 up three real, version-specific findings (confirmed by grepping the actual dependency/option
-usage across the whole cloned source tree, not just `Main.scala`):
+usage across the whole cloned source tree, not just `Main.scala`, and later confirmed again by
+actually running the flix-0.76.2 jar):
 
 1. **`--no-install`'s underlying `installDeps` flag is set but never read.** It flows from the CLI
    into `CmdOpts` into `Options`, but no call in `Bootstrap.scala` (or anywhere else in the
@@ -149,12 +154,19 @@ usage across the whole cloned source tree, not just `Main.scala`):
    behavior it's supposed to disable isn't gated on it anywhere in this version. It's still
    declared here (flix's own `--help` still documents it, so a proxy mirrors that), but it's
    worth knowing this flag is currently a no-op if you're relying on it.
+   (`build --no-install` on a fresh project still ran the full "Resolving Flix dependencies...
+   Downloading..." sequence identically to `build` without the flag -- consistent with, though
+   not a rigorous proof of, the grep-confirmed fact that `options.installDeps` is never read.
+   The test project declared no actual dependencies, so there was nothing for the flag to
+   meaningfully skip; a project with real unresolved dependencies would be a stronger check.)
 2. **`--json` only ever affects `--version`'s own output.** `Main.scala` reads `cmdOpts.json`
    exactly twice: once to build `options.json`, and once directly in `printVersion(cmdOpts.json)`.
    Nothing in `Bootstrap.scala` reads `options.json`. Unlike `flix-0.60.0.picocli` (which attached
    `--json` to `check`/`build`/`run`/`test`/`outdated`, matching that version's actual behavior),
    this file keeps `--json` top-level only, paired with `--version`, since attaching it to any
-   subcommand here would be documenting a feature that doesn't do anything.
+   subcommand here would be documenting a feature that doesn't do anything. Confirmed empirically:
+   `--version --json` produces `{"major":0,"minor":76,"revision":2}`; `check --json` on a real
+   file produces byte-identical output to plain `check` (empty on success either way).
 3. **File-argument support varies per command, and doesn't match every command's own `--help`
    text.** Each `case Command.X =>` branch in `Main.scala` either unconditionally rejects a
    non-empty `cmdOpts.files` ("The '...' command does not support file arguments.") or branches on
@@ -164,7 +176,11 @@ usage across the whole cloned source tree, not just `Main.scala`):
    files**," which the code no longer honors. `flix-0.60.0.picocli` gave the shared `files`
    positional to `check`/`build`/`run`/`test`/`repl`; that would be wrong for this version, so this
    file only references it from the four commands confirmed (by the code, not the text) to accept
-   it — see `Flix0762ExampleTest.onlyCheckDocFormatAndTestAcceptFileArguments`.
+   it — see `Flix0762ExampleTest.onlyCheckDocFormatAndTestAcceptFileArguments`. Confirmed
+   empirically against the real jar: `build Main.flix`/`run Main.flix`/`repl Main.flix` each print
+   exactly `"The '<cmd>' command does not support file arguments."` and exit; `check Main.flix`,
+   `test Main.flix`, `doc Main.flix`, and `format Main.flix` all run against the file with no such
+   rejection.
 
 ### Everything else, briefly
 
@@ -174,7 +190,9 @@ usage across the whole cloned source tree, not just `Main.scala`):
   `Bootstrap#init`'s implementation at all) and not `build-pkg` (no confirmation logic either) —
   both would have been wrong guesses from the command names alone; `flix-0.60.0.picocli` gave
   `--yes` to `init`/`build-pkg`/`release`, which doesn't hold up for this version's `init`/
-  `build-pkg` on inspection of the actual implementation.
+  `build-pkg` on inspection of the actual implementation. Confirmed empirically: `init --yes`
+  and plain `build-pkg` (no prompt shown either way) both behave identically with or without
+  the flag.
 - **`--top`** (new global option, "displays a live view of where the compiler spends its time."):
   bundled into `compileOptions` alongside `--threads`, since both are only meaningful where actual
   compilation happens.

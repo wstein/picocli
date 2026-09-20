@@ -1,14 +1,16 @@
 // Realistic picocli-spec DSL for the real flix CLI (v0.76.2), based on structural analysis of
 // flix's own scopt-based parser (Main.scala) and its command implementations (Bootstrap.scala),
 // read directly from git tag v0.76.2 (https://github.com/flix/flix/tree/v0.76.2/main/src/ca/
-// uwaterloo/flix). Unlike examples/flix-0.60.0.picocli, no running `flixw --help` was available
-// to cross-check this file against -- every judgment call is backed by reading the actual command
-// bodies in Bootstrap.scala instead, precisely because scopt only records which text is a global
-// option, never which subcommands actually consult it, or whether a subcommand even accepts file
-// arguments. That source reading surfaced several real, version-specific findings that a
-// transcription of --help text alone would have missed -- see picocli-spec/examples/README.md
-// for all of them, including three genuine differences from how examples/flix-0.60.0.picocli
-// curated the equivalent options.
+// uwaterloo/flix) -- precisely because scopt only records which text is a global option, never
+// which subcommands actually consult it, or whether a subcommand even accepts file arguments.
+// That source reading surfaced several real, version-specific findings that a transcription of
+// --help text alone would have missed -- see picocli-spec/examples/README.md for all of them,
+// including three genuine differences from how examples/flix-0.60.0.picocli curated the
+// equivalent options. Every one of those findings, and the full command/option set below, was
+// subsequently confirmed empirically against the actual flix-0.76.2 jar (`--help`, plus running
+// build/run/repl/check/test/doc/format with a loose file argument, `--version --json`,
+// `check --json`, `--listen` standalone, and `init --yes`/`build-pkg`) -- not just inferred from
+// source, the same empirical bar flix-0.60.0.picocli set.
 //
 // --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
 // Shared options/positionals/groups are declared once in definitions { ... } as bundles and pulled
