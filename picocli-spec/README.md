@@ -412,10 +412,12 @@ for it, or generate man pages, without writing any Java, see the sibling
 top of this one:
 
 ```
-$ java -jar picocli-spec-tool.jar preview flix.picocli       # recursive --help preview
-$ java -jar picocli-spec-tool.jar completion flix.picocli    # bash/zsh completion script
-$ java -jar picocli-spec-tool.jar manpage flix.picocli       # AsciiDoc man pages
-$ java -jar picocli-spec-tool.jar validate flix.picocli      # load-and-report, nothing generated
+$ ./gradlew :picocli-spec-tool:build   # produces picocli-spec-tool-<version>-all.jar
+
+$ java -jar picocli-spec-tool-<version>-all.jar preview flix.picocli       # recursive --help preview
+$ java -jar picocli-spec-tool-<version>-all.jar completion flix.picocli    # bash/zsh completion script
+$ java -jar picocli-spec-tool-<version>-all.jar manpage flix.picocli       # AsciiDoc man pages
+$ java -jar picocli-spec-tool-<version>-all.jar validate flix.picocli      # load-and-report, nothing generated
 ```
 
 ## Current limitations

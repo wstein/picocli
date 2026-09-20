@@ -8,10 +8,29 @@ Built the ordinary way, with picocli's own annotations (`@Command`/`@Option`/`@P
 Unlike the specs it operates on, this outer tool is not itself described by a picocli-spec
 file — a spec-authoring tool has no reason to avoid the annotation processor it's built with.
 
+## Building
+
+```
+$ ./gradlew :picocli-spec-tool:build
+```
+
+produces a self-contained, directly runnable jar at
+`picocli-spec-tool/build/libs/picocli-spec-tool-<version>-all.jar`, via the
+[Shadow](https://gradleup.com/shadow/) plugin — it bundles picocli, picocli-codegen, and
+picocli-spec together with this module's own classes, so nothing else needs to be on the
+classpath. (The plain, non-`-all` jar next to it in the same directory is this module's own
+classes only, same as any other module here — not runnable by itself.)
+
+Shadow is pinned to `8.3.9` and applied *conditionally*, only when the JVM running Gradle is Java
+8 or newer: later Shadow releases require Java 11 or (from `9.x`) Java 17 and Gradle 9 just to run
+the plugin, which this repo's own CI matrix — building the whole project under Java 6/7 too —
+can't assume. Building under Java 6/7 still works; it just skips `shadowJar` (no `-all` jar), the
+same way this module has always still compiled there without producing anything Java 8-specific.
+
 ## Usage
 
 ```
-$ java -jar picocli-spec-tool.jar <subcommand> ...
+$ java -jar picocli-spec-tool-<version>-all.jar <subcommand> ...
 ```
 
 | Subcommand | What it does |
@@ -27,7 +46,7 @@ reader, same as `SpecLoader` does internally.
 ### Example
 
 ```
-$ java -jar picocli-spec-tool.jar preview ../picocli-spec/examples/flix-0.60.0.picocli
+$ java -jar picocli-spec-tool-<version>-all.jar preview ../picocli-spec/examples/flix-0.60.0.picocli
 Usage: flix [--help] [--version] [--listen=PARAM] [COMMAND]
 The Flix Programming Language 0.60.0
       --help           prints this usage information.
