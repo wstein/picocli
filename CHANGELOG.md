@@ -7,7 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [v4.9.0] - 2026-09-21
+## [v4.9.1] - 2026-09-21
+
+### Added
+- **Java 11 Target**: `picocli-spec` and `picocli-spec-tool` now target Java 11 bytecode (`sourceCompatibility = 11`, `targetCompatibility = 11`).
+- **Extended `ArgTypes` Vocabulary**: Added `Path`, `URI`, `URL`, `BigDecimal`, and `BigInteger` with built-in converter mappings and JSON schema synchronization.
+- **Batch Spec Merging**: Added `CommandSpecMerger.mergeAll(CommandSpec uber, Collection<CommandSpec> imported)` alongside varargs `merge()`.
+- **Manpage Overwrite Guard**: `picospec manpage` checks for existing `.adoc` files before writing and requires `--overwrite` to prevent accidental loss.
+- **Spec-Driven Development (SDD) Docs**:
+  - Split `picocli-spec/README.md` into `REQUIREMENTS.md` (FR-1–FR-7, NFR-1–NFR-4), `DESIGN.md` (EBNF grammar, data flow, schema reference), and a concise `README.md`.
+  - Added Architecture Decision Records under `docs/adr/`: `ADR-001` (Custom Minimal JSON Parser), `ADR-002` (Dual DSL & JSON Strategy), and `ADR-003` (Two-Module Split).
+- **Fork-First Root README**: Overhauled repository `README.md` to highlight fork features, coordinates, and usage.
+
+### Changed
+- **JDK Support Policy**: CI matrix streamlined to LTS JDK releases (8, 11, 17, 21); dropped non-blocking intermediate JDK jobs and legacy `build-java-6-7` CI job.
+- **CI Dependabot Configuration**: Auto-merge restricted to `version-update:semver-patch`.
+
+### Fixed
+- **DSL Multi-line Descriptions**: `CommandSpecDsl.parse()` splits descriptions on newline escapes (`\n`) and carriage returns into `String[]`, ensuring round-trip fidelity with `write()`.
+- **Subcommand Definitions Guard**: `CommandSpecJson.read()` rejects nested `definitions` blocks on subcommand JSON objects with a helpful error.
+- **Fish Completion Robustness**: Verified quoting of single quotes, backslashes, and script/subcommand names in fish completions.
+
+---
+
+## [v4.9.0] - 2026-09-20
 
 ### Added
 
@@ -15,16 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DSL Specification Parser & Serializer**: Define complete picocli `CommandSpec` trees using a concise, human-friendly DSL (`.picocli`) via `CommandSpecDsl.parse()` and `CommandSpecDsl.write()`.
 - **JSON Specification Reader & Writer**: Parse and serialize `CommandSpec` trees from/to JSON adhering to `command-spec.schema.json` via `CommandSpecJson.read()` and `CommandSpecJson.write()`.
 - **Zero Runtime Dependencies**: Embedded lightweight JSON parser (`picocli.spec.json.Json`) ensuring zero transitive dependencies beyond picocli core.
-- **Spec Composition**:
-  - `CommandSpecMerger.merge(CommandSpec uber, CommandSpec... imported)` attaches external specs as subcommands onto a host CLI.
-  - `CommandSpecMerger.mergeAll(CommandSpec uber, Collection<CommandSpec> imported)` provides explicit collection-based batch composition.
+- **Spec Composition**: `CommandSpecMerger.merge(CommandSpec uber, CommandSpec... imported)` attaches external specs as subcommands onto a host CLI.
 - **Definition Reuse & Bundles**:
   - Top-level `definitions` blocks in DSL and JSON for defining reusable options and positional parameters.
   - `bundle` declarations grouping options, positionals, and argument groups, expandable into commands via `use <bundleName>`.
   - Nested bundle composition (`bundle` using an earlier `bundle`).
-- **Rich Type Vocabulary (`ArgTypes`)**:
-  - Built-in mappings for `String`, `boolean`, `int`, `long`, `double`, `File`, `Path`, `URI`, `URL`, `BigDecimal`, and `BigInteger`.
-  - Array suffix support (e.g. `Path[]`, `File[]`, `String[]`) for multi-value arguments.
+- **Base Type Vocabulary (`ArgTypes`)**:
+  - Built-in mappings for `String`, `boolean`, `int`, `long`, `double`, and `File`.
+  - Array suffix support (e.g. `File[]`, `String[]`) for multi-value arguments.
 - **Ambiguity Validation (`SpecValidator`)**: Fails fast during parse or merge on parsing ambiguities, such as an option's `defaultValue` colliding with a sibling subcommand's name.
 
 #### `picocli-spec-tool` (New Module)
@@ -36,7 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `manpage <spec-file>`: Generates AsciiDoc man pages via `picocli-codegen`.
   - `convert <spec-file>`: Losslessly converts between `.picocli` DSL and JSON formats.
 - **Packaging**: Self-contained executable fat-jar (`picocli-spec-tool-<version>-all.jar`) built via Gradle Shadow plugin.
-- **Overwrite Protection**: `picospec manpage` checks for existing `.adoc` files before writing and requires `--overwrite` to prevent accidental clobbering.
 
 #### Core Enhancements & Features
 - **On-Demand Help Sections (`helpSection`)**:
@@ -46,27 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fish Shell Completion**:
   - Added `AutoComplete.fish()` generating declarative `complete -c` scripts for fish shell.
   - Added `--shell=fish` option to `generate-completion` and the standalone `AutoComplete` CLI.
-  - Single-quote, space, and backslash escaping tested and verified for fish syntax.
-
-#### Documentation & Spec-Driven Development (SDD)
-- Split `picocli-spec/README.md` into dedicated SDD artifacts:
-  - `REQUIREMENTS.md`: Functional (FR-1–FR-7) and non-functional requirements and constraints.
-  - `DESIGN.md`: EBNF grammar, architecture data flow, JSON schema reference, and design notes.
-  - `README.md`: Concise quick-start guide.
-- Added Architecture Decision Records under `docs/adr/`:
-  - `ADR-001`: Custom Minimal JSON Parser for picocli-spec.
-  - `ADR-002`: Dual DSL and JSON Format Strategy.
-  - `ADR-003`: Two-Module Split (`picocli-spec` vs `picocli-spec-tool`).
 
 ### Changed
-- **JDK Support Policy**: Target and build against the LTS JDK releases (8, 11, 17, 21). Removed non-blocking intermediate JDK jobs that overwhelmed CI quotas.
-- **CI Dependabot Configuration**: Auto-merge restricted to `version-update:semver-patch` to prevent unreviewed breaking changes from minor version bumps.
-- **Hidden Argument Groups**: Groups marked `hidden` are now flattened directly onto their parent command with `hidden = true`, avoiding empty synopsis brackets (`"[]"`) or orphaned headings.
-
-### Fixed
-- **DSL Multi-line Descriptions**: `CommandSpecDsl.parse()` splits descriptions on newline escapes (`\n`) and carriage returns into `String[]`, ensuring round-trip fidelity with `write()`.
-- **Subcommand Definitions Guard**: `CommandSpecJson.read()` now explicitly rejects nested `definitions` blocks in subcommand JSON objects with a helpful error message instead of silently ignoring them.
-- **Fish Completion Robustness**: Subcommand conditions and argument descriptions properly escape single quotes and backslashes in fish completion scripts.
+- **Hidden Argument Groups**: Groups marked `hidden` are flattened directly onto their parent command with `hidden = true`, avoiding empty synopsis brackets (`"[]"`) or orphaned headings.
 
 ---
 
