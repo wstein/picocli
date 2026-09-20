@@ -13,7 +13,7 @@ import java.nio.file.Files;
 import java.util.concurrent.Callable;
 
 @Command(name = "completion", mixinStandardHelpOptions = true,
-        description = "Generates a bash/zsh completion script for the given spec.")
+        description = "Generates a bash/zsh or fish completion script for the given spec.")
 final class CompletionCommand implements Callable<Integer> {
 
     @Parameters(index = "0", paramLabel = "<spec-file>", description = "A .picocli or .json spec file.")
@@ -22,6 +22,11 @@ final class CompletionCommand implements Callable<Integer> {
     @Option(names = {"-n", "--name"},
             description = "The name of the command to generate a completion script for (default: the spec's own root command name).")
     String scriptName;
+
+    @Option(names = {"-s", "--shell"},
+            description = "The shell to generate a completion script for: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).",
+            defaultValue = "bash")
+    Completion.Shell shell;
 
     @Option(names = {"-o", "--output"}, paramLabel = "<file>", description = "Write the script to this file instead of stdout.")
     File outputFile;
@@ -32,7 +37,7 @@ final class CompletionCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         CommandSpec spec = SpecLoader.load(specFile);
         String name = scriptName != null ? scriptName : spec.name();
-        String script = Completion.bashScript(spec, name);
+        String script = Completion.script(spec, name, shell);
 
         if (outputFile != null) {
             Files.write(outputFile.toPath(), script.getBytes(StandardCharsets.UTF_8));

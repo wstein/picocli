@@ -87,6 +87,18 @@ public class SpecToolAppTest {
     }
 
     @Test
+    public void completionWritesAFishScriptWhenRequested() throws Exception {
+        File spec = specFile("command demo \"A demo tool.\" { option --verbose : boolean \"be verbose.\" }");
+
+        Captured result = run("completion", "--shell", "fish", spec.getPath());
+
+        assertEquals(ExitCode.OK, result.exitCode);
+        assertTrue(result.out().contains("# demo fish shell completion"));
+        assertTrue(result.out().contains("complete -c 'demo'"));
+        assertTrue(result.out().contains("-l 'verbose'"));
+    }
+
+    @Test
     public void completionWritesToAFileWhenOutputIsGiven() throws Exception {
         File spec = specFile("command demo \"A demo tool.\" {}");
         File outputFile = new File(tmp.getRoot(), "demo-completion.sh");

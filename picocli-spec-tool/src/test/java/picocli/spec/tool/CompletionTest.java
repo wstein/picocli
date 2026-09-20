@@ -25,4 +25,23 @@ public class CompletionTest {
         assertTrue(script.contains("--release"));
         assertTrue(script.contains("build"));
     }
+
+    @Test
+    public void generatesAFishScriptMentioningEveryOptionAndSubcommand() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo \"A demo tool.\" {\n" +
+                "  option --verbose : boolean \"be verbose.\"\n" +
+                "  command build \"Builds the thing.\" {\n" +
+                "    option --release : boolean \"optimize for release.\"\n" +
+                "  }\n" +
+                "}");
+
+        String script = Completion.script(spec, "demo", Completion.Shell.fish);
+
+        assertTrue(script.contains("# demo fish shell completion"));
+        assertTrue(script.contains("complete -c 'demo'"));
+        assertTrue(script.contains("-l 'verbose'"));
+        assertTrue(script.contains("-l 'release'"));
+        assertTrue(script.contains("build"));
+    }
 }
