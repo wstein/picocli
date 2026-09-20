@@ -21,17 +21,19 @@ When providing an integrated or proxy "uber" CLI that wraps, delegates to, or co
 - **FR-1.2**: Support commands, subcommands (nested to arbitrary depth), options (short, long, multiple names), positional parameters, and descriptions.
 - **FR-1.3**: Support option/positional attributes: `type`, `default`, `required`, `arity`, `inherit` (`ScopeType.INHERIT`), `hidden`, `usageHelp`, `versionHelp`, and `helpSection`.
 - **FR-1.4**: Preserve multi-line descriptions by splitting on newline escapes (`\n`) and carriage returns into multi-element string arrays.
+- **FR-1.5**: Support `mixinStandardHelpOptions` directive inside command blocks, mixing in standard `-h`/`--help` and `-V`/`--version` options.
 
 ### FR-2: JSON Specification Support
 - **FR-2.1**: Parse JSON conforming to `command-spec.schema.json` into a `CommandSpec` via `CommandSpecJson.read(String)`.
 - **FR-2.2**: Enforce that the document root is a valid JSON object.
 - **FR-2.3**: Forbid nested `definitions` blocks in subcommand objects; reject with an informative `IllegalArgumentException`.
+- **FR-2.4**: Support `mixinStandardHelpOptions: true` in command objects.
 
 ### FR-3: Serialization and Round-Trip Fidelity
 - **FR-3.1**: Serialize any `CommandSpec` (programmatic, spec-built, or annotation-based) into JSON via `CommandSpecJson.write(CommandSpec)`.
 - **FR-3.2**: Serialize any `CommandSpec` into DSL text via `CommandSpecDsl.write(CommandSpec)`.
 - **FR-3.3**: Ensure round-trip fidelity: `DSL -> CommandSpec -> DSL` and `JSON -> CommandSpec -> JSON` produce semantically equivalent models and descriptions.
-- **FR-3.4**: Exclude inherited and group-contained options from flat option arrays during serialization to prevent duplicate emission.
+- **FR-3.4**: Exclude inherited, group-contained, and standard help mixin options from flat option arrays during serialization to prevent duplicate emission, emitting `mixinStandardHelpOptions` when enabled.
 
 ### FR-4: Spec Composition and Merging
 - **FR-4.1**: Attach one or more imported `CommandSpec` instances to a host "uber" command as subcommands via `CommandSpecMerger.merge(CommandSpec uber, CommandSpec... imported)`.

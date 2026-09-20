@@ -68,6 +68,26 @@ CommandSpec spec = CommandSpecJson.read(jsonText);
 String exportedJson = CommandSpecJson.write(spec);
 ```
 
+### 3. Standard Help Options
+
+Both the DSL and JSON support picocli's `@Command(mixinStandardHelpOptions = true)` shorthand to automatically mix in standard `-h`, `--help` and `-V`, `--version` options:
+
+```
+command mytool {
+  mixinStandardHelpOptions
+  option -v, --verbose : boolean
+}
+```
+
+Or in JSON:
+
+```json
+{
+  "name": "mytool",
+  "mixinStandardHelpOptions": true
+}
+```
+
 ---
 
 ## Composing into a Host CLI

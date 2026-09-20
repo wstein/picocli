@@ -53,7 +53,7 @@ spec        := definitions? command
 definitions := 'definitions' '{' ( option | positional | bundle )* '}'
 bundle      := 'bundle' name '{' ( option | positional | group | use )* '}'
 command     := 'command' name [string] '{' member* '}'
-member      := option | positional | group | use | command
+member      := option | positional | group | use | command | 'mixinStandardHelpOptions'
 group       := 'group' ('exclusive' | 'cooperative') ['hidden'] ['helpSection' '=' value] ['multiplicity' '=' value] [string]
                '{' ( option | positional | group | use )* '}'
 use         := 'use' name
@@ -118,6 +118,7 @@ The schema is formally maintained in [command-spec.schema.json](src/main/resourc
 |---|---|---|---|
 | `name` | `string` | inside `subcommands` | Command name. Optional at root. |
 | `description` | `string[]` | no | Array of description lines. |
+| `mixinStandardHelpOptions` | `boolean` | no | Sets whether standard help options (`-h`, `--help`, `-V`, `--version`) should be mixed in (`spec.mixinStandardHelpOptions(true)`). Defaults to `false`. |
 | `options` | `(option \| string)[]` | no | Inlined options or references to `definitions.options`. |
 | `positionalParams` | `(positionalParam \| string)[]` | no | Inlined positionals or references to `definitions.positionalParams`. |
 | `argGroups` | `argGroup[]` | no | Argument groups. |
