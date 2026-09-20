@@ -65,6 +65,18 @@ public class CommandSpecMergerTest {
     }
 
     @Test
+    public void mergeAllAttachesCollectionOfSpecs() {
+        CommandSpec uber = uberSpec();
+        java.util.List<CommandSpec> specs = java.util.Arrays.asList(flixSpec(), otherToolSpec());
+
+        CommandSpec merged = CommandSpecMerger.mergeAll(uber, specs);
+
+        assertSame(uber, merged);
+        assertTrue(merged.subcommands().containsKey("flix"));
+        assertTrue(merged.subcommands().containsKey("other-tool"));
+    }
+
+    @Test
     public void rejectsDuplicateSubcommandName() {
         CommandSpec uber = CommandSpecMerger.merge(uberSpec(), flixSpec());
         try {
