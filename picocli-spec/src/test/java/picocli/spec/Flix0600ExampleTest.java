@@ -133,14 +133,16 @@ public class Flix0600ExampleTest {
      * up (see FlixExperimentalHelp).
      */
     @Test
-    public void experimentalFlagsAreHiddenButStillFullyFunctional() throws IOException {
+    public void experimentalFlagsAreTaggedHelpSectionAndFullyFunctional() throws IOException {
         CommandSpec flix = CommandSpecDsl.parse(readExample());
         CommandSpec check = flix.subcommands().get("check").getCommandSpec();
 
-        assertTrue(check.argGroups().isEmpty());
-        assertTrue(check.findOption("--Xiterations").hidden());
+        assertEquals(1, check.argGroups().size());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.argGroups().get(0)));
+        assertFalse(check.findOption("--Xiterations").hidden());
         assertTrue(check.findOption("--Xhelp") != null);
-        assertFalse(check.findOption("--Xhelp").hidden());
+        assertTrue(check.findOption("--Xhelp").usageHelp());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.findOption("--Xhelp")));
 
         CommandLine cmd = new CommandLine(flix);
         ParseResult result = cmd.parseArgs("check", "--Xfuzzer", "--Xchaos-monkey");

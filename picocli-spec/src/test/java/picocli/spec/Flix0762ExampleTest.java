@@ -143,14 +143,16 @@ public class Flix0762ExampleTest {
      * test via "use xflags", matching flix-0.60.0.picocli's approach for its own 14-flag set.
      */
     @Test
-    public void experimentalFlagsAreHiddenButStillFullyFunctional() throws IOException {
+    public void experimentalFlagsAreTaggedHelpSectionAndFullyFunctional() throws IOException {
         CommandSpec flix = CommandSpecDsl.parse(readExample());
         CommandSpec check = flix.subcommands().get("check").getCommandSpec();
 
-        assertTrue(check.argGroups().isEmpty());
-        assertTrue(check.findOption("--Xnewmono").hidden());
+        assertEquals(1, check.argGroups().size());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.argGroups().get(0)));
+        assertFalse(check.findOption("--Xnewmono").hidden());
         assertTrue(check.findOption("--Xhelp") != null);
-        assertFalse(check.findOption("--Xhelp").hidden());
+        assertTrue(check.findOption("--Xhelp").usageHelp());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.findOption("--Xhelp")));
 
         CommandLine cmd = new CommandLine(flix);
         ParseResult result = cmd.parseArgs("check", "--Xverify", "--Xnewmono");

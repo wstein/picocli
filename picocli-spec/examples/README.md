@@ -64,22 +64,20 @@ reasoning:
   only to the four core dev-loop commands that actually invoke the compiler pipeline end to end
   — `check`, `build`, `run`, `test` — and deliberately *not* to `build-jar`/`build-fatjar`/
   `build-pkg`/`doc`/`repl`, to keep those commands' own `--help` clean. That's a curation choice a
-  real proxy author would plausibly make, not a fact derived from flix's source. The 14 are wrapped
-  in a `group cooperative hidden "The following options are experimental:%n" { ... }` once, inside
+  real proxy author would plausibly make, not a fact derived fro  The 14 are wrapped
+  in a `group cooperative helpSection="experimental" "The following options are experimental:%n" { ... }` once, inside
   the `xflags` bundle itself (rather than repeated in each of the four commands) — real flix's own
   `--help` has exactly that heading before this exact set of flags, so this reproduces its visual
   structure, not just its option list, while each command only needs `use xflags`. Grouping here is
   presentational, not a validation rule: `cooperative` (not `exclusive`) with picocli's default
   multiplicity (`0..1`) imposes no restriction — any subset, including none, may be used together —
-  the only effect is the usage-help section heading (and, as a side effect, the synopsis line
-  brackets the 14 as a visual unit too). `hidden` keeps them out of default `--help`/synopsis
-  entirely; `--Xhelp` (this proxy's own addition, paired with the hidden group) is meant to reveal
-  them on demand — a declarative spec can only mark it as a plain boolean option, not wire up
-  *what happens* when it's matched; see `FlixExperimentalHelpTest` for a host CLI's own dispatch
-  logic doing exactly that (printing the matched command's hidden `--X*` options via picocli's
-  `Help.optionListExcludingGroups`). `check`/`build`/`test` turn out to have *identical* bodies (`compileOptions`
-  + `--explain` + `--json` + `--Xhelp` + `xflags` + `files`), so that whole shape is itself bundled
-  as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.
+  the only effect is the usage-help section heading. `helpSection="experimental"` keeps them out of default `--help`
+  while keeping their options visible to shell autocompletion (since they are not marked `hidden`).
+  `--Xhelp` (declared with `helpSection="experimental"`) acts as the on-demand trigger: when matched on the CLI,
+  picocli's execution strategy natively intercepts it, renders only the experimental options group, and short-circuits
+  execution with exit code 0. See `FlixExperimentalHelpTest` for tests exercising this behavior. `check`/`build`/`test`
+  turn out to have *identical* bodies (`compileOptions` + `--explain` + `--json` + `--Xhelp` + `xflags` + `files`), so that
+  whole shape is itself bundled as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.`/`--entrypoint` on top.
 - **`<file>...`** (modeled as a `positional files : File ... arity=0..*`): attached to `check`,
   `build`, `run`, `test`, and `repl` (whose own `--help` text explicitly says "for the current
   project, or provided Flix source files") — the commands whose descriptions imply they operate

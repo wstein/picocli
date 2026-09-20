@@ -44,4 +44,31 @@ public class CompletionTest {
         assertTrue(script.contains("-l 'release'"));
         assertTrue(script.contains("build"));
     }
+
+    @Test
+    public void generatesCompletionIncludingTaggedHelpSectionOptions() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+                "  bundle xflags {\n" +
+                "    group cooperative helpSection=\"experimental\" \"Experimental:%n\" {\n" +
+                "      option --Xbenchmark-code-size : boolean \"benchmark code size\"\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix \"Flix compiler.\" {\n" +
+                "  command check \"Checks project.\" {\n" +
+                "    option --Xhelp\n" +
+                "    use xflags\n" +
+                "  }\n" +
+                "}");
+
+        String fish = Completion.script(spec, "flix", Completion.Shell.fish);
+        assertTrue(fish.contains("-l 'Xbenchmark-code-size'"));
+        assertTrue(fish.contains("-l 'Xhelp'"));
+
+        String bash = Completion.bashScript(spec, "flix");
+        assertTrue(bash.contains("--Xbenchmark-code-size"));
+        assertTrue(bash.contains("--Xhelp"));
+    }
 }

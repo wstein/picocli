@@ -24,9 +24,8 @@ definitions {
   option --library : boolean "documents the bundled library instead of the current project."
 
   // Not part of real flix's own --help; this proxy's own addition, paired with hiding the
-  // --X* flags below. Its *behavior* -- actually printing them -- can't be expressed in a
-  // declarative spec; see FlixExperimentalHelpTest for the runtime side of this.
-  option --Xhelp : boolean "shows the experimental options for this command."
+  // --X* flags from standard help. Triggers rendering of the "experimental" help section.
+  option --Xhelp : boolean "shows the experimental options for this command." helpSection="experimental"
 
   option --Xbenchmark-code-size : boolean "[experimental] benchmarks the size of the generated JVM files."
   option --Xbenchmark-incremental : boolean "[experimental] benchmarks the performance of each compiler phase in incremental mode."
@@ -43,7 +42,7 @@ definitions {
   // 11 experimental flags for this version (down from 14 in flix-0.60.0.picocli: Xsummary,
   // Xfuzzer, Xprint-typer, and Xchaos-monkey are gone from the CLI; Xverify and Xnewmono are new).
   bundle xflags {
-    group cooperative hidden "The following options are experimental:%n" {
+    group cooperative helpSection="experimental" "The following options are experimental:%n" {
       option --Xbenchmark-code-size
       option --Xbenchmark-incremental
       option --Xbenchmark-phases

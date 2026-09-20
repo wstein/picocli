@@ -25,9 +25,8 @@ definitions {
   option --yes : boolean "automatically answer yes to all prompts."
 
   // Not part of real flix's own --help; this proxy's own addition, paired with hiding the
-  // --X* flags below. Its *behavior* -- actually printing them -- can't be expressed in a
-  // declarative spec; see FlixExperimentalHelpTest for the runtime side of this.
-  option --Xhelp : boolean "shows the experimental options for this command."
+  // --X* flags from standard help. Triggers rendering of the "experimental" help section.
+  option --Xhelp : boolean "shows the experimental options for this command." helpSection="experimental"
 
   option --Xbenchmark-code-size : boolean "[experimental] benchmarks the size of the generated JVM files."
   option --Xbenchmark-incremental : boolean "[experimental] benchmarks the performance of each compiler phase in incremental mode."
@@ -48,7 +47,7 @@ definitions {
   // can pull in the whole thing with one "use xflags" instead of repeating both the group
   // wrapper and every option name.
   bundle xflags {
-    group cooperative hidden "The following options are experimental:%n" {
+    group cooperative helpSection="experimental" "The following options are experimental:%n" {
       option --Xbenchmark-code-size
       option --Xbenchmark-incremental
       option --Xbenchmark-phases

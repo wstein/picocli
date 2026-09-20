@@ -1,11 +1,9 @@
 package picocli.spec;
 
 import org.junit.Test;
+import picocli.AutoComplete;
 import picocli.CommandLine;
-import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Model.OptionSpec;
-import picocli.CommandLine.ParseResult;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,42 +13,25 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Demonstrates the runtime half of {@code examples/flix-0.60.0.picocli}'s {@code --Xhelp}:
- * printing a subcommand's hidden {@code --X*} options on demand. Which options count as
- * "experimental" (hidden + a {@code --X} name) and how to render them can't be expressed in the
- * declarative spec itself -- a host CLI's own execution strategy decides what to do when
- * {@code --Xhelp} is matched, the same way it decides what to do for any other matched option.
- * This test exercises exactly the logic a real proxy would wire up.
+ * Tests {@code examples/flix-0.60.0.picocli}'s and {@code examples/flix-0.76.2.picocli}'s {@code --Xhelp}:
+ * the declarative {@code helpSection="experimental"} group and trigger option natively render
+ * experimental options on demand, exclude them from standard {@code --help}, and keep them
+ * available for shell autocompletion.
  */
 public class FlixExperimentalHelpTest {
-
-    /** What a host CLI's dispatch logic would call upon seeing "--Xhelp" matched for a subcommand. */
-    private static void printExperimentalOptions(CommandLine subcommand) {
-        CommandSpec spec = subcommand.getCommandSpec();
-        List<OptionSpec> experimental = new ArrayList<OptionSpec>();
-        for (OptionSpec option : spec.options()) {
-            if (option.hidden() && option.longestName().startsWith("--X")) {
-                experimental.add(option);
-            }
-        }
-        Help help = new Help(spec, Help.defaultColorScheme(Help.Ansi.OFF));
-        subcommand.getOut().print(help.optionListExcludingGroups(experimental));
-        subcommand.getOut().flush(); // PrintWriter autoFlush only triggers on println/printf/format, not plain print()
-    }
 
     private static PrintWriter utf8Writer(ByteArrayOutputStream out) throws UnsupportedEncodingException {
         return new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
     }
 
     @Test
-    public void xhelpPrintsOnlyTheHiddenExperimentalOptionsForThatCommand() throws IOException {
+    public void xhelpNativelyPrintsOnlyTheExperimentalOptionsForThatCommand() throws IOException {
         File file = new File("examples/flix-0.60.0.picocli");
         String dsl = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
         CommandSpec flix = CommandSpecDsl.parse(dsl);
@@ -59,18 +40,60 @@ public class FlixExperimentalHelpTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         cmd.setOut(utf8Writer(out));
 
-        ParseResult result = cmd.parseArgs("check", "--Xhelp");
-        ParseResult checkResult = result.subcommand();
-        assertTrue(checkResult.matchedOptionValue("--Xhelp", Boolean.FALSE));
-
-        printExperimentalOptions(checkResult.commandSpec().commandLine());
+        int exitCode = cmd.execute("check", "--Xhelp");
+        assertEquals(0, exitCode);
 
         String printed = out.toString("UTF-8");
+        assertTrue("contains experimental group heading", printed.contains("The following options are experimental"));
         assertTrue(printed.contains("--Xfuzzer"));
         assertTrue(printed.contains("enables compiler fuzzing"));
         assertTrue(printed.contains("--Xiterations"));
         assertFalse("a non-experimental option must not be printed", printed.contains("--explain"));
-        assertFalse("--Xhelp itself is not hidden, so it must not be printed here", printed.contains("--Xhelp"));
+        assertFalse("--Xhelp itself is not an experimental flag, so it must not be in the experimental group", printed.contains("--Xhelp"));
+        assertFalse("standard synopsis must not be in on-demand help", printed.contains("Usage:"));
+    }
+
+    @Test
+    public void standardHelpExcludesExperimentalOptions() throws IOException {
+        File file = new File("examples/flix-0.60.0.picocli");
+        String dsl = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        CommandSpec flix = CommandSpecDsl.parse(dsl);
+        CommandLine cmd = new CommandLine(flix);
+
+        CommandLine checkCmd = cmd.getSubcommands().get("check");
+        String printed = checkCmd.getUsageMessage();
+
+        assertTrue(printed.contains("--explain"));
+        assertTrue("shows --Xhelp trigger option in standard options", printed.contains("--Xhelp"));
+
+        assertFalse("must not contain experimental heading", printed.contains("The following options are experimental"));
+        assertFalse("must not contain --Xfuzzer", printed.contains("--Xfuzzer"));
+        assertFalse("must not contain --Xiterations", printed.contains("--Xiterations"));
+
+        // Top-level flix also executes --help cleanly
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        cmd.setOut(utf8Writer(out));
+        int exitCode = cmd.execute("--help");
+        assertEquals(0, exitCode);
+        assertTrue(out.toString("UTF-8").contains("The Flix Programming Language"));
+    }
+
+    @Test
+    public void shellCompletionIncludesExperimentalOptions() throws IOException {
+        File file = new File("examples/flix-0.76.2.picocli");
+        String dsl = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        CommandSpec flix = CommandSpecDsl.parse(dsl);
+        CommandLine cmd = new CommandLine(flix);
+
+        String fish = AutoComplete.fish("flix", cmd);
+        assertTrue("fish completion must include --Xbenchmark-code-size", fish.contains("'Xbenchmark-code-size'"));
+        assertTrue("fish completion must include --Xlib", fish.contains("'Xlib'"));
+        assertTrue("fish completion must include standard --threads", fish.contains("'threads'"));
+
+        String bash = AutoComplete.bash("flix", cmd);
+        assertTrue("bash completion must include --Xbenchmark-code-size", bash.contains("--Xbenchmark-code-size"));
+        assertTrue("bash completion must include --Xlib", bash.contains("--Xlib"));
+        assertTrue("bash completion must include standard --threads", bash.contains("--threads"));
     }
 
     @Test
@@ -80,12 +103,8 @@ public class FlixExperimentalHelpTest {
         CommandSpec flix = CommandSpecDsl.parse(dsl);
         CommandLine cmd = new CommandLine(flix);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        cmd.setOut(utf8Writer(out));
-
-        ParseResult result = cmd.parseArgs("doc");
-        printExperimentalOptions(result.subcommand().commandSpec().commandLine());
-
-        assertTrue(out.toString("UTF-8").isEmpty());
+        CommandLine docCmd = cmd.getSubcommands().get("doc");
+        String rendered = HelpSectionRenderer.renderSection(docCmd, "experimental");
+        assertTrue(rendered.isEmpty());
     }
 }
