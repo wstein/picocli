@@ -181,6 +181,38 @@ public class CommandSpecJsonHiddenGroupAndBundleTest {
     }
 
     @Test
+    public void bundleCanUseAnotherBundleAtItsOwnTopLevel() {
+        CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
+                "  \"options\": { \"--github-token\": { \"names\": [\"--github-token\"], \"type\": \"String\" }, " +
+                "                 \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
+                "  \"bundles\": {" +
+                "    \"commonOptions\": { \"options\": [\"--github-token\"] }," +
+                "    \"xflags\": { \"options\": [\"--Xfoo\"] }," +
+                "    \"everything\": { \"use\": [\"commonOptions\", \"xflags\"] }" +
+                "  }" +
+                "}, \"name\": \"flix\", \"subcommands\": [ { \"name\": \"check\", \"use\": [\"everything\"] } ]}");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertEquals(2, check.options().size());
+        assertTrue(check.findOption("--github-token") != null);
+        assertTrue(check.findOption("--Xfoo") != null);
+    }
+
+    @Test
+    public void bundleComposedFromAnotherBundleGetsIndependentInstancesPerUse() {
+        CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
+                "  \"options\": { \"--json\": { \"names\": [\"--json\"], \"type\": \"boolean\" } }," +
+                "  \"bundles\": { \"inner\": { \"options\": [\"--json\"] }, \"outer\": { \"use\": [\"inner\"] } }" +
+                "}, \"name\": \"flix\", \"subcommands\": [" +
+                "{ \"name\": \"check\", \"use\": [\"outer\"] }," +
+                "{ \"name\": \"build\", \"use\": [\"outer\"] }" +
+                "]}");
+
+        assertTrue(spec.subcommands().get("check").getCommandSpec().findOption("--json")
+                != spec.subcommands().get("build").getCommandSpec().findOption("--json"));
+    }
+
+    @Test
     public void expandedOptionsActuallyParse() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +

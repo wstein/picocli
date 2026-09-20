@@ -68,12 +68,14 @@ public final class CommandSpecJson {
             if (json == null) { return EMPTY; }
             Map<String, Map<String, Object>> options = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("options"));
             Map<String, Map<String, Object>> positionalParams = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("positionalParams"));
-            Definitions withoutBundles = new Definitions(options, positionalParams, java.util.Collections.<String, Bundle>emptyMap());
 
+            // soFar wraps this SAME mutable bundles map, so a later bundle in the document can
+            // "use" an earlier one -- each bundles.put() below is immediately visible through it.
             Map<String, Bundle> bundles = new LinkedHashMap<String, Bundle>();
+            Definitions soFar = new Definitions(options, positionalParams, bundles);
             Map<String, Object> bundlesJson = mapOrEmpty(json.get("bundles"));
             for (Map.Entry<String, Object> entry : bundlesJson.entrySet()) {
-                bundles.put(entry.getKey(), Bundle.from((Map<String, Object>) entry.getValue(), withoutBundles));
+                bundles.put(entry.getKey(), Bundle.from((Map<String, Object>) entry.getValue(), soFar));
             }
             return new Definitions(options, positionalParams, bundles);
         }
@@ -139,6 +141,12 @@ public final class CommandSpecJson {
             List<GroupTemplate> groups = new ArrayList<GroupTemplate>();
             for (Object group : listOrEmpty(json.get("groups"))) {
                 groups.add(GroupTemplate.from((Map<String, Object>) group, definitionsSoFar));
+            }
+            for (Object use : listOrEmpty(json.get("use"))) {
+                Bundle used = definitionsSoFar.resolveBundle((String) use);
+                optionNames.addAll(used.optionNames);
+                positionalLabels.addAll(used.positionalLabels);
+                groups.addAll(used.groups);
             }
             return new Bundle(optionNames, positionalLabels, groups);
         }

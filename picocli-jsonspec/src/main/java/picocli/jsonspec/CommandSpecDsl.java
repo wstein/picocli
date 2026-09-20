@@ -413,8 +413,15 @@ public final class CommandSpecDsl {
                             positionalLabels.add(label);
                         } else if (checkWord("group")) {
                             groupTemplates.add(parseGroupTemplate(soFar));
+                        } else if (checkWord("use")) {
+                            advance();
+                            String usedBundleName = expectWord();
+                            Bundle used = soFar.resolveBundle(usedBundleName);
+                            optionNames.addAll(used.optionNames);
+                            positionalLabels.addAll(used.positionalLabels);
+                            groupTemplates.addAll(used.groups);
                         } else {
-                            throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + current().text + "'");
+                            throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + current().text + "'");
                         }
                     }
                     expect(TokenKind.RBRACE, "'}'");

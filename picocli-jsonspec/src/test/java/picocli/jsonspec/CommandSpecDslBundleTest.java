@@ -216,6 +216,57 @@ public class CommandSpecDslBundleTest {
     }
 
     @Test
+    public void bundleCanUseAnotherBundleAtItsOwnTopLevel() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --github-token : String\n" +
+                "  option --no-install : boolean\n" +
+                "  option --threads : int\n" +
+                "  bundle commonOptions {\n" +
+                "    option --github-token\n" +
+                "    option --no-install\n" +
+                "    option --threads\n" +
+                "  }\n" +
+                "  option --Xfoo : boolean\n" +
+                "  bundle xflags {\n" +
+                "    option --Xfoo\n" +
+                "  }\n" +
+                "  bundle everything {\n" +
+                "    use commonOptions\n" +
+                "    use xflags\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix {\n" +
+                "  command check { use everything }\n" +
+                "}");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertEquals(4, check.options().size());
+        assertTrue(check.findOption("--github-token") != null);
+        assertTrue(check.findOption("--no-install") != null);
+        assertTrue(check.findOption("--threads") != null);
+        assertTrue(check.findOption("--Xfoo") != null);
+    }
+
+    @Test
+    public void bundleComposedFromAnotherBundleGetsIndependentInstancesPerUse() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --json : boolean\n" +
+                "  bundle inner { option --json }\n" +
+                "  bundle outer { use inner }\n" +
+                "}\n" +
+                "command flix {\n" +
+                "  command check { use outer }\n" +
+                "  command build { use outer }\n" +
+                "}");
+
+        assertNotSame(
+                spec.subcommands().get("check").getCommandSpec().findOption("--json"),
+                spec.subcommands().get("build").getCommandSpec().findOption("--json"));
+    }
+
+    @Test
     public void expandedOptionsActuallyParse() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
