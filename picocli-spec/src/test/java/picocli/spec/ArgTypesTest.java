@@ -3,6 +3,10 @@ package picocli.spec;
 import org.junit.Test;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +23,23 @@ public class ArgTypesTest {
             resolved.add(ArgTypes.toClass(name));
         }
         assertEquals(new HashSet<Class<?>>(Arrays.<Class<?>>asList(
-                String.class, boolean.class, int.class, long.class, double.class, File.class)), resolved);
+                String.class, boolean.class, int.class, long.class, double.class, File.class,
+                URI.class, URL.class, BigDecimal.class, BigInteger.class)), resolved);
+    }
+
+    @Test
+    public void resolvesTypesPicocliHasBuiltInConvertersFor() {
+        assertEquals(URI.class, ArgTypes.toClass("URI"));
+        assertEquals(URL.class, ArgTypes.toClass("URL"));
+        assertEquals(BigDecimal.class, ArgTypes.toClass("BigDecimal"));
+        assertEquals(BigInteger.class, ArgTypes.toClass("BigInteger"));
+    }
+
+    @Test
+    public void writesEveryNameBackToItself() {
+        for (String name : ArgTypes.names()) {
+            assertEquals(name, ArgTypes.toName(ArgTypes.toClass(name)));
+        }
     }
 
     @Test

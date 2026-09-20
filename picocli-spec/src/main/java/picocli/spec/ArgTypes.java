@@ -1,6 +1,10 @@
 package picocli.spec;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URI;
+import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,6 +23,10 @@ import java.util.Set;
  * scalar field can only ever hold one match. {@code Collection}/{@code Map} types (which need an
  * explicit auxiliary type due to generics erasure) are not yet supported; arrays cover the same
  * need without that extra complexity.</p>
+ * <p>The vocabulary is deliberately limited to types picocli converts out of the box and that are
+ * available on every Java version this module supports. Notably {@code java.nio.file.Path} is
+ * absent: picocli core itself only registers its converter reflectively so it can keep compiling
+ * at Java 6 source level, which this module also targets.</p>
  */
 final class ArgTypes {
 
@@ -32,6 +40,10 @@ final class ArgTypes {
         TYPES_BY_NAME.put("long", long.class);
         TYPES_BY_NAME.put("double", double.class);
         TYPES_BY_NAME.put("File", File.class);
+        TYPES_BY_NAME.put("URI", URI.class);
+        TYPES_BY_NAME.put("URL", URL.class);
+        TYPES_BY_NAME.put("BigDecimal", BigDecimal.class);
+        TYPES_BY_NAME.put("BigInteger", BigInteger.class);
     }
     private static final Map<Class<?>, String> NAMES_BY_TYPE = new LinkedHashMap<Class<?>, String>();
     static {
