@@ -17,7 +17,7 @@
   This is a small self-hosted flat Maven repository for
   <a href="https://github.com/wstein/picocli">wstein/picocli</a>, a personal fork of
   <a href="https://github.com/remkop/picocli">remkop/picocli</a> used to prototype additions
-  (e.g. fish shell completion, the <code>picocli-jsonspec</code> module below) before/if they
+  (e.g. fish shell completion, the <code>picocli-spec</code> module below) before/if they
   get contributed upstream.
 </p>
 <p>It is <strong>not</strong> affiliated with the official <code>info.picocli:picocli</code> releases on Maven Central.</p>
@@ -34,13 +34,13 @@ dependencies {
 <ul>
   <li><a href="https://github.com/wstein/picocli/blob/develop/README.md">Project README</a> (this fork's full README, including upstream picocli's own documentation)</li>
   <li><a href="apidocs/picocli/">Javadoc — picocli (core)</a></li>
-  <li><a href="apidocs/picocli-jsonspec/">Javadoc — picocli-jsonspec</a></li>
+  <li><a href="apidocs/picocli-spec/">Javadoc — picocli-spec</a></li>
   <li><a href="maven/io/github/wstein/picocli/maven-metadata.xml">maven-metadata.xml</a> (lists published versions)</li>
   <li><a href="https://github.com/wstein/picocli/releases">GitHub Releases</a> (jars attached directly)</li>
   <li><a href="https://github.com/wstein/picocli/blob/develop/.github/workflows/release.yml">release workflow source</a></li>
 </ul>
 
-<h2>picocli-jsonspec</h2>
+<h2>picocli-spec</h2>
 <p>
   Build a picocli <code>CommandSpec</code> from JSON or from a small DSL, export any
   <code>CommandSpec</code> back to JSON, and merge one or more such specs into a host CLI as
@@ -49,14 +49,14 @@ dependencies {
   human-friendly.
 </p>
 <ul>
-  <li><a href="https://github.com/wstein/picocli/tree/develop/picocli-jsonspec">Module README</a> (DSL grammar, JSON field reference, worked example)</li>
-  <li><a href="jsonspec/schema/command-spec.schema.json">JSON Schema</a> for the JSON format</li>
-  <li><a href="apidocs/picocli-jsonspec/">Javadoc</a></li>
+  <li><a href="https://github.com/wstein/picocli/tree/develop/picocli-spec">Module README</a> (DSL grammar, JSON field reference, worked example)</li>
+  <li><a href="spec/schema/command-spec.schema.json">JSON Schema</a> for the JSON format (tracks latest; pin an exact release at <code>spec/schema/&lt;version&gt;/command-spec.schema.json</code>, kept permanently)</li>
+  <li><a href="apidocs/picocli-spec/">Javadoc</a></li>
 </ul>
 
 <h2>Other modules in this repo</h2>
 <p>These are upstream picocli modules (not fork-specific); only their READMEs are linked here — this
-site currently only hosts generated Javadoc for <code>picocli</code> and <code>picocli-jsonspec</code>
+site currently only hosts generated Javadoc for <code>picocli</code> and <code>picocli-spec</code>
 above.</p>
 <ul>
   <li><a href="https://github.com/wstein/picocli/tree/develop/picocli-codegen">picocli-codegen</a> — annotation processor and GraalVM native-image config generators</li>

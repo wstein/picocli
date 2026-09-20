@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"picocli.spec"},{"l":"picocli.spec.json"}];updateSearchResults();
