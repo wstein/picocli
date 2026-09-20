@@ -223,7 +223,10 @@ public final class CommandSpecJson {
             }
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
-            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
+            if (helpSection != null) {
+                builder.helpSection(helpSection);
+                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
+            }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
@@ -369,7 +372,10 @@ public final class CommandSpecJson {
         String heading = (String) json.get("heading");
         if (heading != null) { builder.heading(heading); }
         String helpSection = (String) json.get("helpSection");
-        if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
+        if (helpSection != null) {
+            builder.helpSection(helpSection);
+            builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
+        }
         ArgSink groupSink = new GroupArgSink(builder);
         addOptionsPositionalsAndUses(json, definitions, groupSink);
         for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
@@ -405,6 +411,7 @@ public final class CommandSpecJson {
         String helpSection = (String) json.get("helpSection");
         if (helpSection != null) {
             builder.usageHelp(true);
+            builder.helpSection(helpSection);
             builder.descriptionKey(HelpSectionRenderer.PREFIX + helpSection);
         }
         Object hidden = json.get("hidden");

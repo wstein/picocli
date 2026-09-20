@@ -399,7 +399,10 @@ public final class CommandSpecDsl {
             }
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
-            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
+            if (helpSection != null) {
+                builder.helpSection(helpSection);
+                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
+            }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
@@ -832,7 +835,10 @@ public final class CommandSpecDsl {
 
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
-            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
+            if (helpSection != null) {
+                builder.helpSection(helpSection);
+                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
+            }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             expect(TokenKind.LBRACE, "'{'");
@@ -885,6 +891,7 @@ public final class CommandSpecDsl {
                     expect(TokenKind.EQUALS, "'='");
                     String section = expectWordOrString();
                     builder.usageHelp(true);
+                    builder.helpSection(section);
                     builder.descriptionKey(HelpSectionRenderer.PREFIX + section);
                 } else {
                     expect(TokenKind.EQUALS, "'='");

@@ -35,6 +35,9 @@ public final class HelpSectionRenderer {
     /** Returns the helpSection name for the given group, or {@code null} if untagged. */
     public static String getHelpSection(ArgGroupSpec group) {
         if (group == null) { return null; }
+        if (group.helpSection() != null && group.helpSection().length() > 0) {
+            return group.helpSection();
+        }
         String key = group.headingKey();
         if (key != null && key.startsWith(PREFIX)) {
             return key.substring(PREFIX.length());
@@ -45,6 +48,9 @@ public final class HelpSectionRenderer {
     /** Returns the helpSection name for the given option, or {@code null} if untagged. */
     public static String getHelpSection(OptionSpec option) {
         if (option == null) { return null; }
+        if (option.helpSection() != null && option.helpSection().length() > 0) {
+            return option.helpSection();
+        }
         String key = option.descriptionKey();
         if (key != null && key.startsWith(PREFIX)) {
             return key.substring(PREFIX.length());
