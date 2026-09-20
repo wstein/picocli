@@ -12,7 +12,7 @@
         "$schema": {
           "type": "string",
           "format": "uri",
-          "description": "Optional editor-validation hint (the conventional key many JSON tools add/read for autocomplete, e.g. pointing at this very schema's $id). Ignored by CommandSpecJson.read() and never emitted by CommandSpecJson.write()."
+          "description": "Optional editor-validation hint (the conventional key many JSON tools add/read for autocomplete, e.g. pointing at this very schema's $id). Ignored by CommandSpecJson.read() and emitted at the root of generated JSON by CommandSpecJson.write()."
         },
         "name": {
           "type": "string",

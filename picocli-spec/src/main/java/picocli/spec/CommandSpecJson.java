@@ -26,6 +26,8 @@ import java.util.Map;
  */
 public final class CommandSpecJson {
 
+    public static final String SCHEMA_URL = "https://wstein.github.io/picocli/spec/schema/command-spec.schema.json";
+
     private CommandSpecJson() {}
 
     /** Builds a new {@link CommandSpec} (with any nested subcommands) from the given JSON text. */
@@ -287,7 +289,10 @@ public final class CommandSpecJson {
 
     /** Serializes the given {@link CommandSpec} (with any nested subcommands) to JSON text. */
     public static String write(CommandSpec spec) {
-        return Json.write(writeCommand(spec));
+        Map<String, Object> root = new LinkedHashMap<String, Object>();
+        root.put("$schema", SCHEMA_URL);
+        root.putAll(writeCommand(spec));
+        return Json.write(root);
     }
 
     // ---- reading: JSON -> CommandSpec ----

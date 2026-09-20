@@ -12,6 +12,7 @@ import picocli.CommandLine.Parameters;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -274,5 +275,16 @@ public class CommandSpecJsonTest {
         CommandSpec loud = roundTripped.subcommands().get("loud").getCommandSpec();
         assertEquals("--volume", loud.options().get(0).longestName());
         assertEquals(int.class, loud.options().get(0).type());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void writesSchemaAttributeAtDocumentRoot() {
+        CommandSpec spec = CommandSpec.create().name("mycmd");
+        String json = CommandSpecJson.write(spec);
+
+        assertTrue(json.contains("\"$schema\": \"" + CommandSpecJson.SCHEMA_URL + "\""));
+        Map<String, Object> map = (Map<String, Object>) picocli.spec.json.Json.parse(json);
+        assertEquals(CommandSpecJson.SCHEMA_URL, map.get("$schema"));
     }
 }
