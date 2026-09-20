@@ -12,6 +12,7 @@ import java.io.File;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -329,5 +330,53 @@ public class CommandSpecDslTest {
         } catch (DslParseException expected) {
             // ok
         }
+    }
+
+    @Test
+    public void parsesMixinStandardHelpOptions() {
+        String dsl = "command app {\n" +
+                "  mixinStandardHelpOptions\n" +
+                "  option -v, --verbose : boolean\n" +
+                "}";
+        CommandSpec spec = CommandSpecDsl.parse(dsl);
+        assertTrue(spec.mixinStandardHelpOptions());
+        assertNotNull(spec.findOption("--help"));
+        assertNotNull(spec.findOption("--version"));
+        assertNotNull(spec.findOption("--verbose"));
+        assertEquals(3, spec.options().size());
+
+        CommandLine cmd = new CommandLine(spec);
+        assertTrue(cmd.parseArgs("-h").isUsageHelpRequested());
+        assertTrue(cmd.parseArgs("-V").isVersionHelpRequested());
+    }
+
+    @Test
+    public void parsesMixinStandardHelpOptionsOnSubcommand() {
+        String dsl = "command app {\n" +
+                "  command sub {\n" +
+                "    mixinStandardHelpOptions\n" +
+                "  }\n" +
+                "}";
+        CommandSpec spec = CommandSpecDsl.parse(dsl);
+        assertFalse(spec.mixinStandardHelpOptions());
+        CommandSpec sub = spec.subcommands().get("sub").getCommandSpec();
+        assertTrue(sub.mixinStandardHelpOptions());
+        assertNotNull(sub.findOption("--help"));
+        assertNotNull(sub.findOption("--version"));
+    }
+
+    @Test
+    public void mixinStandardHelpOptionsConvertsIdenticallyBetweenJsonAndDsl() {
+        String dsl = "command app {\n" +
+                "  mixinStandardHelpOptions\n" +
+                "  option -v, --verbose : boolean\n" +
+                "}";
+        CommandSpec specFromDsl = CommandSpecDsl.parse(dsl);
+        String json = CommandSpecJson.write(specFromDsl);
+        CommandSpec specFromJson = CommandSpecJson.read(json);
+
+        assertEquals(specFromDsl.mixinStandardHelpOptions(), specFromJson.mixinStandardHelpOptions());
+        assertEquals(specFromDsl.options().size(), specFromJson.options().size());
+        assertEquals(CommandSpecDsl.write(specFromDsl), CommandSpecDsl.write(specFromJson));
     }
 }

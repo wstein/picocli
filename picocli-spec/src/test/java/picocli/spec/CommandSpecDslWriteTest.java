@@ -15,6 +15,7 @@ import java.io.File;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class CommandSpecDslWriteTest {
@@ -315,5 +316,24 @@ public class CommandSpecDslWriteTest {
         CommandSpec parsed = CommandSpecDsl.parse(CommandSpecDsl.write(spec));
 
         assertArrayEquals(new String[] {"first", "second"}, parsed.usageMessage().description());
+    }
+
+    @Test
+    public void writesMixinStandardHelpOptions() {
+        CommandSpec spec = CommandSpec.create().name("app");
+        spec.mixinStandardHelpOptions(true);
+        spec.addOption(OptionSpec.builder("-v", "--verbose").type(boolean.class).build());
+
+        String dsl = CommandSpecDsl.write(spec);
+        assertTrue(dsl.contains("mixinStandardHelpOptions"));
+        assertFalse(dsl.contains("option -h, --help"));
+        assertFalse(dsl.contains("option -V, --version"));
+
+        CommandSpec roundTripped = CommandSpecDsl.parse(dsl);
+        assertTrue(roundTripped.mixinStandardHelpOptions());
+        assertNotNull(roundTripped.findOption("--verbose"));
+        assertNotNull(roundTripped.findOption("--help"));
+        assertNotNull(roundTripped.findOption("--version"));
+        assertEquals(3, roundTripped.options().size());
     }
 }

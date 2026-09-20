@@ -8,9 +8,11 @@ import picocli.CommandLine.Model.PositionalParamSpec;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A lightweight, human-friendly text format for describing a picocli {@link CommandSpec},
@@ -102,8 +104,18 @@ public final class CommandSpecDsl {
         }
         out.append(" {\n");
 
+        Set<OptionSpec> standardHelpOptions = Collections.emptySet();
+        if (spec.mixinStandardHelpOptions()) {
+            indent(out, indent + 1);
+            out.append("mixinStandardHelpOptions\n");
+            CommandSpec helpMixin = spec.mixins().get("mixinStandardHelpOptions");
+            if (helpMixin != null) {
+                standardHelpOptions = new HashSet<OptionSpec>(helpMixin.options());
+            }
+        }
+
         for (OptionSpec option : spec.options()) {
-            if (option.group() == null && !option.inherited()) {
+            if (option.group() == null && !option.inherited() && !standardHelpOptions.contains(option)) {
                 writeOption(option, out, indent + 1);
             }
         }
@@ -683,21 +695,28 @@ public final class CommandSpecDsl {
             }
             expect(TokenKind.LBRACE, "'{'");
             ArgSink sink = new CommandArgSink(spec);
+            boolean mixinStandardHelp = false;
             while (!check(TokenKind.RBRACE)) {
                 if (!check(TokenKind.WORD)) {
-                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', or 'command' but found '" + current().text + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', 'mixinStandardHelpOptions', or 'command' but found '" + current().text + "'");
                 }
                 String keyword = current().text;
                 if ("command".equals(keyword)) {
                     CommandSpec sub = parseCommand(definitions);
                     spec.addSubcommand(sub.name(), sub);
+                } else if ("mixinStandardHelpOptions".equals(keyword)) {
+                    advance();
+                    mixinStandardHelp = true;
                 } else if (isMemberKeyword(keyword)) {
                     parseMember(definitions, sink);
                 } else {
-                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', or 'command' but found '" + keyword + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', 'mixinStandardHelpOptions', or 'command' but found '" + keyword + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
+            if (mixinStandardHelp) {
+                spec.mixinStandardHelpOptions(true);
+            }
             return spec;
         }
 
