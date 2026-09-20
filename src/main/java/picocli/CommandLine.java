@@ -2790,6 +2790,11 @@ public class CommandLine {
     }
 
     private StringBuilder usage(StringBuilder sb, Help help) {
+        String activeSection = help.activeHelpSection();
+        if (activeSection != null) {
+            sb.append(help.renderHelpSection(activeSection));
+            return sb;
+        }
         for (String key : getHelpSectionKeys()) {
             IHelpSectionRenderer renderer = getHelpSectionMap().get(key);
             if (renderer != null) { sb.append(renderer.render(help)); }
@@ -3860,6 +3865,15 @@ public class CommandLine {
          * @see <a href="https://picocli.info/#_variable_interpolation">Variable Interpolation section of the user manual</a>
          */
         String[] description() default {};
+
+        /**
+         * Optional help section tag for this option (e.g., {@code "experimental"}).
+         * When paired with {@link #usageHelp()} (such as {@code --Xhelp}), specifying this option
+         * on the command line renders that specific tagged help section on demand and exits.
+         * Can also be placed on standalone options to tag them into a named help section.
+         * @return the help section tag, or an empty string if untagged
+         * @since 4.8 */
+        String helpSection() default "";
 
         /**
          * Specifies the minimum number of required parameters and the maximum number of accepted parameters.
@@ -4963,6 +4977,16 @@ public class CommandLine {
          * Groups with a lower number are shown before groups with a higher number.
          * This attribute is only honored for groups that have a {@link #heading() heading} (or a {@link #headingKey() headingKey} with a non-{@code null} resource bundle value).*/
         int order() default -1;
+
+        /** Optional help section tag for this group (e.g., {@code "experimental"}).
+         * Groups tagged with a non-empty help section are excluded from standard {@code --help}
+         * usage messages, but remain unhidden so their options appear in shell completion scripts.
+         * They are rendered on demand when an option tagged with the same help section
+         * (e.g., {@code @Option(names = "--Xhelp", helpSection = "experimental", usageHelp = true)})
+         * is matched on the command line.
+         * @return the help section tag, or an empty string if untagged
+         * @since 4.8 */
+        String helpSection() default "";
     }
     /**
      * <p>
@@ -6418,11 +6442,17 @@ public class CommandLine {
                 validatePositionalParameters(positionalParameters);
                 List<String> wrongUsageHelpAttr = new ArrayList<String>();
                 List<String> wrongVersionHelpAttr = new ArrayList<String>();
-                List<String> usageHelpAttr = new ArrayList<String>();
+                Map<String, List<String>> usageHelpBySection = new LinkedHashMap<String, List<String>>();
                 List<String> versionHelpAttr = new ArrayList<String>();
                 for (OptionSpec option : options()) {
                     if (option.usageHelp()) {
-                        usageHelpAttr.add(option.longestName());
+                        String section = option.helpSection() == null ? "" : option.helpSection();
+                        List<String> list = usageHelpBySection.get(section);
+                        if (list == null) {
+                            list = new ArrayList<String>();
+                            usageHelpBySection.put(section, list);
+                        }
+                        list.add(option.longestName());
                         if (!isBoolean(option.type())) { wrongUsageHelpAttr.add(option.longestName()); }
                     }
                     if (option.versionHelp()) {
@@ -6438,7 +6468,12 @@ public class CommandLine {
                 if (!wrongVersionHelpAttr.isEmpty()) {
                     throw new InitializationException(String.format(wrongType, wrongVersionHelpAttr, "versionHelp", "--version", "version information"));
                 }
-                if (usageHelpAttr.size() > 1)   { CommandLine.tracer().warn(multiple, usageHelpAttr, "usageHelp", "--help", "usage help message"); }
+                for (Map.Entry<String, List<String>> entry : usageHelpBySection.entrySet()) {
+                    if (entry.getValue().size() > 1) {
+                        String example = entry.getKey().length() == 0 ? "--help" : entry.getValue().get(0);
+                        CommandLine.tracer().warn(multiple, entry.getValue(), "usageHelp", example, "usage help message");
+                    }
+                }
                 if (versionHelpAttr.size() > 1) { CommandLine.tracer().warn(multiple, versionHelpAttr, "versionHelp", "--version", "version information"); }
             }
 
@@ -10032,6 +10067,7 @@ public class CommandLine {
             private final String fallbackValue;
             private final String originalFallbackValue;
             private final int order;
+            private final String helpSection;
 
             public static OptionSpec.Builder builder(String name, String... names) {
                 String[] copy = new String[Assert.notNull(names, "names").length + 1];
@@ -10059,6 +10095,7 @@ public class CommandLine {
                 negatable = builder.negatable;
                 fallbackValue = builder.fallbackValue;
                 originalFallbackValue = builder.originalFallbackValue;
+                helpSection = builder.helpSection;
 
                 if (names.length == 0 || Arrays.asList(names).contains("")) {
                     throw new InitializationException("Invalid names: " + Arrays.toString(names));
@@ -10137,6 +10174,11 @@ public class CommandLine {
                 return interpolate(fallbackValue);
             }
 
+            /** Returns the optional help section tag of this option (may be {@code null} or empty).
+             * @see Option#helpSection()
+             * @since 4.8 */
+            public String helpSection() { return helpSection; }
+
             public boolean equals(Object obj) {
                 if (obj == this) { return true; }
                 if (!(obj instanceof OptionSpec)) { return false; }
@@ -10147,6 +10189,7 @@ public class CommandLine {
                         && versionHelp == other.versionHelp
                         && order == other.order
                         && negatable == other.negatable
+                        && Assert.equals(helpSection, other.helpSection)
                         && Assert.equals(fallbackValue, other.fallbackValue)
                         && new HashSet<String>(Arrays.asList(names)).equals(new HashSet<String>(Arrays.asList(other.names)));
             }
@@ -10158,6 +10201,7 @@ public class CommandLine {
                         + 37 * Arrays.hashCode(names)
                         + 37 * Assert.hashCode(negatable)
                         + 37 * Assert.hashCode(fallbackValue)
+                        + 37 * Assert.hashCode(helpSection)
                         + 37 * order;
             }
 
@@ -10173,6 +10217,7 @@ public class CommandLine {
                 private String fallbackValue = DEFAULT_FALLBACK_VALUE;
                 private String originalFallbackValue = ArgSpec.UNSPECIFIED;
                 private int order = DEFAULT_ORDER;
+                private String helpSection = "";
 
                 private Builder(String[] names) { this.names = names; }
                 private Builder(OptionSpec original) {
@@ -10185,6 +10230,7 @@ public class CommandLine {
                     fallbackValue = original.fallbackValue;
                     originalFallbackValue = original.originalFallbackValue;
                     order = original.order;
+                    helpSection = original.helpSection;
                 }
                 private Builder(IAnnotatedElement member, IFactory factory) {
                     super(member.getAnnotation(Option.class), member, factory);
@@ -10197,6 +10243,7 @@ public class CommandLine {
                     fallbackValue = NULL_VALUE.equals(option.fallbackValue()) ? null : option.fallbackValue();
                     originalFallbackValue = option.fallbackValue();
                     order = option.order();
+                    helpSection = option.helpSection();
                 }
 
                 /** Returns a valid {@code OptionSpec} instance. */
@@ -10232,6 +10279,20 @@ public class CommandLine {
                  * @see Option#fallbackValue()
                  * @since 4.0 */
                 public String fallbackValue() { return fallbackValue; }
+
+                /** Returns the optional help section tag for this option.
+                 * @see Option#helpSection()
+                 * @since 4.8 */
+                public String helpSection() { return helpSection; }
+
+                /** Sets the help section tag for this option.
+                 * @param helpSection the help section tag
+                 * @return this builder instance
+                 * @since 4.8 */
+                public Builder helpSection(String helpSection) {
+                    this.helpSection = helpSection == null ? "" : helpSection;
+                    return this;
+                }
 
                 /** Returns the position in the options list in the usage help message at which this option should be shown.
                  * Options with a lower number are shown before options with a higher number.
@@ -10431,6 +10492,7 @@ public class CommandLine {
             private final Range multiplicity;
             private final boolean validate;
             private final int order;
+            private final String helpSection;
             private final IGetter getter;
             private final ISetter setter;
             private final IScope scope;
@@ -10448,6 +10510,7 @@ public class CommandLine {
                 headingKey       = NO_HEADING_KEY.equals(builder.headingKey) ? null : builder.headingKey;
                 exclusive        = builder.exclusive && builder.validate; // non-validating groups cannot be exclusive: https://github.com/remkop/picocli/issues/810
                 multiplicity     = builder.multiplicity;
+                helpSection      = builder.helpSection;
                 if (multiplicity.max() <= 0) { throw new InitializationException("ArgGroup must have multiplicity that allows at least one occurrence, but had multiplicity=" + multiplicity); }
 
                 validate         = builder.validate;
@@ -10518,6 +10581,11 @@ public class CommandLine {
             /** Returns the position in the options list in the usage help message at which this group should be shown.
              * Groups with a lower number are shown before groups with a higher number.
              * This attribute is only honored for groups that have a {@link #heading() heading} (or a {@link #headingKey() headingKey} with a non-{@code null} resource bundle value).*/
+            /** Returns the optional help section tag of this group (may be {@code null} or empty).
+             * @see ArgGroup#helpSection()
+             * @since 4.8 */
+            public String helpSection() { return helpSection; }
+
             public int order() { return this.order; }
 
             /** Returns the heading of this group (may be {@code null}), used when generating the usage documentation.
@@ -10946,6 +11014,7 @@ public class CommandLine {
                 private Range multiplicity = Range.valueOf("0..1");
                 private boolean validate   = true;
                 private int order          = DEFAULT_ORDER;
+                private String helpSection = "";
                 private final List<ArgSpec> args = new ArrayList<ArgSpec>();
                 private final List<ArgGroupSpec> subgroups = new ArrayList<ArgGroupSpec>();
                 private final List<IAnnotatedElement> specElements = new ArrayList<IAnnotatedElement>();
@@ -10972,7 +11041,22 @@ public class CommandLine {
                             .exclusive(group.exclusive())
                             .multiplicity(group.multiplicity())
                             .validate(group.validate())
-                            .order(group.order());
+                            .order(group.order())
+                            .helpSection(group.helpSection());
+                }
+
+                /** Returns the optional help section tag of this group.
+                 * @see ArgGroup#helpSection()
+                 * @since 4.8 */
+                public String helpSection() { return helpSection; }
+
+                /** Sets the help section tag of this group.
+                 * @param helpSection the help section tag
+                 * @return this builder instance
+                 * @since 4.8 */
+                public Builder helpSection(String helpSection) {
+                    this.helpSection = helpSection == null ? "" : helpSection;
+                    return this;
                 }
 
                 /** Returns a valid {@code ArgGroupSpec} instance. */
@@ -15899,9 +15983,17 @@ public class CommandLine {
          * @since 4.0 */
         protected Text createDetailedSynopsisGroupsText(Set<ArgSpec> outparam_groupArgs) {
             Text groupText = ansi().new Text(0);
+            String activeSection = activeHelpSection();
             for (ArgGroupSpec group : commandSpec().argGroups()) {
                 if (group.validate()) { // non-validating groups are not shown in the synopsis
-                    groupText = groupText.concat(" ").concat(group.synopsisText(colorScheme(), outparam_groupArgs));
+                    String section = getHelpSection(group);
+                    if (activeSection == null) {
+                        if (section == null || section.isEmpty()) {
+                            groupText = groupText.concat(" ").concat(group.synopsisText(colorScheme(), outparam_groupArgs));
+                        }
+                    } else if (activeSection.equals(section)) {
+                        groupText = groupText.concat(" ").concat(group.synopsisText(colorScheme(), outparam_groupArgs));
+                    }
                 }
             }
             return groupText;
@@ -15931,6 +16023,25 @@ public class CommandLine {
                 Collections.sort(options, optionSort);// iterate in specified sort order
             }
             options.removeAll(done);
+            String activeSection = activeHelpSection();
+            for (Iterator<OptionSpec> iter = options.iterator(); iter.hasNext(); ) {
+                OptionSpec option = iter.next();
+                if (option.group() != null) {
+                    String groupSection = getHelpSection(option.group());
+                    if (activeSection == null) {
+                        if (groupSection != null && !groupSection.isEmpty()) { iter.remove(); }
+                    } else if (!activeSection.equals(groupSection)) {
+                        iter.remove();
+                    }
+                } else {
+                    String optSection = getHelpSection(option);
+                    if (activeSection == null) {
+                        if (optSection != null && !optSection.isEmpty() && !option.usageHelp()) { iter.remove(); }
+                    } else if (!activeSection.equals(optSection)) {
+                        iter.remove();
+                    }
+                }
+            }
             if (clusterBooleanOptions) { // cluster all short boolean options into a single string
                 List<OptionSpec> booleanOptions = new ArrayList<OptionSpec>();
                 StringBuilder clusteredRequired = new StringBuilder("-");
@@ -16080,19 +16191,48 @@ public class CommandLine {
             String[] lines = Ansi.OFF.new Text(commandSpec.usageMessage().synopsisHeading()).toString().split("\\r?\\n|\\r|%n", -1);
             return lines[lines.length - 1].length();
         }
+        private static void collectAllGroups(List<ArgGroupSpec> groups, List<ArgGroupSpec> result) {
+            for (ArgGroupSpec group : groups) {
+                collectAllGroups(group.subgroups(), result);
+                result.add(group);
+            }
+        }
         private List<OptionSpec> excludeHiddenAndGroupOptions(List<OptionSpec> all) {
             List<OptionSpec> result = new ArrayList<OptionSpec>(all);
-            for (ArgGroupSpec group : optionSectionGroups()) { result.removeAll(group.allOptionsNested()); }
+            List<ArgGroupSpec> allGroups = new ArrayList<ArgGroupSpec>();
+            collectAllGroups(commandSpec.argGroups(), allGroups);
+            for (ArgGroupSpec group : allGroups) {
+                if (group.heading() != null || (getHelpSection(group) != null && !getHelpSection(group).isEmpty())) {
+                    result.removeAll(group.allOptionsNested());
+                }
+            }
+            String activeSection = activeHelpSection();
             for (Iterator<OptionSpec> iter = result.iterator(); iter.hasNext(); ) {
-                if (iter.next().hidden()) {
+                OptionSpec opt = iter.next();
+                if (opt.hidden()) {
                     iter.remove();
+                } else {
+                    String section = getHelpSection(opt);
+                    if (activeSection == null) {
+                        if (section != null && !section.isEmpty() && !opt.usageHelp()) {
+                            iter.remove();
+                        }
+                    } else if (!activeSection.equals(section)) {
+                        iter.remove();
+                    }
                 }
             }
             return result;
         }
         private List<PositionalParamSpec> excludeHiddenAndGroupParams(List<PositionalParamSpec> all) {
             List<PositionalParamSpec> result = new ArrayList<PositionalParamSpec>(all);
-            for (ArgGroupSpec group : optionSectionGroups()) { result.removeAll(group.allPositionalParametersNested()); }
+            List<ArgGroupSpec> allGroups = new ArrayList<ArgGroupSpec>();
+            collectAllGroups(commandSpec.argGroups(), allGroups);
+            for (ArgGroupSpec group : allGroups) {
+                if (group.heading() != null || (getHelpSection(group) != null && !getHelpSection(group).isEmpty())) {
+                    result.removeAll(group.allPositionalParametersNested());
+                }
+            }
             for (Iterator<PositionalParamSpec> iter = result.iterator(); iter.hasNext(); ) {
                 if (iter.next().hidden()) {
                     iter.remove();
@@ -16227,14 +16367,118 @@ public class CommandLine {
          * @since 4.4 */
         public List<ArgGroupSpec> optionSectionGroups() {
             List<ArgGroupSpec> result = new ArrayList<ArgGroupSpec>();
-            optionSectionGroups(commandSpec.argGroups(), result);
+            optionSectionGroups(commandSpec.argGroups(), result, activeHelpSection());
             return result;
         }
-        private static void optionSectionGroups(List<ArgGroupSpec> groups, List<ArgGroupSpec> result) {
+        private static void optionSectionGroups(List<ArgGroupSpec> groups, List<ArgGroupSpec> result, String activeSection) {
             for (ArgGroupSpec group : groups) {
-                optionSectionGroups(group.subgroups(), result);
-                if (group.heading() != null) { result.add(group); }
+                optionSectionGroups(group.subgroups(), result, activeSection);
+                if (group.heading() != null) {
+                    String section = getHelpSection(group);
+                    if (activeSection == null) {
+                        if (section == null || section.isEmpty()) { result.add(group); }
+                    } else if (activeSection.equals(section)) {
+                        result.add(group);
+                    }
+                }
             }
+        }
+
+        /** Returns the help section name for the given group, or {@code null} if untagged. */
+        static String getHelpSection(ArgGroupSpec group) {
+            if (group == null) { return null; }
+            if (group.helpSection() != null && !group.helpSection().isEmpty()) {
+                return group.helpSection();
+            }
+            String key = group.headingKey();
+            if (key != null && key.startsWith("helpSection:")) {
+                return key.substring("helpSection:".length());
+            }
+            return null;
+        }
+
+        /** Returns the help section name for the given option, or {@code null} if untagged. */
+        static String getHelpSection(OptionSpec option) {
+            if (option == null) { return null; }
+            if (option.helpSection() != null && !option.helpSection().isEmpty()) {
+                return option.helpSection();
+            }
+            String key = option.descriptionKey();
+            if (key != null && key.startsWith("helpSection:")) {
+                return key.substring("helpSection:".length());
+            }
+            return null;
+        }
+
+        /** Returns the active help section requested on the command line, or {@code null} for standard help.
+         * @since 4.8 */
+        public String activeHelpSection() {
+            if (commandSpec == null || commandSpec.commandLine() == null) { return null; }
+            ParseResult pr = commandSpec.commandLine().getParseResult();
+            if (pr == null) { return null; }
+            for (OptionSpec opt : pr.matchedOptions()) {
+                if (opt.usageHelp()) {
+                    String section = getHelpSection(opt);
+                    if (section != null && !section.isEmpty()) {
+                        return section;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /** Renders the specified tagged help section (such as an experimental options group).
+         * @param sectionName the name of the help section to render
+         * @return the formatted help section
+         * @since 4.8 */
+        public String renderHelpSection(String sectionName) {
+            if (sectionName == null) { return ""; }
+            Set<ArgSpec> done = new HashSet<ArgSpec>();
+            StringBuilder sb = new StringBuilder();
+
+            for (ArgGroupSpec group : commandSpec.argGroups()) {
+                if (!sectionName.equals(getHelpSection(group))) {
+                    continue;
+                }
+                List<OptionSpec> groupOptions = new ArrayList<OptionSpec>(group.allOptionsNested());
+                Comparator<OptionSpec> optionSort = createDefaultOptionSort();
+                if (optionSort != null) {
+                    Collections.sort(groupOptions, optionSort);
+                }
+                groupOptions.removeAll(done);
+                done.addAll(groupOptions);
+
+                List<PositionalParamSpec> groupPositionals = new ArrayList<PositionalParamSpec>(group.allPositionalParametersNested());
+                groupPositionals.removeAll(done);
+                done.addAll(groupPositionals);
+
+                Layout groupLayout = createDefaultLayout();
+                groupLayout.addPositionalParameters(groupPositionals, parameterLabelRenderer());
+                groupLayout.addOptions(groupOptions, parameterLabelRenderer());
+
+                if (group.heading() != null) {
+                    sb.append(createHeading(group.heading()));
+                }
+                sb.append(groupLayout);
+            }
+
+            List<OptionSpec> looseOptions = new ArrayList<OptionSpec>();
+            for (OptionSpec opt : commandSpec.options()) {
+                if (opt.group() == null && !opt.usageHelp() && !done.contains(opt) && sectionName.equals(getHelpSection(opt))) {
+                    looseOptions.add(opt);
+                }
+            }
+            if (!looseOptions.isEmpty()) {
+                Comparator<OptionSpec> optionSort = createDefaultOptionSort();
+                if (optionSort != null) {
+                    Collections.sort(looseOptions, optionSort);
+                }
+                Layout layout = createDefaultLayout();
+                layout.addOptions(looseOptions, parameterLabelRenderer());
+                sb.append(layout);
+            }
+
+            return sb.toString();
         }
 
         /**
