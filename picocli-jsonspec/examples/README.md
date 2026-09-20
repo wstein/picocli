@@ -60,14 +60,18 @@ reasoning:
   only to the four core dev-loop commands that actually invoke the compiler pipeline end to end
   — `check`, `build`, `run`, `test` — and deliberately *not* to `build-jar`/`build-fatjar`/
   `build-pkg`/`doc`/`repl`, to keep those commands' own `--help` clean. That's a curation choice a
-  real proxy author would plausibly make, not a fact derived from flix's source. Within each of
-  those four commands, the 14 are further wrapped in a `group cooperative "The following options
-  are experimental:%n" { ... }` — real flix's own `--help` has exactly that heading before this
-  exact set of flags, so this reproduces its visual structure, not just its option list. Grouping
-  here is presentational, not a validation rule: `cooperative` (not `exclusive`) with picocli's
-  default multiplicity (`0..1`) imposes no restriction — any subset, including none, may be used
-  together — the only effect is the usage-help section heading (and, as a side effect, the
-  synopsis line brackets the 14 as a visual unit too).
+  real proxy author would plausibly make, not a fact derived from flix's source. The 14 are wrapped
+  in a `group cooperative hidden "The following options are experimental:%n" { ... }` once, inside
+  the `xflags` bundle itself (rather than repeated in each of the four commands) — real flix's own
+  `--help` has exactly that heading before this exact set of flags, so this reproduces its visual
+  structure, not just its option list, while each command only needs `use xflags`. Grouping here is
+  presentational, not a validation rule: `cooperative` (not `exclusive`) with picocli's default
+  multiplicity (`0..1`) imposes no restriction — any subset, including none, may be used together —
+  the only effect is the usage-help section heading (and, as a side effect, the synopsis line
+  brackets the 14 as a visual unit too). `hidden` keeps them out of default `--help`/synopsis
+  entirely; `--Xhelp` (this proxy's own addition, paired with the hidden group) is meant to reveal
+  them on demand — see the DSL file's own comment on `--Xhelp` for what's still just a plan vs.
+  actually implemented.
 - **`<file>...`** (modeled as a `positional files : File ... arity=0..*`): attached to `check`,
   `build`, `run`, `test`, and `repl` (whose own `--help` text explicitly says "for the current
   project, or provided Flix source files") — the commands whose descriptions imply they operate

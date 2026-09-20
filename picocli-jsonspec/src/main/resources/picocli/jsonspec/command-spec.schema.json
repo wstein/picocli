@@ -36,6 +36,11 @@
           "type": "array",
           "items": { "$ref": "#/$defs/namedCommand" }
         },
+        "use": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of definitions.bundles entries to expand into this command's own options/positionalParams (and any groups the bundle itself declares), in addition to whatever this command's own \"options\"/\"positionalParams\"/\"argGroups\" already list."
+        },
         "definitions": {
           "type": "object",
           "additionalProperties": false,
@@ -50,8 +55,39 @@
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/positionalParam" },
               "description": "Keyed by whatever label a reference will use (conventionally the positional's own bare label before angle-bracket wrapping, e.g. \"files\")."
+            },
+            "bundles": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/bundle" },
+              "description": "Named, reusable bundles of already-defined options/positionals (and/or inline groups), expandable into any command's or group's own body via a \"use\" array entry naming one. A bundle may itself \"use\" an earlier bundle in this same map."
             }
           }
+        }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of options already declared in definitions.options that this bundle expands to -- always a plain name reference here, never an inline option object."
+        },
+        "positionalParams": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Labels of positional params already declared in definitions.positionalParams -- always a plain label reference here, never an inline object."
+        },
+        "groups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argGroup" },
+          "description": "Groups declared inline within this bundle, materialized fresh (with fresh option/positional instances) each time the bundle is \"use\"d."
+        },
+        "use": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of other definitions.bundles entries to fold into this bundle -- must already appear earlier in the same bundles map."
         }
       }
     },
@@ -79,6 +115,11 @@
           "type": "string",
           "description": "Usage-help section heading for this group."
         },
+        "hidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "This group is never actually built as an ArgGroupSpec: with \"hidden\": true, all of its members (and any subgroups' members, recursively) are instead flattened directly into the enclosing command/group, with each member's own \"hidden\" forced true. Verified empirically that a group whose every member is hidden otherwise still leaves visible usage-help artifacts (an orphaned heading, and a stray empty \"[]\" in the synopsis) -- flattening avoids that entirely. \"exclusive\"/\"multiplicity\"/\"heading\" are moot when \"hidden\" is true: no mutual-exclusion/multiplicity validation is performed for a hidden group's former members."
+        },
         "options": {
           "type": "array",
           "items": { "anyOf": [ { "$ref": "#/$defs/option" }, { "$ref": "#/$defs/definitionReference" } ] }
@@ -86,6 +127,11 @@
         "positionalParams": {
           "type": "array",
           "items": { "anyOf": [ { "$ref": "#/$defs/positionalParam" }, { "$ref": "#/$defs/definitionReference" } ] }
+        },
+        "use": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of definitions.bundles entries to expand into this group's own options/positionalParams/subgroups, in addition to whatever this group's own arrays already list."
         },
         "subgroups": {
           "type": "array",
@@ -125,6 +171,11 @@
           "default": false,
           "description": "Marks this as picocli's built-in version-help option: matching it auto-prints the version message and short-circuits execution. Options only."
         },
+        "hidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "Excludes this option from default usage help while it remains fully functional. See CommandLine.Model.ArgSpec#hidden()."
+        },
         "scope": { "$ref": "#/$defs/scope" }
       }
     },
@@ -141,6 +192,11 @@
         "defaultValue": { "$ref": "#/$defs/defaultValue" },
         "required": { "$ref": "#/$defs/required" },
         "arity": { "$ref": "#/$defs/arity" },
+        "hidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "Excludes this positional param from default usage help while it remains fully functional. See CommandLine.Model.ArgSpec#hidden()."
+        },
         "scope": { "$ref": "#/$defs/scope" }
       }
     },
