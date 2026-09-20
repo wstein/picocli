@@ -48,7 +48,9 @@ CommandSpec flixSpec = CommandSpecDsl.parse(dslText);
 spec        := definitions? command
 definitions := 'definitions' '{' ( option | positional )* '}'
 command     := 'command' name [string] '{' member* '}'
-member      := option | positional | command
+member      := option | positional | group | command
+group       := 'group' ('exclusive' | 'cooperative') ['multiplicity' '=' value] [string]
+               '{' ( option | positional | group )* '}'
 option      := 'option' name (',' name)* ( ':' type [string] attr* )?
 positional  := 'positional' name ( ':' type [string] attr* )?
 attr        := 'default' '=' value
@@ -141,6 +143,39 @@ array entry may then be either a full object (as before) or a plain string namin
 
 See [`flix-0.60.0.dsl`](examples/flix-0.60.0.dsl) for a realistic file built around this — 24
 shared options/positionals defined once and referenced from up to 10 commands each.
+
+## Grouping options (`group`)
+
+A `group` declares a picocli `ArgGroupSpec` — a set of options/positionals validated as a unit,
+either mutually exclusive or cooperative, with an optional multiplicity and heading:
+
+```
+command flix {
+  group exclusive "Output format" {
+    option --json : boolean
+    option --xml : boolean
+  }
+  group cooperative multiplicity=1 {
+    option --user : String required
+    option --password : String required
+  }
+}
+```
+
+`exclusive` (picocli's own default) means at most one of the group's own args may be matched
+together; `cooperative` (`exclusive: false` in JSON) means they may all be matched together, and
+is typically combined with `multiplicity=1` to validate a set that must be given together or not
+at all. `multiplicity` uses the same range syntax as `arity` (`Range.valueOf`); `"1"` makes the
+group itself required. A group's `option`/`positional` entries accept the same definition-or-
+reference syntax as a command's own, and a group may nest further `group`s as subgroups.
+
+A group's args are automatically added to the enclosing command's own options/positionals —
+picocli's `CommandSpec#addArgGroup` does this — so `spec.findOption("--json")` finds it exactly
+as if it had been declared directly on the command; only the *validation rule* (exclusive/
+cooperative/multiplicity) is different. In JSON, a command's `"argGroups"` array holds the same
+shape recursively (`exclusive`, `multiplicity`, `heading`, `options`, `positionalParams`,
+`subgroups`), and `CommandSpecJson.write()` correctly omits a grouped arg from the command's own
+flat `"options"`/`"positionalParams"` arrays to avoid emitting it twice.
 
 ## JSON
 
@@ -240,7 +275,9 @@ subcommand.
   than one value, since picocli can only bind multiple matches to an array or `Collection` type.
   `Collection`/`Map` types (which need an explicit auxiliary type due to generics erasure) aren't
   supported yet; arrays cover the same need without that extra complexity.
-- No `ArgGroup`/mixin support yet — flat options and positional params per command level.
+- No `@Mixin`-equivalent for reusing a whole pre-built fragment of a command's structure across
+  *files*; `definitions`/references (above) cover reuse of individual options/positionals within
+  one file.
 - No execution wiring is provided or assumed: a merged-in subcommand has no `run()`/`call()`
   of its own. Attach one via the host command's own dispatch logic (e.g. an `IExecutionStrategy`
   that recognizes commands originating from an imported spec and shells out accordingly).
@@ -253,4 +290,5 @@ subcommand.
 
 See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecMergerTest`,
 `CommandSpecFixturesTest`, `CommandSpecSchemaTest`, `CommandSpecDslDefinitionsTest`,
-`CommandSpecJsonDefinitionsTest`, `FlixExampleTest`) for more complete, runnable examples.
+`CommandSpecJsonDefinitionsTest`, `CommandSpecDslArgGroupTest`, `CommandSpecJsonArgGroupTest`,
+`FlixExampleTest`) for more complete, runnable examples.

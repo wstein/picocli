@@ -1,6 +1,8 @@
 package picocli.jsonspec;
 
 import picocli.CommandLine;
+import picocli.CommandLine.Model.ArgGroupSpec;
+import picocli.CommandLine.Model.ArgSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
@@ -106,16 +108,13 @@ public final class CommandSpecJson {
         }
 
         for (Object option : listOrEmpty(json.get("options"))) {
-            Map<String, Object> optionJson = option instanceof String
-                    ? definitions.resolveOption((String) option)
-                    : (Map<String, Object>) option;
-            spec.addOption(readOption(optionJson));
+            spec.addOption(readOption(resolveOptionJson(option, definitions)));
         }
         for (Object positional : listOrEmpty(json.get("positionalParams"))) {
-            Map<String, Object> positionalJson = positional instanceof String
-                    ? definitions.resolvePositional((String) positional)
-                    : (Map<String, Object>) positional;
-            spec.addPositional(readPositional(positionalJson));
+            spec.addPositional(readPositional(resolvePositionalJson(positional, definitions)));
+        }
+        for (Object argGroup : listOrEmpty(json.get("argGroups"))) {
+            spec.addArgGroup(readArgGroup((Map<String, Object>) argGroup, definitions));
         }
         for (Object subcommand : listOrEmpty(json.get("subcommands"))) {
             Map<String, Object> subJson = (Map<String, Object>) subcommand;
@@ -123,6 +122,37 @@ public final class CommandSpecJson {
             spec.addSubcommand(subSpec.name(), subSpec);
         }
         return spec;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> resolveOptionJson(Object entry, Definitions definitions) {
+        return entry instanceof String ? definitions.resolveOption((String) entry) : (Map<String, Object>) entry;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> resolvePositionalJson(Object entry, Definitions definitions) {
+        return entry instanceof String ? definitions.resolvePositional((String) entry) : (Map<String, Object>) entry;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ArgGroupSpec readArgGroup(Map<String, Object> json, Definitions definitions) {
+        ArgGroupSpec.Builder builder = ArgGroupSpec.builder();
+        Object exclusive = json.get("exclusive");
+        if (exclusive != null) { builder.exclusive((Boolean) exclusive); }
+        String multiplicity = (String) json.get("multiplicity");
+        if (multiplicity != null) { builder.multiplicity(multiplicity); }
+        String heading = (String) json.get("heading");
+        if (heading != null) { builder.heading(heading); }
+        for (Object option : listOrEmpty(json.get("options"))) {
+            builder.addArg(readOption(resolveOptionJson(option, definitions)));
+        }
+        for (Object positional : listOrEmpty(json.get("positionalParams"))) {
+            builder.addArg(readPositional(resolvePositionalJson(positional, definitions)));
+        }
+        for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
+            builder.addSubgroup(readArgGroup((Map<String, Object>) subgroup, definitions));
+        }
+        return builder.build();
     }
 
     @SuppressWarnings("unchecked")
@@ -182,19 +212,24 @@ public final class CommandSpecJson {
         json.put("name", spec.name());
         putDescriptionIfPresent(json, spec.usageMessage().description());
 
-        if (!spec.options().isEmpty()) {
-            List<Object> options = new ArrayList<Object>();
-            for (OptionSpec option : spec.options()) {
-                options.add(writeOption(option));
-            }
-            json.put("options", options);
+        List<Object> options = new ArrayList<Object>();
+        for (OptionSpec option : spec.options()) {
+            if (option.group() == null) { options.add(writeOption(option)); }
         }
-        if (!spec.positionalParameters().isEmpty()) {
-            List<Object> positionals = new ArrayList<Object>();
-            for (PositionalParamSpec positional : spec.positionalParameters()) {
-                positionals.add(writePositional(positional));
+        if (!options.isEmpty()) { json.put("options", options); }
+
+        List<Object> positionals = new ArrayList<Object>();
+        for (PositionalParamSpec positional : spec.positionalParameters()) {
+            if (positional.group() == null) { positionals.add(writePositional(positional)); }
+        }
+        if (!positionals.isEmpty()) { json.put("positionalParams", positionals); }
+
+        if (!spec.argGroups().isEmpty()) {
+            List<Object> argGroups = new ArrayList<Object>();
+            for (ArgGroupSpec group : spec.argGroups()) {
+                argGroups.add(writeArgGroup(group));
             }
-            json.put("positionalParams", positionals);
+            json.put("argGroups", argGroups);
         }
         if (!spec.subcommands().isEmpty()) {
             List<Object> subcommands = new ArrayList<Object>();
@@ -219,6 +254,28 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("paramLabel", positional.paramLabel());
         putCommonArgSpecFields(json, positional);
+        return json;
+    }
+
+    private static Map<String, Object> writeArgGroup(ArgGroupSpec group) {
+        Map<String, Object> json = new LinkedHashMap<String, Object>();
+        json.put("exclusive", group.exclusive());
+        json.put("multiplicity", group.multiplicity().toString());
+        if (group.heading() != null) { json.put("heading", group.heading()); }
+
+        List<Object> options = new ArrayList<Object>();
+        List<Object> positionals = new ArrayList<Object>();
+        for (ArgSpec arg : group.args()) {
+            if (arg.isOption()) { options.add(writeOption((OptionSpec) arg)); } else { positionals.add(writePositional((PositionalParamSpec) arg)); }
+        }
+        if (!options.isEmpty()) { json.put("options", options); }
+        if (!positionals.isEmpty()) { json.put("positionalParams", positionals); }
+
+        if (!group.subgroups().isEmpty()) {
+            List<Object> subgroups = new ArrayList<Object>();
+            for (ArgGroupSpec subgroup : group.subgroups()) { subgroups.add(writeArgGroup(subgroup)); }
+            json.put("subgroups", subgroups);
+        }
         return json;
     }
 

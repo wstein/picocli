@@ -1,5 +1,6 @@
 package picocli.jsonspec;
 
+import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
@@ -280,22 +281,68 @@ public final class CommandSpecDsl {
             expect(TokenKind.LBRACE, "'{'");
             while (!check(TokenKind.RBRACE)) {
                 if (!check(TokenKind.WORD)) {
-                    throw new DslParseException("Expected 'option', 'positional', or 'command' but found '" + current().text + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'command' but found '" + current().text + "'");
                 }
                 String keyword = current().text;
                 if ("option".equals(keyword)) {
                     spec.addOption(parseOption(definitions));
                 } else if ("positional".equals(keyword)) {
                     spec.addPositional(parsePositional(definitions));
+                } else if ("group".equals(keyword)) {
+                    spec.addArgGroup(parseGroup(definitions));
                 } else if ("command".equals(keyword)) {
                     CommandSpec sub = parseCommand(definitions);
                     spec.addSubcommand(sub.name(), sub);
                 } else {
-                    throw new DslParseException("Expected 'option', 'positional', or 'command' but found '" + keyword + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'command' but found '" + keyword + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
             return spec;
+        }
+
+        /**
+         * {@code group ('exclusive'|'cooperative') ['multiplicity' '=' value] [string] '{' ( option | positional | group )* '}'}
+         */
+        private ArgGroupSpec parseGroup(Definitions definitions) {
+            expectKeyword("group");
+            String kind = expectWord();
+            boolean exclusive;
+            if ("exclusive".equals(kind)) {
+                exclusive = true;
+            } else if ("cooperative".equals(kind)) {
+                exclusive = false;
+            } else {
+                throw new DslParseException("Expected 'exclusive' or 'cooperative' but found '" + kind + "'");
+            }
+
+            ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
+            if (checkWord("multiplicity")) {
+                advance();
+                expect(TokenKind.EQUALS, "'='");
+                builder.multiplicity(expectWordOrString());
+            }
+            if (check(TokenKind.STRING)) {
+                builder.heading(advance().text);
+            }
+            expect(TokenKind.LBRACE, "'{'");
+            while (!check(TokenKind.RBRACE)) {
+                if (!check(TokenKind.WORD)) {
+                    throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + current().text + "'");
+                }
+                String keyword = current().text;
+                if ("option".equals(keyword)) {
+                    builder.addArg(parseOption(definitions));
+                } else if ("positional".equals(keyword)) {
+                    builder.addArg(parsePositional(definitions));
+                } else if ("group".equals(keyword)) {
+                    builder.addSubgroup(parseGroup(definitions));
+                } else {
+                    throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + keyword + "'");
+                }
+            }
+            expect(TokenKind.RBRACE, "'}'");
+            return builder.build();
         }
 
         private OptionSpec parseOption(Definitions definitions) {

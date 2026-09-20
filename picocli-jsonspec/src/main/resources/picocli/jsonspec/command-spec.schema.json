@@ -27,6 +27,11 @@
           "type": "array",
           "items": { "anyOf": [ { "$ref": "#/$defs/positionalParam" }, { "$ref": "#/$defs/definitionReference" } ] }
         },
+        "argGroups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argGroup" },
+          "description": "Each entry's own options/positionalParams (and any nested subgroups' args, recursively) are still visible on this command's own options()/positionalParameters() -- picocli's CommandSpec#addArgGroup registers them automatically. They do NOT also appear in this command's own \"options\"/\"positionalParams\" arrays; CommandSpecJson.write() excludes any arg that belongs to a group from those flat arrays specifically to avoid emitting it twice."
+        },
         "subcommands": {
           "type": "array",
           "items": { "$ref": "#/$defs/namedCommand" }
@@ -53,6 +58,41 @@
     "definitionReference": {
       "type": "string",
       "description": "A reference to a same-named entry in the document root's definitions.options or definitions.positionalParams, instead of a full inline object."
+    },
+    "argGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exclusive": {
+          "type": "boolean",
+          "default": true,
+          "description": "true (picocli's own default): at most \"multiplicity\" of this group's own args (not counting subgroups) may be matched together -- e.g. only one of a set of mutually-exclusive options. false: the group's args may all be matched together (still subject to their own individual required/arity), used to validate a co-occurring set as a unit (e.g. \"multiplicity=1\" cooperative group requires the whole set together, or none of it)."
+        },
+        "multiplicity": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.\\.([0-9]+|\\*))?$",
+          "default": "0..1",
+          "examples": ["0..1", "1", "1..*"],
+          "description": "How many times this group as a whole may/must be matched. Parsed by picocli.CommandLine.Model.Range.valueOf(String), same format as an arg's \"arity\". \"1\" makes the group required."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Usage-help section heading for this group."
+        },
+        "options": {
+          "type": "array",
+          "items": { "anyOf": [ { "$ref": "#/$defs/option" }, { "$ref": "#/$defs/definitionReference" } ] }
+        },
+        "positionalParams": {
+          "type": "array",
+          "items": { "anyOf": [ { "$ref": "#/$defs/positionalParam" }, { "$ref": "#/$defs/definitionReference" } ] }
+        },
+        "subgroups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argGroup" },
+          "description": "Nested groups, e.g. a cooperative group containing two mutually-exclusive subgroups."
+        }
+      }
     },
     "namedCommand": {
       "allOf": [ { "$ref": "#/$defs/command" } ],
