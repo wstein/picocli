@@ -125,19 +125,22 @@ public class FlixExampleTest {
     }
 
     /**
-     * The 14 experimental --X* flags are grouped under a heading matching real flix's own
-     * "--help" output ("The following options are experimental:"), rather than listed flat --
-     * grouping is cooperative (not mutually exclusive) and imposes no restriction on how many
-     * may be used together, verified below alongside the heading itself.
+     * The 14 --X* flags are hidden (via a {@code hidden} group -- per examples/README.md's
+     * reasoning, a fully hidden group can't be a real picocli ArgGroupSpec without leaving
+     * visible rendering artifacts) rather than shown under a visible heading, and pulled into
+     * each command via a "use xflags" collection reference instead of listed individually. A
+     * plain, non-hidden --Xhelp flag is declared alongside them for a host application to wire
+     * up (see FlixExperimentalHelp).
      */
     @Test
-    public void experimentalFlagsAreGroupedUnderTheRealFlixHeading() throws IOException {
+    public void experimentalFlagsAreHiddenButStillFullyFunctional() throws IOException {
         CommandSpec flix = CommandSpecDsl.parse(readExample());
         CommandSpec check = flix.subcommands().get("check").getCommandSpec();
 
-        assertEquals(1, check.argGroups().size());
-        assertTrue(check.argGroups().get(0).heading().contains("The following options are experimental:"));
-        assertTrue(check.findOption("--Xiterations") != null);
+        assertTrue(check.argGroups().isEmpty());
+        assertTrue(check.findOption("--Xiterations").hidden());
+        assertTrue(check.findOption("--Xhelp") != null);
+        assertFalse(check.findOption("--Xhelp").hidden());
 
         CommandLine cmd = new CommandLine(flix);
         ParseResult result = cmd.parseArgs("check", "--Xfuzzer", "--Xchaos-monkey");

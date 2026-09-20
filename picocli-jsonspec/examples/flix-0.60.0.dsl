@@ -24,6 +24,11 @@ definitions {
   option --entrypoint : String "specifies the main entry point."
   option --yes : boolean "automatically answer yes to all prompts."
 
+  // Not part of real flix's own --help; this proxy's own addition, paired with hiding the
+  // --X* flags below. Its *behavior* -- actually printing them -- can't be expressed in a
+  // declarative spec; see FlixExperimentalHelp for the runtime side of this.
+  option --Xhelp : boolean "shows the experimental options for this command."
+
   option --Xbenchmark-code-size : boolean "[experimental] benchmarks the size of the generated JVM files."
   option --Xbenchmark-incremental : boolean "[experimental] benchmarks the performance of each compiler phase in incremental mode."
   option --Xbenchmark-phases : boolean "[experimental] benchmarks the performance of each compiler phase."
@@ -38,6 +43,25 @@ definitions {
   option --Xsubeffecting : String "[experimental] enables sub-effecting in select places"
   option --Xchaos-monkey : boolean "[experimental] introduces randomness."
   option --Xiterations : int "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
+
+  // Bundles the 14 flags above so each of check/build/run/test can pull them all in with one
+  // "use xflags" instead of listing every name.
+  collection xflags {
+    option --Xbenchmark-code-size
+    option --Xbenchmark-incremental
+    option --Xbenchmark-phases
+    option --Xbenchmark-frontend
+    option --Xbenchmark-throughput
+    option --Xlib
+    option --Xno-deprecated
+    option --Xprint-phases
+    option --Xsummary
+    option --Xfuzzer
+    option --Xprint-typer
+    option --Xsubeffecting
+    option --Xchaos-monkey
+    option --Xiterations
+  }
 
   positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
 }
@@ -57,21 +81,9 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    group cooperative "The following options are experimental:%n" {
-      option --Xbenchmark-code-size
-      option --Xbenchmark-incremental
-      option --Xbenchmark-phases
-      option --Xbenchmark-frontend
-      option --Xbenchmark-throughput
-      option --Xlib
-      option --Xno-deprecated
-      option --Xprint-phases
-      option --Xsummary
-      option --Xfuzzer
-      option --Xprint-typer
-      option --Xsubeffecting
-      option --Xchaos-monkey
-      option --Xiterations
+    option --Xhelp
+    group cooperative hidden "The following options are experimental:%n" {
+      use xflags
     }
     positional files
   }
@@ -82,21 +94,9 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    group cooperative "The following options are experimental:%n" {
-      option --Xbenchmark-code-size
-      option --Xbenchmark-incremental
-      option --Xbenchmark-phases
-      option --Xbenchmark-frontend
-      option --Xbenchmark-throughput
-      option --Xlib
-      option --Xno-deprecated
-      option --Xprint-phases
-      option --Xsummary
-      option --Xfuzzer
-      option --Xprint-typer
-      option --Xsubeffecting
-      option --Xchaos-monkey
-      option --Xiterations
+    option --Xhelp
+    group cooperative hidden "The following options are experimental:%n" {
+      use xflags
     }
     positional files
   }
@@ -136,21 +136,9 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    group cooperative "The following options are experimental:%n" {
-      option --Xbenchmark-code-size
-      option --Xbenchmark-incremental
-      option --Xbenchmark-phases
-      option --Xbenchmark-frontend
-      option --Xbenchmark-throughput
-      option --Xlib
-      option --Xno-deprecated
-      option --Xprint-phases
-      option --Xsummary
-      option --Xfuzzer
-      option --Xprint-typer
-      option --Xsubeffecting
-      option --Xchaos-monkey
-      option --Xiterations
+    option --Xhelp
+    group cooperative hidden "The following options are experimental:%n" {
+      use xflags
     }
     positional files
   }
@@ -161,21 +149,9 @@ command flix "The Flix Programming Language 0.60.0" {
     option --github-token
     option --no-install
     option --threads
-    group cooperative "The following options are experimental:%n" {
-      option --Xbenchmark-code-size
-      option --Xbenchmark-incremental
-      option --Xbenchmark-phases
-      option --Xbenchmark-frontend
-      option --Xbenchmark-throughput
-      option --Xlib
-      option --Xno-deprecated
-      option --Xprint-phases
-      option --Xsummary
-      option --Xfuzzer
-      option --Xprint-typer
-      option --Xsubeffecting
-      option --Xchaos-monkey
-      option --Xiterations
+    option --Xhelp
+    group cooperative hidden "The following options are experimental:%n" {
+      use xflags
     }
     positional files
   }
