@@ -38,6 +38,9 @@ import java.util.Map;
  * convention for annotated fields. Supported {@code &lt;type&gt;} names are the same as
  * {@link CommandSpecJson}'s (currently scalar types only). A {@code //} starts a line comment,
  * running to end of line; it is not recognized inside a quoted string.</p>
+ * <p>A {@code "&lt;description&gt;"} may span several help lines: each {@code \n} inside it starts a
+ * new element of the resulting {@code String[]} description, and {@link #write(CommandSpec)} joins
+ * multi-element descriptions back with {@code \n}, so descriptions survive a round trip unchanged.</p>
  * <p>An {@code option}/{@code positional} statement inside a {@code command} body that omits the
  * {@code : <type>} part (and everything after it) is a <em>reference</em> to a same-named option
  * or positional param declared once in the optional top-level {@code definitions} block, instead
@@ -232,6 +235,21 @@ public final class CommandSpecDsl {
             sb.append(desc[i]);
         }
         return sb.toString();
+    }
+
+    /** Inverse of {@link #joinDescription(String[])}: each {@code \n} in the DSL text starts a new description line. */
+    private static String[] splitDescription(String desc) {
+        List<String> lines = new ArrayList<String>();
+        int start = 0;
+        for (int i = 0; i <= desc.length(); i++) {
+            if (i == desc.length() || desc.charAt(i) == '\n') {
+                String line = desc.substring(start, i);
+                if (line.endsWith("\r")) { line = line.substring(0, line.length() - 1); }
+                lines.add(line);
+                start = i + 1;
+            }
+        }
+        return lines.toArray(new String[0]);
     }
 
     private static String quote(String s) {
@@ -661,7 +679,7 @@ public final class CommandSpecDsl {
             String name = expectWord();
             CommandSpec spec = CommandSpec.create().name(name);
             if (check(TokenKind.STRING)) {
-                spec.usageMessage().description(advance().text);
+                spec.usageMessage().description(splitDescription(advance().text));
             }
             expect(TokenKind.LBRACE, "'{'");
             ArgSink sink = new CommandArgSink(spec);
@@ -869,7 +887,7 @@ public final class CommandSpecDsl {
 
             OptionSpec.Builder builder = OptionSpec.builder(names.toArray(new String[0])).type(ArgTypes.toClass(type));
             if (check(TokenKind.STRING)) {
-                builder.description(advance().text);
+                builder.description(splitDescription(advance().text));
             }
             while (checkWord("default") || checkWord("required") || checkWord("arity")
                     || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit") || checkWord("hidden")
@@ -912,7 +930,7 @@ public final class CommandSpecDsl {
                     .paramLabel("<" + label + ">")
                     .type(ArgTypes.toClass(type));
             if (check(TokenKind.STRING)) {
-                builder.description(advance().text);
+                builder.description(splitDescription(advance().text));
             }
             while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit") || checkWord("hidden")) {
                 String attr = advance().text;

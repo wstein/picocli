@@ -231,7 +231,7 @@ public class CommandSpecDslWriteTest {
         String dsl = CommandSpecDsl.write(spec);
 
         CommandSpec roundTripped = CommandSpecDsl.parse(dsl);
-        assertArrayEquals(new String[] {"Line 1\nLine 2 with \"quotes\" and \\backslash"},
+        assertArrayEquals(new String[] {"Line 1", "Line 2 with \"quotes\" and \\backslash"},
                 roundTripped.usageMessage().description());
 
         OptionSpec msg = roundTripped.findOption("--msg");
@@ -265,5 +265,55 @@ public class CommandSpecDslWriteTest {
 
         assertEquals(1, roundTripped.positionalParameters().size());
         assertEquals("<name>", roundTripped.positionalParameters().get(0).paramLabel());
+    }
+
+    @Test
+    public void roundTripsMultiLineCommandDescription() {
+        CommandSpec spec = CommandSpec.create().name("flix");
+        spec.usageMessage().description("The Flix programming language", "", "See https://flix.dev");
+
+        CommandSpec parsed = CommandSpecDsl.parse(CommandSpecDsl.write(spec));
+
+        assertArrayEquals(new String[] {"The Flix programming language", "", "See https://flix.dev"},
+                parsed.usageMessage().description());
+    }
+
+    @Test
+    public void roundTripsMultiLineOptionDescription() {
+        CommandSpec spec = CommandSpec.create().name("app");
+        spec.addOption(OptionSpec.builder("--verbose")
+                .type(boolean.class)
+                .description("Enable verbose output.", "May be repeated.")
+                .build());
+
+        CommandSpec parsed = CommandSpecDsl.parse(CommandSpecDsl.write(spec));
+
+        assertArrayEquals(new String[] {"Enable verbose output.", "May be repeated."},
+                parsed.findOption("--verbose").description());
+    }
+
+    @Test
+    public void roundTripsMultiLinePositionalDescription() {
+        CommandSpec spec = CommandSpec.create().name("app");
+        spec.addPositional(PositionalParamSpec.builder()
+                .paramLabel("<file>")
+                .type(File.class)
+                .description("The file to read.", "Defaults to stdin.")
+                .build());
+
+        CommandSpec parsed = CommandSpecDsl.parse(CommandSpecDsl.write(spec));
+
+        assertArrayEquals(new String[] {"The file to read.", "Defaults to stdin."},
+                parsed.positionalParameters().get(0).description());
+    }
+
+    @Test
+    public void carriageReturnsDoNotSplitDescriptionLines() {
+        CommandSpec spec = CommandSpec.create().name("app");
+        spec.usageMessage().description("first\r\nsecond");
+
+        CommandSpec parsed = CommandSpecDsl.parse(CommandSpecDsl.write(spec));
+
+        assertArrayEquals(new String[] {"first", "second"}, parsed.usageMessage().description());
     }
 }
