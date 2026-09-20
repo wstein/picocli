@@ -124,6 +124,32 @@ public class SpecToolAppTest {
     }
 
     @Test
+    public void manpageRefusesToOverwriteExistingFilesAndLeavesThemUntouched() throws Exception {
+        File spec = specFile("command demo \"A demo tool.\" {}");
+        File page = new File(tmp.getRoot(), "demo.adoc");
+        Files.write(page.toPath(), "hand-edited".getBytes(StandardCharsets.UTF_8));
+
+        Captured result = run("manpage", "--outdir", tmp.getRoot().getPath(), spec.getPath());
+
+        assertEquals(ExitCode.USAGE, result.exitCode);
+        assertTrue(result.err(), result.err().contains("demo.adoc"));
+        assertTrue(result.err(), result.err().contains("--overwrite"));
+        assertEquals("hand-edited", new String(Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void manpageOverwritesExistingFilesWhenAskedTo() throws Exception {
+        File spec = specFile("command demo \"A demo tool.\" {}");
+        File page = new File(tmp.getRoot(), "demo.adoc");
+        Files.write(page.toPath(), "hand-edited".getBytes(StandardCharsets.UTF_8));
+
+        Captured result = run("manpage", "--overwrite", "--outdir", tmp.getRoot().getPath(), spec.getPath());
+
+        assertEquals(ExitCode.OK, result.exitCode);
+        assertTrue(new String(Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8).contains("A demo tool."));
+    }
+
+    @Test
     public void validatePrintsOkForAValidSpec() throws Exception {
         File spec = specFile("command demo \"A demo tool.\" {}");
 
