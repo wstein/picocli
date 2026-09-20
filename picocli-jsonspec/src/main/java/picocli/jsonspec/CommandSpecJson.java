@@ -50,22 +50,32 @@ public final class CommandSpecJson {
      */
     private static final class Definitions {
         static final Definitions EMPTY = new Definitions(java.util.Collections.<String, Map<String, Object>>emptyMap(),
-                java.util.Collections.<String, Map<String, Object>>emptyMap());
+                java.util.Collections.<String, Map<String, Object>>emptyMap(), java.util.Collections.<String, Collection>emptyMap());
 
         final Map<String, Map<String, Object>> options;
         final Map<String, Map<String, Object>> positionalParams;
+        final Map<String, Collection> collections;
 
-        Definitions(Map<String, Map<String, Object>> options, Map<String, Map<String, Object>> positionalParams) {
+        Definitions(Map<String, Map<String, Object>> options, Map<String, Map<String, Object>> positionalParams,
+                    Map<String, Collection> collections) {
             this.options = options;
             this.positionalParams = positionalParams;
+            this.collections = collections;
         }
 
         @SuppressWarnings("unchecked")
         static Definitions from(Map<String, Object> json) {
             if (json == null) { return EMPTY; }
-            return new Definitions(
-                    (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("options")),
-                    (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("positionalParams")));
+            Map<String, Map<String, Object>> options = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("options"));
+            Map<String, Map<String, Object>> positionalParams = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("positionalParams"));
+            Definitions withoutCollections = new Definitions(options, positionalParams, java.util.Collections.<String, Collection>emptyMap());
+
+            Map<String, Collection> collections = new LinkedHashMap<String, Collection>();
+            Map<String, Object> collectionsJson = mapOrEmpty(json.get("collections"));
+            for (Map.Entry<String, Object> entry : collectionsJson.entrySet()) {
+                collections.put(entry.getKey(), Collection.from((Map<String, Object>) entry.getValue(), withoutCollections));
+            }
+            return new Definitions(options, positionalParams, collections);
         }
 
         @SuppressWarnings("unchecked")
@@ -88,6 +98,89 @@ public final class CommandSpecJson {
             }
             return def;
         }
+
+        Collection resolveCollection(String name) {
+            Collection collection = collections.get(name);
+            if (collection == null) {
+                throw new IllegalArgumentException("Reference to undefined collection \"" + name + "\": not found in \"definitions.collections\"");
+            }
+            return collection;
+        }
+    }
+
+    /** A named, reusable bundle of already-defined option/positional names, expanded by a {@code "use"} array entry. */
+    private static final class Collection {
+        final List<String> optionNames;
+        final List<String> positionalLabels;
+
+        Collection(List<String> optionNames, List<String> positionalLabels) {
+            this.optionNames = optionNames;
+            this.positionalLabels = positionalLabels;
+        }
+
+        @SuppressWarnings("unchecked")
+        static Collection from(Map<String, Object> json, Definitions definitionsSoFar) {
+            List<String> optionNames = new ArrayList<String>();
+            for (Object name : listOrEmpty(json.get("options"))) {
+                definitionsSoFar.resolveOption((String) name); // validates existence eagerly
+                optionNames.add((String) name);
+            }
+            List<String> positionalLabels = new ArrayList<String>();
+            for (Object label : listOrEmpty(json.get("positionalParams"))) {
+                definitionsSoFar.resolvePositional((String) label);
+                positionalLabels.add((String) label);
+            }
+            return new Collection(optionNames, positionalLabels);
+        }
+    }
+
+    /**
+     * Where a parsed option/positional/group ends up: either a {@link CommandSpec} (a command
+     * body) or an {@link ArgGroupSpec.Builder} (a group body). Mirrors {@link CommandSpecDsl}'s
+     * own {@code ArgSink}.
+     */
+    private interface ArgSink {
+        void addOption(OptionSpec option);
+        void addPositional(PositionalParamSpec positional);
+        void addGroup(ArgGroupSpec group);
+    }
+
+    private static final class CommandArgSink implements ArgSink {
+        private final CommandSpec spec;
+        CommandArgSink(CommandSpec spec) { this.spec = spec; }
+        public void addOption(OptionSpec option) { spec.addOption(option); }
+        public void addPositional(PositionalParamSpec positional) { spec.addPositional(positional); }
+        public void addGroup(ArgGroupSpec group) { spec.addArgGroup(group); }
+    }
+
+    private static final class GroupArgSink implements ArgSink {
+        private final ArgGroupSpec.Builder builder;
+        GroupArgSink(ArgGroupSpec.Builder builder) { this.builder = builder; }
+        public void addOption(OptionSpec option) { builder.addArg(option); }
+        public void addPositional(PositionalParamSpec positional) { builder.addArg(positional); }
+        public void addGroup(ArgGroupSpec group) { builder.addSubgroup(group); }
+    }
+
+    /**
+     * Wraps another {@link ArgSink}, forcing every option/positional added through it to
+     * {@code hidden}. Used for a {@code "hidden": true} argGroup: verified empirically that a
+     * group whose every member is hidden still leaves visible artifacts in usage help (an
+     * orphaned heading, and, regardless of heading, a stray empty "[]" in the synopsis for the
+     * group itself), so a hidden group is never actually built as a real {@link ArgGroupSpec} --
+     * its members are flattened directly into the enclosing sink instead. A nested (non-hidden)
+     * subgroup reaching {@link #addGroup} is flattened too, recursively.
+     */
+    private static final class HidingArgSink implements ArgSink {
+        private final ArgSink delegate;
+        HidingArgSink(ArgSink delegate) { this.delegate = delegate; }
+        public void addOption(OptionSpec option) { delegate.addOption(OptionSpec.builder(option).hidden(true).build()); }
+        public void addPositional(PositionalParamSpec positional) { delegate.addPositional(PositionalParamSpec.builder(positional).hidden(true).build()); }
+        public void addGroup(ArgGroupSpec group) {
+            for (ArgSpec arg : group.args()) {
+                if (arg.isOption()) { addOption((OptionSpec) arg); } else { addPositional((PositionalParamSpec) arg); }
+            }
+            for (ArgGroupSpec subgroup : group.subgroups()) { addGroup(subgroup); }
+        }
     }
 
     /** Serializes the given {@link CommandSpec} (with any nested subcommands) to JSON text. */
@@ -109,14 +202,10 @@ public final class CommandSpecJson {
             spec.usageMessage().description(description);
         }
 
-        for (Object option : listOrEmpty(json.get("options"))) {
-            spec.addOption(readOption(resolveOptionJson(option, definitions)));
-        }
-        for (Object positional : listOrEmpty(json.get("positionalParams"))) {
-            spec.addPositional(readPositional(resolvePositionalJson(positional, definitions)));
-        }
+        ArgSink sink = new CommandArgSink(spec);
+        addOptionsPositionalsAndUses(json, definitions, sink);
         for (Object argGroup : listOrEmpty(json.get("argGroups"))) {
-            spec.addArgGroup(readArgGroup((Map<String, Object>) argGroup, definitions));
+            readArgGroup((Map<String, Object>) argGroup, definitions, sink);
         }
         for (Object subcommand : listOrEmpty(json.get("subcommands"))) {
             Map<String, Object> subJson = (Map<String, Object>) subcommand;
@@ -136,8 +225,40 @@ public final class CommandSpecJson {
         return entry instanceof String ? definitions.resolvePositional((String) entry) : (Map<String, Object>) entry;
     }
 
+    /** Reads a {@code "options"}/{@code "positionalParams"}/{@code "use"} triple into {@code sink} -- shared by a command and an argGroup object, which both accept the same three fields. */
+    private static void addOptionsPositionalsAndUses(Map<String, Object> json, Definitions definitions, ArgSink sink) {
+        for (Object option : listOrEmpty(json.get("options"))) {
+            sink.addOption(readOption(resolveOptionJson(option, definitions)));
+        }
+        for (Object positional : listOrEmpty(json.get("positionalParams"))) {
+            sink.addPositional(readPositional(resolvePositionalJson(positional, definitions)));
+        }
+        for (Object use : listOrEmpty(json.get("use"))) {
+            Collection collection = definitions.resolveCollection((String) use);
+            for (String optionName : collection.optionNames) {
+                sink.addOption(readOption(definitions.resolveOption(optionName)));
+            }
+            for (String label : collection.positionalLabels) {
+                sink.addPositional(readPositional(definitions.resolvePositional(label)));
+            }
+        }
+    }
+
+    /**
+     * Reads one argGroup object into {@code sink}: either {@code sink.addGroup(...)} with a
+     * freshly-built {@link ArgGroupSpec}, or -- if {@code "hidden": true} -- flattens its members
+     * (and any subgroups', recursively) directly into {@code sink} instead. See {@link HidingArgSink}.
+     */
     @SuppressWarnings("unchecked")
-    private static ArgGroupSpec readArgGroup(Map<String, Object> json, Definitions definitions) {
+    private static void readArgGroup(Map<String, Object> json, Definitions definitions, ArgSink sink) {
+        if (Boolean.TRUE.equals(json.get("hidden"))) {
+            ArgSink hidingSink = new HidingArgSink(sink);
+            addOptionsPositionalsAndUses(json, definitions, hidingSink);
+            for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
+                readArgGroup((Map<String, Object>) subgroup, definitions, hidingSink);
+            }
+            return;
+        }
         ArgGroupSpec.Builder builder = ArgGroupSpec.builder();
         Object exclusive = json.get("exclusive");
         if (exclusive != null) { builder.exclusive((Boolean) exclusive); }
@@ -145,16 +266,12 @@ public final class CommandSpecJson {
         if (multiplicity != null) { builder.multiplicity(multiplicity); }
         String heading = (String) json.get("heading");
         if (heading != null) { builder.heading(heading); }
-        for (Object option : listOrEmpty(json.get("options"))) {
-            builder.addArg(readOption(resolveOptionJson(option, definitions)));
-        }
-        for (Object positional : listOrEmpty(json.get("positionalParams"))) {
-            builder.addArg(readPositional(resolvePositionalJson(positional, definitions)));
-        }
+        ArgSink groupSink = new GroupArgSink(builder);
+        addOptionsPositionalsAndUses(json, definitions, groupSink);
         for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
-            builder.addSubgroup(readArgGroup((Map<String, Object>) subgroup, definitions));
+            readArgGroup((Map<String, Object>) subgroup, definitions, groupSink);
         }
-        return builder.build();
+        sink.addGroup(builder.build());
     }
 
     @SuppressWarnings("unchecked")
