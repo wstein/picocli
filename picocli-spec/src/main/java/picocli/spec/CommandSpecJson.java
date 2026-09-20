@@ -39,6 +39,7 @@ public final class CommandSpecJson {
         Definitions definitions = Definitions.from((Map<String, Object>) root.get("definitions"));
         CommandSpec spec = readCommand(root, definitions);
         SpecValidator.validate(spec);
+        HelpSectionRenderer.install(spec);
         return spec;
     }
 
@@ -164,16 +165,18 @@ public final class CommandSpecJson {
         final boolean exclusive;
         final String multiplicity;
         final boolean hidden;
+        final String helpSection;
         final String heading;
         final List<OptionSpec> options;
         final List<PositionalParamSpec> positionals;
         final List<GroupTemplate> subgroups;
 
-        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String heading,
+        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String helpSection, String heading,
                       List<OptionSpec> options, List<PositionalParamSpec> positionals, List<GroupTemplate> subgroups) {
             this.exclusive = exclusive;
             this.multiplicity = multiplicity;
             this.hidden = hidden;
+            this.helpSection = helpSection;
             this.heading = heading;
             this.options = options;
             this.positionals = positionals;
@@ -187,6 +190,7 @@ public final class CommandSpecJson {
             boolean exclusive = exclusiveValue == null || (Boolean) exclusiveValue;
             String multiplicity = (String) json.get("multiplicity");
             String heading = (String) json.get("heading");
+            String helpSection = (String) json.get("helpSection");
 
             List<OptionSpec> options = new ArrayList<OptionSpec>();
             for (Object option : listOrEmpty(json.get("options"))) {
@@ -206,7 +210,7 @@ public final class CommandSpecJson {
                 for (String label : nested.positionalLabels) { positionals.add(readPositional(definitions.resolvePositional(label))); }
                 subgroups.addAll(nested.groups);
             }
-            return new GroupTemplate(exclusive, multiplicity, hidden, heading, options, positionals, subgroups);
+            return new GroupTemplate(exclusive, multiplicity, hidden, helpSection, heading, options, positionals, subgroups);
         }
 
         void materialize(ArgSink sink) {
@@ -219,6 +223,7 @@ public final class CommandSpecJson {
             }
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
@@ -363,6 +368,8 @@ public final class CommandSpecJson {
         if (multiplicity != null) { builder.multiplicity(multiplicity); }
         String heading = (String) json.get("heading");
         if (heading != null) { builder.heading(heading); }
+        String helpSection = (String) json.get("helpSection");
+        if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
         ArgSink groupSink = new GroupArgSink(builder);
         addOptionsPositionalsAndUses(json, definitions, groupSink);
         for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
@@ -395,6 +402,11 @@ public final class CommandSpecJson {
         if (usageHelp != null) { builder.usageHelp((Boolean) usageHelp); }
         Object versionHelp = json.get("versionHelp");
         if (versionHelp != null) { builder.versionHelp((Boolean) versionHelp); }
+        String helpSection = (String) json.get("helpSection");
+        if (helpSection != null) {
+            builder.usageHelp(true);
+            builder.descriptionKey(HelpSectionRenderer.PREFIX + helpSection);
+        }
         Object hidden = json.get("hidden");
         if (hidden != null) { builder.hidden((Boolean) hidden); }
         if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
@@ -465,7 +477,12 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("names", new ArrayList<Object>(java.util.Arrays.asList(option.names())));
         putCommonArgSpecFields(json, option);
-        if (option.usageHelp()) { json.put("usageHelp", Boolean.TRUE); }
+        String helpSection = HelpSectionRenderer.getHelpSection(option);
+        if (helpSection != null) {
+            json.put("helpSection", helpSection);
+        } else if (option.usageHelp()) {
+            json.put("usageHelp", Boolean.TRUE);
+        }
         if (option.versionHelp()) { json.put("versionHelp", Boolean.TRUE); }
         return json;
     }
@@ -481,6 +498,8 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("exclusive", group.exclusive());
         json.put("multiplicity", group.multiplicity().toString());
+        String helpSection = HelpSectionRenderer.getHelpSection(group);
+        if (helpSection != null) { json.put("helpSection", helpSection); }
         if (group.heading() != null) { json.put("heading", group.heading()); }
 
         List<Object> options = new ArrayList<Object>();

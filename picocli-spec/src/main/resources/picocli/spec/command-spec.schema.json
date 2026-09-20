@@ -120,6 +120,10 @@
           "default": false,
           "description": "This group is never actually built as an ArgGroupSpec: with \"hidden\": true, all of its members (and any subgroups' members, recursively) are instead flattened directly into the enclosing command/group, with each member's own \"hidden\" forced true. Verified empirically that a group whose every member is hidden otherwise still leaves visible usage-help artifacts (an orphaned heading, and a stray empty \"[]\" in the synopsis) -- flattening avoids that entirely. \"exclusive\"/\"multiplicity\"/\"heading\" are moot when \"hidden\" is true: no mutual-exclusion/multiplicity validation is performed for a hidden group's former members."
         },
+        "helpSection": {
+          "type": "string",
+          "description": "Tags this group with a custom help section name (e.g. \"experimental\"). Tagged groups are omitted from standard --help usage messages, while their members remain visible to shell autocompletion. Rendered on demand when a matching trigger option is invoked."
+        },
         "options": {
           "type": "array",
           "items": { "anyOf": [ { "$ref": "#/$defs/option" }, { "$ref": "#/$defs/definitionReference" } ] }
@@ -175,6 +179,10 @@
           "type": "boolean",
           "default": false,
           "description": "Excludes this option from default usage help while it remains fully functional. See CommandLine.Model.ArgSpec#hidden()."
+        },
+        "helpSection": {
+          "type": "string",
+          "description": "Designates this option as an on-demand help trigger for the named help section (e.g. \"experimental\"). Automatically implies usageHelp = true."
         },
         "scope": { "$ref": "#/$defs/scope" }
       }

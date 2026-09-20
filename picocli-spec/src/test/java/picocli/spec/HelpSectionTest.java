@@ -1,0 +1,142 @@
+package picocli.spec;
+
+import org.junit.Test;
+import picocli.AutoComplete;
+import picocli.CommandLine;
+import picocli.CommandLine.Model.ArgGroupSpec;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.OptionSpec;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+public class HelpSectionTest {
+
+    private static final String TEST_DSL =
+            "command testapp {\n" +
+            "  option -h, --help : boolean \"display this help and exit\" usageHelp\n" +
+            "  option --normal : String \"a normal option\"\n" +
+            "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+            "  group cooperative helpSection=\"experimental\" \"The following options are experimental:%n\" {\n" +
+            "    option --Xalpha : boolean \"experimental alpha feature\"\n" +
+            "    option --Xbeta : String \"experimental beta setting\"\n" +
+            "  }\n" +
+            "}\n";
+
+    @Test
+    public void testDslParseGroupAndOptionWithHelpSection() {
+        CommandSpec spec = CommandSpecDsl.parse(TEST_DSL);
+
+        OptionSpec xhelp = spec.findOption("--Xhelp");
+        assertNotNull(xhelp);
+        assertTrue("helpSection option implies usageHelp", xhelp.usageHelp());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+
+        assertEquals(1, spec.argGroups().size());
+        ArgGroupSpec group = spec.argGroups().get(0);
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+
+        OptionSpec xalpha = spec.findOption("--Xalpha");
+        assertNotNull(xalpha);
+        assertFalse("options in tagged group must NOT be hidden", xalpha.hidden());
+
+        OptionSpec xbeta = spec.findOption("--Xbeta");
+        assertNotNull(xbeta);
+        assertFalse("options in tagged group must NOT be hidden", xbeta.hidden());
+    }
+
+    @Test
+    public void testDslRoundTrip() {
+        CommandSpec spec1 = CommandSpecDsl.parse(TEST_DSL);
+        String writtenDsl = CommandSpecDsl.write(spec1);
+        CommandSpec spec2 = CommandSpecDsl.parse(writtenDsl);
+
+        OptionSpec xhelp = spec2.findOption("--Xhelp");
+        assertNotNull(xhelp);
+        assertTrue(xhelp.usageHelp());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+
+        assertEquals(1, spec2.argGroups().size());
+        ArgGroupSpec group = spec2.argGroups().get(0);
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+        assertNotNull(spec2.findOption("--Xalpha"));
+    }
+
+    @Test
+    public void testJsonRoundTrip() {
+        CommandSpec spec1 = CommandSpecDsl.parse(TEST_DSL);
+        String json = CommandSpecJson.write(spec1);
+        assertTrue(json.contains("\"helpSection\": \"experimental\""));
+
+        CommandSpec spec2 = CommandSpecJson.read(json);
+        OptionSpec xhelp = spec2.findOption("--Xhelp");
+        assertNotNull(xhelp);
+        assertTrue(xhelp.usageHelp());
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+
+        assertEquals(1, spec2.argGroups().size());
+        ArgGroupSpec group = spec2.argGroups().get(0);
+        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+        assertNotNull(spec2.findOption("--Xalpha"));
+    }
+
+    @Test
+    public void testStandardHelpSuppressesTaggedHelpSection() {
+        CommandSpec spec = CommandSpecDsl.parse(TEST_DSL);
+        CommandLine cmd = new CommandLine(spec);
+
+        String usage = cmd.getUsageMessage();
+        assertTrue("standard help contains --help", usage.contains("--help"));
+        assertTrue("standard help contains --normal", usage.contains("--normal"));
+        assertTrue("standard help contains --Xhelp so users know it exists", usage.contains("--Xhelp"));
+
+        assertFalse("standard help must NOT contain --Xalpha", usage.contains("--Xalpha"));
+        assertFalse("standard help must NOT contain --Xbeta", usage.contains("--Xbeta"));
+        assertFalse("standard help must NOT contain experimental heading",
+                usage.contains("The following options are experimental"));
+    }
+
+    @Test
+    public void testOnDemandHelpTriggersWhenOptionMatched() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(TEST_DSL);
+        CommandLine cmd = new CommandLine(spec);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        cmd.setOut(new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8), true));
+
+        int exitCode = cmd.execute("--Xhelp");
+        assertEquals(0, exitCode);
+
+        String output = out.toString("UTF-8");
+        assertTrue("must contain experimental heading", output.contains("The following options are experimental"));
+        assertTrue("must contain --Xalpha", output.contains("--Xalpha"));
+        assertTrue("must contain experimental alpha feature", output.contains("experimental alpha feature"));
+        assertTrue("must contain --Xbeta", output.contains("--Xbeta"));
+
+        assertFalse("must NOT contain standard Usage: synopsis", output.contains("Usage:"));
+        assertFalse("must NOT contain normal options in on-demand help", output.contains("--normal"));
+        assertFalse("must NOT contain --help in on-demand help", output.contains("--help"));
+    }
+
+    @Test
+    public void testAutoCompleteIncludesExperimentalOptions() {
+        CommandSpec spec = CommandSpecDsl.parse(TEST_DSL);
+        CommandLine cmd = new CommandLine(spec);
+
+        String fish = AutoComplete.fish("testapp", cmd);
+        assertTrue("Fish completion must contain Xalpha", fish.contains("'Xalpha'"));
+        assertTrue("Fish completion must contain Xbeta", fish.contains("'Xbeta'"));
+        assertTrue("Fish completion must contain normal", fish.contains("'normal'"));
+
+        String bash = AutoComplete.bash("testapp", cmd);
+        assertTrue("Bash completion must contain --Xalpha", bash.contains("--Xalpha"));
+        assertTrue("Bash completion must contain --Xbeta", bash.contains("--Xbeta"));
+    }
+}

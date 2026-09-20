@@ -74,6 +74,7 @@ public final class CommandSpecDsl {
         } catch (IllegalArgumentException ambiguity) {
             throw new DslParseException(ambiguity.getMessage());
         }
+        HelpSectionRenderer.install(spec);
         return spec;
     }
 
@@ -147,7 +148,10 @@ public final class CommandSpecDsl {
         if (option.hidden()) {
             out.append(" hidden");
         }
-        if (option.usageHelp()) {
+        String helpSection = HelpSectionRenderer.getHelpSection(option);
+        if (helpSection != null) {
+            out.append(" helpSection=").append(quote(helpSection));
+        } else if (option.usageHelp()) {
             out.append(" usageHelp");
         }
         if (option.versionHelp()) {
@@ -189,6 +193,10 @@ public final class CommandSpecDsl {
         out.append(group.exclusive() ? "exclusive" : "cooperative");
         if (group.multiplicity() != null && !"0..1".equals(group.multiplicity().toString())) {
             out.append(" multiplicity=").append(group.multiplicity().toString());
+        }
+        String helpSection = HelpSectionRenderer.getHelpSection(group);
+        if (helpSection != null) {
+            out.append(" helpSection=").append(quote(helpSection));
         }
         if (group.heading() != null && !group.heading().isEmpty()) {
             out.append(" ").append(quote(group.heading()));
@@ -363,16 +371,18 @@ public final class CommandSpecDsl {
         final boolean exclusive;
         final String multiplicity;
         final boolean hidden;
+        final String helpSection;
         final String heading;
         final List<OptionSpec> options;
         final List<PositionalParamSpec> positionals;
         final List<GroupTemplate> subgroups;
 
-        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String heading,
+        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String helpSection, String heading,
                       List<OptionSpec> options, List<PositionalParamSpec> positionals, List<GroupTemplate> subgroups) {
             this.exclusive = exclusive;
             this.multiplicity = multiplicity;
             this.hidden = hidden;
+            this.helpSection = helpSection;
             this.heading = heading;
             this.options = options;
             this.positionals = positionals;
@@ -389,6 +399,7 @@ public final class CommandSpecDsl {
             }
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
@@ -726,10 +737,14 @@ public final class CommandSpecDsl {
 
             String multiplicity = null;
             boolean hidden = false;
-            while (checkWord("multiplicity") || checkWord("hidden")) {
+            String helpSection = null;
+            while (checkWord("multiplicity") || checkWord("hidden") || checkWord("helpSection")) {
                 String attr = advance().text;
                 if ("hidden".equals(attr)) {
                     hidden = true;
+                } else if ("helpSection".equals(attr)) {
+                    expect(TokenKind.EQUALS, "'='");
+                    helpSection = expectWordOrString();
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     multiplicity = expectWordOrString();
@@ -762,7 +777,7 @@ public final class CommandSpecDsl {
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
-            return new GroupTemplate(exclusive, multiplicity, hidden, heading, options, positionals, subgroups);
+            return new GroupTemplate(exclusive, multiplicity, hidden, helpSection, heading, options, positionals, subgroups);
         }
 
         /**
@@ -788,10 +803,14 @@ public final class CommandSpecDsl {
 
             String multiplicity = null;
             boolean hidden = false;
-            while (checkWord("multiplicity") || checkWord("hidden")) {
+            String helpSection = null;
+            while (checkWord("multiplicity") || checkWord("hidden") || checkWord("helpSection")) {
                 String attr = advance().text;
                 if ("hidden".equals(attr)) {
                     hidden = true;
+                } else if ("helpSection".equals(attr)) {
+                    expect(TokenKind.EQUALS, "'='");
+                    helpSection = expectWordOrString();
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     multiplicity = expectWordOrString();
@@ -813,6 +832,7 @@ public final class CommandSpecDsl {
 
             ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (helpSection != null) { builder.headingKey(HelpSectionRenderer.PREFIX + helpSection); }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
             expect(TokenKind.LBRACE, "'{'");
@@ -848,7 +868,8 @@ public final class CommandSpecDsl {
                 builder.description(advance().text);
             }
             while (checkWord("default") || checkWord("required") || checkWord("arity")
-                    || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit") || checkWord("hidden")) {
+                    || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit") || checkWord("hidden")
+                    || checkWord("helpSection")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
@@ -860,6 +881,11 @@ public final class CommandSpecDsl {
                     builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
                 } else if ("hidden".equals(attr)) {
                     builder.hidden(true);
+                } else if ("helpSection".equals(attr)) {
+                    expect(TokenKind.EQUALS, "'='");
+                    String section = expectWordOrString();
+                    builder.usageHelp(true);
+                    builder.descriptionKey(HelpSectionRenderer.PREFIX + section);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();

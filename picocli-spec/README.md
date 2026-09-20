@@ -50,7 +50,7 @@ definitions := 'definitions' '{' ( option | positional | bundle )* '}'
 bundle      := 'bundle' name '{' ( option | positional | group | use )* '}'
 command     := 'command' name [string] '{' member* '}'
 member      := option | positional | group | use | command
-group       := 'group' ('exclusive' | 'cooperative') ['hidden'] ['multiplicity' '=' value] [string]
+group       := 'group' ('exclusive' | 'cooperative') ['hidden'] ['helpSection' '=' value] ['multiplicity' '=' value] [string]
                '{' ( option | positional | group | use )* '}'
 use         := 'use' name       // expands a bundle's members at this point
 option      := 'option' name (',' name)* ( ':' type [string] attr* )?
@@ -60,6 +60,7 @@ attr        := 'default' '=' value
              | 'arity' '=' value
              | 'inherit'
              | 'hidden'
+             | 'helpSection' '=' value
              | 'usageHelp'    // options only
              | 'versionHelp'  // options only
 name, type,
@@ -208,6 +209,27 @@ moot on a hidden group: no mutual-exclusion/multiplicity validation applies to f
 group that no longer exists as such. Individually hidden options/positionals (the `hidden` attr
 from the grammar above) and a hidden group compose the same way in JSON — see the field reference
 below.
+
+### Tagged help groups and on-demand triggers (`helpSection`)
+
+When flags should be excluded from standard `--help` but **included in shell autocompletion**
+(unlike `hidden`, which suppresses flags from completion as well), tag the group with
+`helpSection="<name>"`:
+
+```picocli
+option --Xhelp : boolean "shows experimental options." helpSection="experimental"
+
+bundle xflags {
+  group cooperative helpSection="experimental" "The following options are experimental:%n" {
+    option --Xfuzzer : boolean "enables compiler fuzzing."
+    option --Xiterations : int "max constraint iterations."
+  }
+}
+```
+
+1. **Excluded from standard `--help`**: the experimental options and group heading do not appear in normal `--help` output.
+2. **Included in shell autocompletion**: members are real `OptionSpec` instances with `hidden = false`, so `bash`, `fish`, and `zsh` completions include them.
+3. **On-demand rendering**: matching `--Xhelp` (declared with `helpSection="experimental"`) automatically triggers picocli to print only the experimental help section and short-circuit execution with exit code 0.
 
 ## Reusable bundles of options/positionals (`bundle`/`use`)
 
@@ -363,6 +385,7 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 | `usageHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in usage-help option (auto-prints and short-circuits execution). |
 | `versionHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in version-help option. |
 | `hidden` | boolean | no, default `false` | Excludes this option from default usage help while it remains fully functional. |
+| `helpSection` | string | no | Designates this option as an on-demand trigger for the named help section. Automatically implies `usageHelp = true`. |
 | `scope` | string | no, default `"local"` | `"inherit"` makes this option also apply to every descendant subcommand (picocli's `ScopeType.INHERIT`), not just the command it's declared on. |
 
 **Positional param object** (`positionalParams[]`, or a value in `definitions.positionalParams`):
@@ -378,6 +401,7 @@ same fields as an option (`scope`/`hidden` included) except `names` is replaced 
 | `multiplicity` | string | no, default `"0..1"` | Same range syntax as `arity`. `"1"` makes the group itself required. |
 | `heading` | string | no | Usage-help section heading. |
 | `hidden` | boolean | no, default `false` | Never actually built as an `ArgGroupSpec`: all members (and subgroups' members, recursively) are flattened into the enclosing command/group instead, each forced `hidden: true`. See [A hidden group](#a-hidden-group) above for why. |
+| `helpSection` | string | no | Tags this group with a custom section name (e.g. `"experimental"`). Omitted from default `--help`, included in shell completion, rendered on demand via matching trigger option. |
 | `options` | (option \| string)[] | no | Same definition-or-reference syntax as a command's own. |
 | `positionalParams` | (positionalParam \| string)[] | no | Same definition-or-reference syntax as a command's own. |
 | `use` | string[] | no | Names of `definitions.bundles` entries to expand into this group's own options/positionalParams/subgroups. |
