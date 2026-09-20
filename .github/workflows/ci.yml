@@ -132,37 +132,3 @@ jobs:
           gistURL: https://gist.githubusercontent.com/remkop/36bc8a3b4395f2fbdb9bc271e97ba2dd
           file: badge.svg
 
-
-  build-java-6-7:
-    strategy:
-      matrix:
-        java-version: [ 6, 7 ]
-        os: [ubuntu-latest, windows-latest]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@c6295a65d1254861815972266d5933fd6e532bdf
-        with:
-          egress-policy: audit
-
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@f9c9c575b8b21b6485636a91ffecd10e558c62f6
-
-      - name: Configure JDK ${{ matrix.java-version }}
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00
-        with:
-          distribution: 'zulu'
-          java-version: ${{ matrix.java-version }}
-          cache: gradle
-
-      - name: Change wrapper permission
-        working-directory: picocli-tests-java567
-        run: chmod +x ./gradlew
-
-      - name: Run build in subdirectory
-        working-directory: picocli-tests-java567
-        run: ./gradlew clean build --no-daemon
