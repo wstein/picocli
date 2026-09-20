@@ -70,21 +70,23 @@ reasoning:
   (listed directly under `Command: lsp-vscode port`), so it's modeled as a required positional
   exactly as shown, unlike everything else which was scoped by inference.
 
-### Known gaps this file doesn't attempt to model
+### Format gaps that turned out not to matter for this file (once checked)
 
-- flix splits its own CLI args from the wrapped program's args with a literal `--` separator
-  (anything after `--` is passed through raw to the program under `run`). picocli-jsonspec has no
-  concept of this; `--args` (a single quoted string, per flix's own text) is the closest
-  equivalent captured here.
-- picocli's built-in `usageHelp`/`versionHelp` option behavior (auto-printing help/version and
-  exiting) isn't part of the DSL/JSON vocabulary yet — `--help`/`--version` here are plain
-  booleans, not wired to short-circuit parsing.
-- No real picocli option inheritance (`ScopeType.INHERIT`) in the DSL/JSON format. That wouldn't
-  have fit this file well anyway: `flix`'s command tree is flat, and each shared option applies
-  to an arbitrary, overlapping *subset* of siblings (the `--X*` flags: 4 of 14 commands;
-  `--github-token`: a different 10 of 14) — not "root + every descendant", which is the only
-  shape tree inheritance can express. Instead, the shared options and the `files` positional are
-  each declared once in the top-level `definitions { ... }` block and referenced by name from
-  the commands that need them (`option --explain` with no `:`, instead of repeating its type and
-  description). Each reference still gets its own independent `OptionSpec` instance under the
-  hood; this only removes duplication in the *source text*, not the resulting `CommandSpec`.
+- **flix's `--` separator** (anything after a literal `--` is passed through raw to the wrapped
+  program under `run`): this needs no special format support at all. picocli already treats a
+  bare `--` as end-of-options by default, so an array-typed, sufficiently-arity'd positional
+  captures everything after it verbatim, option-looking tokens included — verified by
+  `CommandSpecDslTest.doubleDashSeparatorPassesRawTokensToAnArrayTypePositional`, not just assumed.
+  `--args` (a single quoted string, per flix's own text) remains the closest *named* equivalent
+  for the common case, but raw multi-token passthrough already works with no format change.
+- **`usageHelp`/`versionHelp`**: resolved — see the module README. `--help`/`--version` above are
+  now marked `usageHelp`/`versionHelp` and genuinely short-circuit execution.
+- **Option inheritance (`ScopeType.INHERIT`)**: also resolved as a format capability (see the
+  module README), but deliberately *not* used in this file: `flix`'s command tree is flat, and
+  each shared option applies to an arbitrary, overlapping *subset* of siblings (the `--X*` flags:
+  4 of 14 commands; `--github-token`: a different 10 of 14) — not "root + every descendant", which
+  is the only shape tree inheritance can express. `definitions { ... }` + by-name references
+  (`option --explain` with no `:`) is the right tool for *this* sharing pattern; inheritance is
+  for a genuinely tree-shaped one, which flix doesn't have. Each reference still gets its own
+  independent `OptionSpec` instance under the hood; this only removes duplication in the *source
+  text*, not the resulting `CommandSpec`.

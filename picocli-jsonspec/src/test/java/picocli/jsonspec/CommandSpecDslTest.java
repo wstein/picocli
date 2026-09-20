@@ -171,6 +171,28 @@ public class CommandSpecDslTest {
         assertArrayEquals(new String[] {"a", "b"}, (String[]) spec.findOption("--tag").getValue());
     }
 
+    /**
+     * Not a format feature -- picocli already treats a bare "--" token as end-of-options by
+     * default, so everything after it (including option-looking tokens) is captured as
+     * positional values, with no special syntax needed in the DSL/JSON. Verified here rather
+     * than just documented, since it was flagged as a possible gap before being checked.
+     */
+    @Test
+    public void doubleDashSeparatorPassesRawTokensToAnArrayTypePositional() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option -v, --verbose : boolean\n" +
+                "  positional args : String[] arity=0..*\n" +
+                "}");
+
+        CommandLine cmd = new CommandLine(spec);
+        cmd.parseArgs("-v", "--", "-x", "--foo", "bar");
+
+        boolean verbose = spec.findOption("--verbose").getValue();
+        assertTrue(verbose);
+        assertArrayEquals(new String[] {"-x", "--foo", "bar"}, (String[]) spec.positionalParameters().get(0).getValue());
+    }
+
     @Test
     public void parsesNestedSubcommands() {
         CommandSpec spec = CommandSpecDsl.parse(

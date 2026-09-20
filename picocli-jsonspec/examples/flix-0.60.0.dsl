@@ -7,12 +7,13 @@
 // and what each command needs. See picocli-jsonspec/examples/README.md for the reasoning behind
 // each judgment call.
 //
-// Known gaps in the current DSL/JSON format (not modeled here): no --/passthrough-args separator,
-// no usageHelp/versionHelp option kind (--help/--version below are plain booleans, not wired to
-// short-circuit parsing the way picocli's own built-in help options do), and no option inheritance
-// (definitions { ... } below reduces the duplication that would otherwise cause, but each command
-// still gets its own independent OptionSpec instance per reference -- there's no shared runtime
-// state between commands).
+// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Shared options/positionals are declared once in definitions { ... } and referenced by name
+// (option --explain, no ':') rather than via inheritance: flix's command tree is flat and each
+// shared option applies to an arbitrary, overlapping subset of siblings, which inheritance can't
+// express -- see picocli-jsonspec/examples/README.md for why, and for the one remaining format
+// gap this file doesn't need (flix's -- passthrough separator needs no special format support at
+// all; picocli already handles it natively for an array-typed positional).
 
 definitions {
   option --explain : boolean "provides suggestions on how to solve a problem."
