@@ -12,8 +12,8 @@ import picocli.CommandLine.Spec;
  * operates on, this outer tool is not itself described by a picocli-spec file.
  */
 @Command(name = "picospec", mixinStandardHelpOptions = true, version = "picospec " + CommandLine.VERSION,
-        subcommands = {PreviewCommand.class, CompletionCommand.class, ManpageCommand.class, ValidateCommand.class},
-        description = "Preview, validate, and generate shell completion scripts and man pages "
+        subcommands = {PreviewCommand.class, CompletionCommand.class, ManpageCommand.class, ValidateCommand.class, ConvertCommand.class},
+        description = "Preview, validate, convert, and generate shell completion scripts and man pages "
                 + "from picocli-spec DSL/JSON spec files.")
 public final class SpecToolApp implements Runnable {
 

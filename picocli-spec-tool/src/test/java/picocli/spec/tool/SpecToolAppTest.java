@@ -59,6 +59,7 @@ public class SpecToolAppTest {
         assertTrue(result.out().contains("completion"));
         assertTrue(result.out().contains("manpage"));
         assertTrue(result.out().contains("validate"));
+        assertTrue(result.out().contains("convert"));
     }
 
     @Test

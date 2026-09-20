@@ -39,6 +39,7 @@ $ java -jar picocli-spec-tool-<version>-all.jar <subcommand> ...
 | `completion <spec-file>` | Generates a bash/zsh or fish completion script, via picocli's own `AutoComplete`. `-s, --shell=bash\|fish` picks the target shell (default: `bash`); `--name` overrides the script's command name (default: the spec's own root command name); `--output <file>` writes to a file instead of stdout. |
 | `manpage <spec-file>` | Generates AsciiDoc man pages for the spec and every subcommand, via picocli-codegen's `ManPageGenerator`. `--outdir <dir>` sets the output directory (default: the current directory). |
 | `validate <spec-file>` | Loads the spec and reports `OK` or a one-line error — nothing is generated. Loading already runs every DSL/JSON parsing rule and `SpecValidator`'s checks, so this is just a clear pass/fail wrapper around that for a shell workflow (e.g. a pre-commit hook or CI step). |
+| `convert <spec-file>` | Converts a spec file between DSL and JSON formats. `-t, --to=dsl\|json` specifies the target format (default: deduced from `--output` extension or the opposite of the input format); `-o, --output <file>` writes to a file instead of stdout. |
 
 Every subcommand accepts either a `.picocli` (DSL) or a `.json` file — the extension picks the
 reader, same as `SpecLoader` does internally.
@@ -78,9 +79,6 @@ to. Keeping the renderer in its own module means authoring/merging specs never d
 
 - `completion` supports `bash` (and `zsh` via `bashcompinit`) and `fish`; PowerShell completion isn't
   wired up.
-- There's no `convert` subcommand yet (DSL ↔ JSON): `CommandSpecJson.write()` already covers
-  DSL → JSON directly if you need it programmatically, but JSON → DSL would need a new DSL
-  *writer* in `picocli-spec` (currently parse-only) — not yet implemented.
 - No execution wiring, same as `picocli-spec` itself: this tool only renders a spec, it never
   runs the CLI it describes.
 
