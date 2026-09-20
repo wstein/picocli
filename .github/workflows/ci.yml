@@ -20,7 +20,11 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.os == 'macos-latest' || matrix.java-version == '9' || matrix.java-version == '18' || matrix.java-version == '19' || matrix.java-version == '20' || matrix.java-version == '22' || matrix.java-version == '23' || matrix.java-version == '24' }}
+    # java-version 25: Gradle 8.14 (this repo's wrapper) cannot run under JDK 25 yet
+    # ("Unsupported class file major version 69" at the first `./gradlew` invocation) --
+    # confirmed via actual CI logs, not a code issue. 21 is deliberately absent: it passes
+    # cleanly and isn't a known-flaky combination the way the others here are.
+    continue-on-error: ${{ matrix.os == 'macos-latest' || matrix.java-version == '9' || matrix.java-version == '18' || matrix.java-version == '19' || matrix.java-version == '20' || matrix.java-version == '22' || matrix.java-version == '23' || matrix.java-version == '24' || matrix.java-version == '25' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@c6295a65d1254861815972266d5933fd6e532bdf
