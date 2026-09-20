@@ -77,6 +77,215 @@ public final class CommandSpecDsl {
         return spec;
     }
 
+    /** Serializes the given {@link CommandSpec} (with any nested subcommands) to DSL text. */
+    public static String write(CommandSpec spec) {
+        StringBuilder out = new StringBuilder();
+        writeCommand(spec, out, 0);
+        return out.toString();
+    }
+
+    private static void writeCommand(CommandSpec spec, StringBuilder out, int indent) {
+        indent(out, indent);
+        out.append("command ");
+        String name = spec.name();
+        if (name == null || name.isEmpty() || "<main class>".equals(name)) {
+            name = "command";
+        }
+        out.append(name);
+        String desc = joinDescription(spec.usageMessage().description());
+        if (desc != null && !desc.isEmpty()) {
+            out.append(" ").append(quote(desc));
+        }
+        out.append(" {\n");
+
+        for (OptionSpec option : spec.options()) {
+            if (option.group() == null) {
+                writeOption(option, out, indent + 1);
+            }
+        }
+        for (PositionalParamSpec positional : spec.positionalParameters()) {
+            if (positional.group() == null) {
+                writePositional(positional, out, indent + 1);
+            }
+        }
+        for (ArgGroupSpec group : spec.argGroups()) {
+            writeGroup(group, out, indent + 1);
+        }
+        for (picocli.CommandLine sub : spec.subcommands().values()) {
+            writeCommand(sub.getCommandSpec(), out, indent + 1);
+        }
+
+        indent(out, indent);
+        out.append("}\n");
+    }
+
+    private static void writeOption(OptionSpec option, StringBuilder out, int indent) {
+        indent(out, indent);
+        out.append("option ");
+        String[] names = option.names();
+        for (int i = 0; i < names.length; i++) {
+            if (i > 0) { out.append(", "); }
+            out.append(names[i]);
+        }
+        out.append(" : ").append(ArgTypes.toName(option.type()));
+        String desc = joinDescription(option.description());
+        if (desc != null && !desc.isEmpty()) {
+            out.append(" ").append(quote(desc));
+        }
+        if (option.defaultValue() != null) {
+            out.append(" default=").append(formatValue(option.defaultValue()));
+        }
+        if (option.required()) {
+            out.append(" required");
+        }
+        if (!isDefaultArity(option)) {
+            out.append(" arity=").append(option.arity().toString());
+        }
+        if (option.scopeType() == picocli.CommandLine.ScopeType.INHERIT) {
+            out.append(" inherit");
+        }
+        if (option.hidden()) {
+            out.append(" hidden");
+        }
+        if (option.usageHelp()) {
+            out.append(" usageHelp");
+        }
+        if (option.versionHelp()) {
+            out.append(" versionHelp");
+        }
+        out.append("\n");
+    }
+
+    private static void writePositional(PositionalParamSpec positional, StringBuilder out, int indent) {
+        indent(out, indent);
+        out.append("positional ");
+        out.append(unwrapParamLabel(positional.paramLabel()));
+        out.append(" : ").append(ArgTypes.toName(positional.type()));
+        String desc = joinDescription(positional.description());
+        if (desc != null && !desc.isEmpty()) {
+            out.append(" ").append(quote(desc));
+        }
+        if (positional.defaultValue() != null) {
+            out.append(" default=").append(formatValue(positional.defaultValue()));
+        }
+        if (positional.required()) {
+            out.append(" required");
+        }
+        if (!isDefaultArity(positional)) {
+            out.append(" arity=").append(positional.arity().toString());
+        }
+        if (positional.scopeType() == picocli.CommandLine.ScopeType.INHERIT) {
+            out.append(" inherit");
+        }
+        if (positional.hidden()) {
+            out.append(" hidden");
+        }
+        out.append("\n");
+    }
+
+    private static void writeGroup(ArgGroupSpec group, StringBuilder out, int indent) {
+        indent(out, indent);
+        out.append("group ");
+        out.append(group.exclusive() ? "exclusive" : "cooperative");
+        if (group.multiplicity() != null && !"0..1".equals(group.multiplicity().toString())) {
+            out.append(" multiplicity=").append(group.multiplicity().toString());
+        }
+        if (group.heading() != null && !group.heading().isEmpty()) {
+            out.append(" ").append(quote(group.heading()));
+        }
+        out.append(" {\n");
+        for (picocli.CommandLine.Model.ArgSpec arg : group.args()) {
+            if (arg.isOption()) {
+                writeOption((OptionSpec) arg, out, indent + 1);
+            } else if (arg.isPositional()) {
+                writePositional((PositionalParamSpec) arg, out, indent + 1);
+            }
+        }
+        for (ArgGroupSpec subgroup : group.subgroups()) {
+            writeGroup(subgroup, out, indent + 1);
+        }
+        indent(out, indent);
+        out.append("}\n");
+    }
+
+    private static void indent(StringBuilder out, int indent) {
+        for (int i = 0; i < indent; i++) {
+            out.append("  ");
+        }
+    }
+
+    private static String joinDescription(String[] desc) {
+        if (desc == null || desc.length == 0) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < desc.length; i++) {
+            if (i > 0) { sb.append("\n"); }
+            sb.append(desc[i]);
+        }
+        return sb.toString();
+    }
+
+    private static String quote(String s) {
+        return "\"" + escapeString(s) + "\"";
+    }
+
+    private static String escapeString(String s) {
+        if (s == null) { return ""; }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\': sb.append("\\\\"); break;
+                case '"':  sb.append("\\\""); break;
+                case '\n': sb.append("\\n"); break;
+                case '\t': sb.append("\\t"); break;
+                case '\r': break;
+                default:   sb.append(c); break;
+            }
+        }
+        return sb.toString();
+    }
+
+    private static boolean isSimpleWord(String s) {
+        if (s == null || s.isEmpty()) { return false; }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (Character.isWhitespace(c) || "{}:,=\"".indexOf(c) >= 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String formatValue(String value) {
+        return isSimpleWord(value) ? value : quote(value);
+    }
+
+    private static boolean isDefaultArity(picocli.CommandLine.Model.ArgSpec arg) {
+        if (arg.arity() == null) { return true; }
+        String s = arg.arity().toString();
+        if (arg.isOption()) {
+            if (arg.type() == boolean.class || arg.type() == Boolean.class) {
+                return "0".equals(s);
+            } else {
+                return "1".equals(s);
+            }
+        } else {
+            return "1".equals(s);
+        }
+    }
+
+    static String unwrapParamLabel(String paramLabel) {
+        if (paramLabel == null || paramLabel.isEmpty()) {
+            return "arg";
+        }
+        return paramLabel.startsWith("<") && paramLabel.endsWith(">")
+                ? paramLabel.substring(1, paramLabel.length() - 1)
+                : paramLabel;
+    }
+
+
     /**
      * The optional top-level {@code definitions} block: named option/positional-param templates
      * that a command body can reference by name (an {@code option}/{@code positional} statement
@@ -432,12 +641,6 @@ public final class CommandSpecDsl {
             }
             expect(TokenKind.RBRACE, "'}'");
             return new Definitions(options, positionalParams, bundles);
-        }
-
-        private String unwrapParamLabel(String paramLabel) {
-            return paramLabel.startsWith("<") && paramLabel.endsWith(">")
-                    ? paramLabel.substring(1, paramLabel.length() - 1)
-                    : paramLabel;
         }
 
         CommandSpec parseCommand(Definitions definitions) {

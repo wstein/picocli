@@ -158,4 +158,20 @@ public class Flix0762ExampleTest {
         assertTrue(checkResult.matchedOptionValue("--Xverify", Boolean.FALSE));
         assertTrue(checkResult.matchedOptionValue("--Xnewmono", Boolean.FALSE));
     }
+
+    @Test
+    public void roundTripsThroughDslWrite() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        String dsl = CommandSpecDsl.write(flix);
+        CommandSpec roundTripped = CommandSpecDsl.parse(dsl);
+
+        assertEquals(flix.name(), roundTripped.name());
+        assertEquals(flix.subcommands().keySet(), roundTripped.subcommands().keySet());
+        for (String subName : flix.subcommands().keySet()) {
+            CommandSpec origSub = flix.subcommands().get(subName).getCommandSpec();
+            CommandSpec rtSub = roundTripped.subcommands().get(subName).getCommandSpec();
+            assertEquals(subName + " option count", origSub.options().size(), rtSub.options().size());
+            assertEquals(subName + " positional count", origSub.positionalParameters().size(), rtSub.positionalParameters().size());
+        }
+    }
 }
