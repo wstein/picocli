@@ -64,8 +64,8 @@ When providing an integrated or proxy "uber" CLI that wraps, delegates to, or co
 - JSON parsing must be implemented with a zero-dependency minimal parser (`picocli.spec.json.Json`).
 
 ### NFR-2: Target Compatibility
-- Target Java 8 bytecode compatibility (`sourceCompatibility = 1.8`, `targetCompatibility = 1.8`).
-- Build and run verified across LTS JDKs: 8, 11, 17, and 21.
+- Target Java 11 bytecode compatibility (`sourceCompatibility = 11`, `targetCompatibility = 11`).
+- Build and run verified across LTS JDKs: 11, 17, and 21.
 
 ### NFR-3: Fail-Fast Ambiguity Validation
 - Automatically validate specs during parse and merge against parsing ambiguities (e.g. default values conflicting with subcommand names) using `SpecValidator`.
