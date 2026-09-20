@@ -92,7 +92,7 @@ jobs:
         run: ./gradlew publishForkPublicationToForkRepoRepository --no-daemon
 
       - name: Generate javadoc
-        run: ./gradlew :javadoc :picocli-jsonspec:javadoc --no-daemon
+        run: ./gradlew :javadoc :picocli-spec:javadoc --no-daemon
 
       - name: Push updated site to GitHub Pages
         run: |
@@ -101,24 +101,24 @@ jobs:
           cp -r build/fork-maven-repo/. gh-pages-site/maven/
 
           rm -rf gh-pages-site/apidocs
-          mkdir -p gh-pages-site/apidocs/picocli gh-pages-site/apidocs/picocli-jsonspec
+          mkdir -p gh-pages-site/apidocs/picocli gh-pages-site/apidocs/picocli-spec
           cp -r build/docs/apidocs/. gh-pages-site/apidocs/picocli/
-          cp -r picocli-jsonspec/build/docs/apidocs/. gh-pages-site/apidocs/picocli-jsonspec/
+          cp -r picocli-spec/build/docs/apidocs/. gh-pages-site/apidocs/picocli-spec/
 
-          # jsonspec/schema is NOT wiped: unlike apidocs (always "latest" only), every version's
+          # spec/schema is NOT wiped: unlike apidocs (always "latest" only), every version's
           # schema is kept permanently, mirroring how maven/ accumulates every released jar.
-          SCHEMA_SRC=picocli-jsonspec/src/main/resources/picocli/jsonspec/command-spec.schema.json
-          LATEST_URL="https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json"
-          VERSIONED_URL="https://wstein.github.io/picocli/jsonspec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
-          mkdir -p "gh-pages-site/jsonspec/schema/${{ steps.vars.outputs.version }}"
-          cp "$SCHEMA_SRC" gh-pages-site/jsonspec/schema/command-spec.schema.json
-          sed "s#$LATEST_URL#$VERSIONED_URL#" "$SCHEMA_SRC" > "gh-pages-site/jsonspec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
+          SCHEMA_SRC=picocli-spec/src/main/resources/picocli/spec/command-spec.schema.json
+          LATEST_URL="https://wstein.github.io/picocli/spec/schema/command-spec.schema.json"
+          VERSIONED_URL="https://wstein.github.io/picocli/spec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
+          mkdir -p "gh-pages-site/spec/schema/${{ steps.vars.outputs.version }}"
+          cp "$SCHEMA_SRC" gh-pages-site/spec/schema/command-spec.schema.json
+          sed "s#$LATEST_URL#$VERSIONED_URL#" "$SCHEMA_SRC" > "gh-pages-site/spec/schema/${{ steps.vars.outputs.version }}/command-spec.schema.json"
 
           cp gh-pages/index.html gh-pages-site/index.html
 
           cd gh-pages-site
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add maven apidocs jsonspec index.html
-          git commit -m "Publish io.github.wstein:picocli:${{ steps.vars.outputs.version }} (maven, javadoc, jsonspec schema, site)" || echo "Nothing to commit"
+          git add maven apidocs spec index.html
+          git commit -m "Publish io.github.wstein:picocli:${{ steps.vars.outputs.version }} (maven, javadoc, spec schema, site)" || echo "Nothing to commit"
           git push origin HEAD:gh-pages

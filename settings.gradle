@@ -3,8 +3,8 @@ include 'picocli-groovy'
 include 'picocli-examples'
 include 'picocli-shell-jline2'
 include 'picocli-codegen'
-include 'picocli-jsonspec'
-include 'picocli-jsonspec-tool'
+include 'picocli-spec'
+include 'picocli-spec-tool'
 include 'picocli-tests-java8'
 
 if (org.gradle.api.JavaVersion.current().isJava8Compatible()) {

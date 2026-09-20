@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+}
+
+group = 'info.picocli'
+description = 'Picocli Spec Tool - a picocli command line tool to preview, validate, and generate shell completion scripts and man pages from picocli-spec DSL/JSON spec files.'
+version = "$projectVersion"
+ext.moduleName = 'info.picocli.spec.tool'
+
+java {
+    if (!JavaVersion.current().isJava9Compatible()) {
+        sourceCompatibility = JavaVersion.VERSION_1_6
+        targetCompatibility = JavaVersion.VERSION_1_6
+    } else { // from Java 9 and up
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    api project(':picocli-spec')
+    api project(':picocli-codegen')
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class'            : 'picocli.spec.tool.SpecToolApp',
+                   'Specification-Title'   : 'Picocli Spec Tool',
+                   'Specification-Vendor'  : 'Remko Popma',
+                   'Specification-Version' : archiveVersion.get(),
+                   'Implementation-Title'  : 'Picocli Spec Tool',
+                   'Implementation-Vendor' : 'Remko Popma',
+                   'Implementation-Version': archiveVersion.get()
+    }
+}

@@ -433,21 +433,21 @@ upstream's `info.picocli:picocli`):
   ```
 
 The same GitHub Pages site also hosts generated **Javadoc** for this module and for
-[`picocli-jsonspec`](picocli-jsonspec/README.md) (below), and the **JSON Schema** for
-picocli-jsonspec's format — see the [landing page](https://wstein.github.io/picocli/) for links to
+[`picocli-spec`](picocli-spec/README.md) (below), and the **JSON Schema** for
+picocli-spec's format — see the [landing page](https://wstein.github.io/picocli/) for links to
 all of it.
 
-### picocli-jsonspec (this fork)
-[`picocli-jsonspec`](picocli-jsonspec/README.md) is a fork-specific module: it builds a picocli
+### picocli-spec (this fork)
+[`picocli-spec`](picocli-spec/README.md) is a fork-specific module: it builds a picocli
 `CommandSpec` from JSON or from a small DSL, exports any `CommandSpec` back to JSON, and merges
 one or more such specs into a host CLI as subcommands — without an annotated Java class. Meant for
 giving a beautiful, help-and-completion-enabled picocli front end to a third-party tool whose own
-CLI isn't human-friendly. See its [README](picocli-jsonspec/README.md) for the DSL grammar and
-JSON field reference, or the [JSON Schema](https://wstein.github.io/picocli/jsonspec/schema/command-spec.schema.json)
-(latest; permanently-kept per-version copies at `.../jsonspec/schema/<version>/...`) and
-[Javadoc](https://wstein.github.io/picocli/apidocs/picocli-jsonspec/).
+CLI isn't human-friendly. See its [README](picocli-spec/README.md) for the DSL grammar and
+JSON field reference, or the [JSON Schema](https://wstein.github.io/picocli/spec/schema/command-spec.schema.json)
+(latest; permanently-kept per-version copies at `.../spec/schema/<version>/...`) and
+[Javadoc](https://wstein.github.io/picocli/apidocs/picocli-spec/).
 
-[`picocli-jsonspec-tool`](picocli-jsonspec-tool/README.md) is a companion command line tool, built
-on top of `picocli-jsonspec`, for previewing what CLI a `.picocli`/`.json` spec produces and
+[`picocli-spec-tool`](picocli-spec-tool/README.md) is a companion command line tool, built
+on top of `picocli-spec`, for previewing what CLI a `.picocli`/`.json` spec produces and
 generating a shell completion script or AsciiDoc man pages for it — without writing any Java.
 
