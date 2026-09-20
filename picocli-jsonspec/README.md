@@ -54,6 +54,7 @@ positional  := 'positional' name ( ':' type [string] attr* )?
 attr        := 'default' '=' value
              | 'required'
              | 'arity' '=' value
+             | 'inherit'
              | 'usageHelp'    // options only
              | 'versionHelp'  // options only
 name, type,
@@ -80,12 +81,15 @@ Notes:
   vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File` — optionally
   suffixed with `[]` for a multi-value array type, e.g. `File[]` (see the schema's
   `$defs.type.pattern`, which is tested to stay in sync with the actual reader).
-- `attr*` may appear in any order and are all optional; `required`/`usageHelp`/`versionHelp` take
-  no value, `default=` and `arity=` do.
+- `attr*` may appear in any order and are all optional; `required`/`inherit`/`usageHelp`/
+  `versionHelp` take no value, `default=` and `arity=` do.
 - `usageHelp`/`versionHelp` mark an option as picocli's built-in usage-/version-help option:
   matching it on the command line auto-prints the usage/version message and short-circuits
   execution (`CommandLine#execute` returns before running any `Runnable`/`Callable`). Positional
   parameters have no equivalent in picocli, so `positional` doesn't accept these two attributes.
+- `inherit` (either kind of statement) sets picocli's `ScopeType.INHERIT`: the option/positional
+  also applies to every descendant subcommand, not just the one it's declared on. Without it, an
+  option/positional is local to its own command (picocli's default).
 
 ## Reusing an option/positional across commands (`definitions`)
 
@@ -210,10 +214,12 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 | `arity` | string | no | e.g. `"0"`, `"1"`, `"0..1"`, `"1..*"`, `"0..*"`; parsed by `Range.valueOf(String)`. |
 | `usageHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in usage-help option (auto-prints and short-circuits execution). |
 | `versionHelp` | boolean | no, default `false` | Options only. Marks picocli's built-in version-help option. |
+| `scope` | string | no, default `"local"` | `"inherit"` makes this option also apply to every descendant subcommand (picocli's `ScopeType.INHERIT`), not just the command it's declared on. |
 
 **Positional param object** (`positionalParams[]`, or a value in `definitions.positionalParams`):
-same fields as an option except `names` is replaced by an optional `paramLabel` (string, defaults
-to picocli's own `"PARAM"`).
+same fields as an option (`scope` included) except `names` is replaced by an optional
+`paramLabel` (string, defaults to picocli's own `"PARAM"`), and there's no `usageHelp`/
+`versionHelp` (options only).
 
 ## Merging into a host CLI
 

@@ -31,6 +31,44 @@ public class CommandSpecDslTest {
     }
 
     @Test
+    public void inheritAttributeSetsScopeTypeInherit() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option --verbose : boolean inherit\n" +
+                "  option --config : String\n" +
+                "  command build {}\n" +
+                "}");
+
+        assertEquals(picocli.CommandLine.ScopeType.INHERIT, spec.findOption("--verbose").scopeType());
+        assertEquals(picocli.CommandLine.ScopeType.LOCAL, spec.findOption("--config").scopeType());
+    }
+
+    @Test
+    public void inheritedOptionActuallyWorksOnASubcommand() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option --verbose : boolean inherit\n" +
+                "  command build {}\n" +
+                "}");
+
+        CommandLine cmd = new CommandLine(spec);
+        ParseResult result = cmd.parseArgs("build", "--verbose");
+
+        assertTrue(result.hasSubcommand());
+        assertTrue(result.subcommand().matchedOptionValue("--verbose", Boolean.FALSE));
+    }
+
+    @Test
+    public void inheritAttributeWorksOnPositionalsToo() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  positional files : File[] inherit arity=0..*\n" +
+                "}");
+
+        assertEquals(picocli.CommandLine.ScopeType.INHERIT, spec.positionalParameters().get(0).scopeType());
+    }
+
+    @Test
     public void parsesUsageHelpAndVersionHelpAttributes() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "command flix {\n" +

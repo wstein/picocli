@@ -149,6 +149,7 @@ public final class CommandSpecJson {
         if (usageHelp != null) { builder.usageHelp((Boolean) usageHelp); }
         Object versionHelp = json.get("versionHelp");
         if (versionHelp != null) { builder.versionHelp((Boolean) versionHelp); }
+        if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
         return builder.build();
     }
 
@@ -166,7 +167,12 @@ public final class CommandSpecJson {
         if (required != null) { builder.required((Boolean) required); }
         String arity = (String) json.get("arity");
         if (arity != null) { builder.arity(arity); }
+        if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
         return builder.build();
+    }
+
+    private static boolean isInheritScope(Map<String, Object> json) {
+        return "inherit".equals(json.get("scope"));
     }
 
     // ---- writing: CommandSpec -> JSON ----
@@ -226,6 +232,9 @@ public final class CommandSpecJson {
             json.put("required", Boolean.TRUE);
         }
         json.put("arity", arg.arity().toString());
+        if (arg.scopeType() == picocli.CommandLine.ScopeType.INHERIT) {
+            json.put("scope", "inherit");
+        }
     }
 
     private static void putDescriptionIfPresent(Map<String, Object> json, String[] description) {

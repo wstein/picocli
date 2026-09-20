@@ -84,7 +84,8 @@
           "type": "boolean",
           "default": false,
           "description": "Marks this as picocli's built-in version-help option: matching it auto-prints the version message and short-circuits execution. Options only."
-        }
+        },
+        "scope": { "$ref": "#/$defs/scope" }
       }
     },
     "positionalParam": {
@@ -99,7 +100,8 @@
         "description": { "$ref": "#/$defs/descriptionLines" },
         "defaultValue": { "$ref": "#/$defs/defaultValue" },
         "required": { "$ref": "#/$defs/required" },
-        "arity": { "$ref": "#/$defs/arity" }
+        "arity": { "$ref": "#/$defs/arity" },
+        "scope": { "$ref": "#/$defs/scope" }
       }
     },
     "descriptionLines": {
@@ -126,6 +128,12 @@
       "pattern": "^[0-9]+(\\.\\.([0-9]+|\\*))?$",
       "examples": ["0", "1", "0..1", "1..*", "0..*"],
       "description": "Parsed by picocli.CommandLine.Model.Range.valueOf(String): a single count, or a min..max range where max may be \"*\" for unbounded."
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["local", "inherit"],
+      "default": "local",
+      "description": "\"inherit\" (picocli's ScopeType.INHERIT) makes this option/positional param also apply to every descendant subcommand, not just the command it's declared on. Omit (or \"local\") for the default, command-only behavior."
     }
   }
 }

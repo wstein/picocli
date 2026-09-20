@@ -132,6 +132,44 @@ public class CommandSpecJsonTest {
     }
 
     @Test
+    public void readsInheritScopeOnOptionsAndPositionals() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
+                "\"options\": [ { \"names\": [\"--verbose\"], \"type\": \"boolean\", \"scope\": \"inherit\" }, " +
+                "{ \"names\": [\"--config\"], \"type\": \"String\" } ], " +
+                "\"positionalParams\": [ { \"paramLabel\": \"<files>\", \"type\": \"File[]\", \"scope\": \"inherit\" } ]," +
+                "\"subcommands\": [ { \"name\": \"build\" } ] }");
+
+        assertEquals(picocli.CommandLine.ScopeType.INHERIT, spec.findOption("--verbose").scopeType());
+        assertEquals(picocli.CommandLine.ScopeType.LOCAL, spec.findOption("--config").scopeType());
+        assertEquals(picocli.CommandLine.ScopeType.INHERIT, spec.positionalParameters().get(0).scopeType());
+    }
+
+    @Test
+    public void inheritedOptionActuallyWorksOnASubcommand() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", " +
+                "\"options\": [ { \"names\": [\"--verbose\"], \"type\": \"boolean\", \"scope\": \"inherit\" } ], " +
+                "\"subcommands\": [ { \"name\": \"build\" } ] }");
+
+        CommandLine cmd = new CommandLine(spec);
+        ParseResult result = cmd.parseArgs("build", "--verbose");
+
+        assertTrue(result.hasSubcommand());
+        assertTrue(result.subcommand().matchedOptionValue("--verbose", Boolean.FALSE));
+    }
+
+    @Test
+    public void writingInheritScopeRoundTrips() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"--verbose\"], \"type\": \"boolean\", \"scope\": \"inherit\" }" +
+                "]}");
+
+        String json = CommandSpecJson.write(spec);
+
+        assertTrue(json.contains("\"scope\": \"inherit\""));
+        assertEquals(picocli.CommandLine.ScopeType.INHERIT, CommandSpecJson.read(json).findOption("--verbose").scopeType());
+    }
+
+    @Test
     public void readsUsageHelpAndVersionHelpFlags() {
         CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
                 "{ \"names\": [\"--help\"], \"type\": \"boolean\", \"usageHelp\": true }," +

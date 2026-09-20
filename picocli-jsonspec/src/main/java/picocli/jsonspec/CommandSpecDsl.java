@@ -320,7 +320,7 @@ public final class CommandSpecDsl {
                 builder.description(advance().text);
             }
             while (checkWord("default") || checkWord("required") || checkWord("arity")
-                    || checkWord("usageHelp") || checkWord("versionHelp")) {
+                    || checkWord("usageHelp") || checkWord("versionHelp") || checkWord("inherit")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
@@ -328,6 +328,8 @@ public final class CommandSpecDsl {
                     builder.usageHelp(true);
                 } else if ("versionHelp".equals(attr)) {
                     builder.versionHelp(true);
+                } else if ("inherit".equals(attr)) {
+                    builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();
@@ -352,10 +354,12 @@ public final class CommandSpecDsl {
             if (check(TokenKind.STRING)) {
                 builder.description(advance().text);
             }
-            while (checkWord("default") || checkWord("required") || checkWord("arity")) {
+            while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
+                } else if ("inherit".equals(attr)) {
+                    builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();
