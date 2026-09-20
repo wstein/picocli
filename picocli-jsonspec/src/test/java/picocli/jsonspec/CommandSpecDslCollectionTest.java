@@ -133,6 +133,89 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
+    public void collectionCanBundleAGroup() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --json : boolean\n" +
+                "  option --xml : boolean\n" +
+                "  collection outputFormat {\n" +
+                "    group exclusive \"Output format\" {\n" +
+                "      option --json\n" +
+                "      option --xml\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix {\n" +
+                "  command check { use outputFormat }\n" +
+                "}");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertEquals(1, check.argGroups().size());
+        assertTrue(check.argGroups().get(0).exclusive());
+        assertEquals("Output format", check.argGroups().get(0).heading());
+        assertEquals(2, check.options().size());
+    }
+
+    @Test
+    public void twoUsesOfACollectionGroupGetIndependentGroupInstances() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --json : boolean\n" +
+                "  collection outputFormat {\n" +
+                "    group exclusive { option --json }\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix {\n" +
+                "  command check { use outputFormat }\n" +
+                "  command build { use outputFormat }\n" +
+                "}");
+
+        assertNotSame(
+                spec.subcommands().get("check").getCommandSpec().argGroups().get(0),
+                spec.subcommands().get("build").getCommandSpec().argGroups().get(0));
+        assertNotSame(
+                spec.subcommands().get("check").getCommandSpec().findOption("--json"),
+                spec.subcommands().get("build").getCommandSpec().findOption("--json"));
+    }
+
+    @Test
+    public void collectionGroupCanBeExclusiveGroupWithMutualExclusionEnforced() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --json : boolean\n" +
+                "  option --xml : boolean\n" +
+                "  collection outputFormat {\n" +
+                "    group exclusive { option --json option --xml }\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix { command check { use outputFormat } }");
+        CommandLine cmd = new CommandLine(spec);
+
+        try {
+            cmd.parseArgs("check", "--json", "--xml");
+            fail("expected MutuallyExclusiveArgsException");
+        } catch (CommandLine.MutuallyExclusiveArgsException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void collectionGroupCanBeHidden() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "definitions {\n" +
+                "  option --Xfoo : boolean\n" +
+                "  collection xflags {\n" +
+                "    group cooperative hidden \"Experimental\" { option --Xfoo }\n" +
+                "  }\n" +
+                "}\n" +
+                "command flix { command check { use xflags } }");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertTrue(check.argGroups().isEmpty());
+        assertTrue(check.findOption("--Xfoo").hidden());
+    }
+
+    @Test
     public void expandedOptionsActuallyParse() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +

@@ -127,14 +127,65 @@ public final class CommandSpecDsl {
         }
     }
 
-    /** A named, reusable bundle of already-defined option/positional names, expanded by a {@code use} statement. */
+    /**
+     * A named, reusable bundle of already-defined option/positional names, plus any groups
+     * declared inline within the {@code collection} block, expanded by a {@code use} statement.
+     */
     private static final class Collection {
         final List<String> optionNames;
         final List<String> positionalLabels;
+        final List<GroupTemplate> groups;
 
-        Collection(List<String> optionNames, List<String> positionalLabels) {
+        Collection(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
             this.optionNames = optionNames;
             this.positionalLabels = positionalLabels;
+            this.groups = groups;
+        }
+    }
+
+    /**
+     * A group declared inside a {@code collection} block: unlike a normal inline group (built and
+     * attached immediately by {@code parseGroup}), this one may be materialized more than once --
+     * once per {@code use} of the collection -- so its members are stored as templates and cloned
+     * fresh (via picocli's own {@code OptionSpec.builder(original)}/{@code PositionalParamSpec.builder(original)})
+     * at each {@link #materialize}. Hidden handling mirrors {@code parseGroup}'s exactly.
+     */
+    private static final class GroupTemplate {
+        final boolean exclusive;
+        final String multiplicity;
+        final boolean hidden;
+        final String heading;
+        final List<OptionSpec> options;
+        final List<PositionalParamSpec> positionals;
+        final List<GroupTemplate> subgroups;
+
+        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String heading,
+                      List<OptionSpec> options, List<PositionalParamSpec> positionals, List<GroupTemplate> subgroups) {
+            this.exclusive = exclusive;
+            this.multiplicity = multiplicity;
+            this.hidden = hidden;
+            this.heading = heading;
+            this.options = options;
+            this.positionals = positionals;
+            this.subgroups = subgroups;
+        }
+
+        void materialize(ArgSink sink) {
+            if (hidden) {
+                ArgSink hidingSink = new HidingArgSink(sink);
+                for (OptionSpec option : options) { hidingSink.addOption(option); }
+                for (PositionalParamSpec positional : positionals) { hidingSink.addPositional(positional); }
+                for (GroupTemplate subgroup : subgroups) { subgroup.materialize(hidingSink); }
+                return;
+            }
+            ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
+            if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (heading != null) { builder.heading(heading); }
+            ArgSink groupSink = new GroupArgSink(builder);
+            for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
+            for (PositionalParamSpec positional : positionals) { groupSink.addPositional(PositionalParamSpec.builder(positional).build()); }
+            for (GroupTemplate subgroup : subgroups) { subgroup.materialize(groupSink); }
+            sink.addGroup(builder.build());
         }
     }
 
@@ -163,6 +214,26 @@ public final class CommandSpecDsl {
         public void addOption(OptionSpec option) { builder.addArg(option); }
         public void addPositional(PositionalParamSpec positional) { builder.addArg(positional); }
         public void addGroup(ArgGroupSpec group) { builder.addSubgroup(group); }
+    }
+
+    /**
+     * Wraps another {@link ArgSink}, forcing every option/positional added through it to
+     * {@code hidden}. A nested (non-hidden-declared) subgroup reaching {@link #addGroup} is
+     * flattened too, recursively -- once any ancestor group is hidden, nothing group-shaped
+     * may reach picocli, so a subgroup's own exclusive/cooperative/multiplicity is discarded
+     * rather than preserved as a real nested {@link ArgGroupSpec}.
+     */
+    private static final class HidingArgSink implements ArgSink {
+        private final ArgSink delegate;
+        HidingArgSink(ArgSink delegate) { this.delegate = delegate; }
+        public void addOption(OptionSpec option) { delegate.addOption(OptionSpec.builder(option).hidden(true).build()); }
+        public void addPositional(PositionalParamSpec positional) { delegate.addPositional(PositionalParamSpec.builder(positional).hidden(true).build()); }
+        public void addGroup(ArgGroupSpec group) {
+            for (picocli.CommandLine.Model.ArgSpec arg : group.args()) {
+                if (arg.isOption()) { addOption((OptionSpec) arg); } else { addPositional((PositionalParamSpec) arg); }
+            }
+            for (ArgGroupSpec subgroup : group.subgroups()) { addGroup(subgroup); }
+        }
     }
 
     // ---- lexer ----
@@ -322,6 +393,7 @@ public final class CommandSpecDsl {
                     expect(TokenKind.LBRACE, "'{'");
                     List<String> optionNames = new ArrayList<String>();
                     List<String> positionalLabels = new ArrayList<String>();
+                    List<GroupTemplate> groupTemplates = new ArrayList<GroupTemplate>();
                     while (!check(TokenKind.RBRACE)) {
                         if (checkWord("option")) {
                             advance();
@@ -339,12 +411,14 @@ public final class CommandSpecDsl {
                             }
                             soFar.resolvePositional(label);
                             positionalLabels.add(label);
+                        } else if (checkWord("group")) {
+                            groupTemplates.add(parseGroupTemplate(soFar));
                         } else {
-                            throw new DslParseException("Expected 'option' or 'positional' but found '" + current().text + "'");
+                            throw new DslParseException("Expected 'option', 'positional', or 'group' but found '" + current().text + "'");
                         }
                     }
                     expect(TokenKind.RBRACE, "'}'");
-                    collections.put(collectionName, new Collection(optionNames, positionalLabels));
+                    collections.put(collectionName, new Collection(optionNames, positionalLabels, groupTemplates));
                 } else {
                     throw new DslParseException("Expected 'option', 'positional', or 'collection' but found '" + current().text + "'");
                 }
@@ -417,6 +491,68 @@ public final class CommandSpecDsl {
             for (String label : collection.positionalLabels) {
                 sink.addPositional(definitions.resolvePositional(label));
             }
+            for (GroupTemplate groupTemplate : collection.groups) {
+                groupTemplate.materialize(sink);
+            }
+        }
+
+        /**
+         * Parses a {@code group} declared inside a {@code collection} block into a
+         * {@link GroupTemplate} instead of materializing it immediately, since a collection's
+         * group may be materialized more than once (once per {@code use}). Grammar is otherwise
+         * identical to a normal inline group.
+         */
+        private GroupTemplate parseGroupTemplate(Definitions definitions) {
+            expectKeyword("group");
+            String kind = expectWord();
+            boolean exclusive;
+            if ("exclusive".equals(kind)) {
+                exclusive = true;
+            } else if ("cooperative".equals(kind)) {
+                exclusive = false;
+            } else {
+                throw new DslParseException("Expected 'exclusive' or 'cooperative' but found '" + kind + "'");
+            }
+
+            String multiplicity = null;
+            boolean hidden = false;
+            while (checkWord("multiplicity") || checkWord("hidden")) {
+                String attr = advance().text;
+                if ("hidden".equals(attr)) {
+                    hidden = true;
+                } else {
+                    expect(TokenKind.EQUALS, "'='");
+                    multiplicity = expectWordOrString();
+                }
+            }
+            String heading = check(TokenKind.STRING) ? advance().text : null;
+
+            List<OptionSpec> options = new ArrayList<OptionSpec>();
+            List<PositionalParamSpec> positionals = new ArrayList<PositionalParamSpec>();
+            List<GroupTemplate> subgroups = new ArrayList<GroupTemplate>();
+            expect(TokenKind.LBRACE, "'{'");
+            while (!check(TokenKind.RBRACE)) {
+                if (!check(TokenKind.WORD) || !isMemberKeyword(current().text)) {
+                    throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + current().text + "'");
+                }
+                String keyword = current().text;
+                if ("option".equals(keyword)) {
+                    options.add(parseOption(definitions));
+                } else if ("positional".equals(keyword)) {
+                    positionals.add(parsePositional(definitions));
+                } else if ("group".equals(keyword)) {
+                    subgroups.add(parseGroupTemplate(definitions));
+                } else if ("use".equals(keyword)) {
+                    advance();
+                    String name = expectWord();
+                    Collection nested = definitions.resolveCollection(name);
+                    for (String optionName : nested.optionNames) { options.add(definitions.resolveOption(optionName)); }
+                    for (String label : nested.positionalLabels) { positionals.add(definitions.resolvePositional(label)); }
+                    subgroups.addAll(nested.groups);
+                }
+            }
+            expect(TokenKind.RBRACE, "'}'");
+            return new GroupTemplate(exclusive, multiplicity, hidden, heading, options, positionals, subgroups);
         }
 
         /**
@@ -478,26 +614,6 @@ public final class CommandSpecDsl {
             }
             expect(TokenKind.RBRACE, "'}'");
             sink.addGroup(builder.build());
-        }
-
-        /**
-         * Wraps another {@link ArgSink}, forcing every option/positional added through it to
-         * {@code hidden}. A nested (non-hidden-declared) subgroup reaching {@link #addGroup} is
-         * flattened too, recursively -- once any ancestor group is hidden, nothing group-shaped
-         * may reach picocli, so a subgroup's own exclusive/cooperative/multiplicity is discarded
-         * rather than preserved as a real nested {@link ArgGroupSpec}.
-         */
-        private static final class HidingArgSink implements ArgSink {
-            private final ArgSink delegate;
-            HidingArgSink(ArgSink delegate) { this.delegate = delegate; }
-            public void addOption(OptionSpec option) { delegate.addOption(OptionSpec.builder(option).hidden(true).build()); }
-            public void addPositional(PositionalParamSpec positional) { delegate.addPositional(PositionalParamSpec.builder(positional).hidden(true).build()); }
-            public void addGroup(ArgGroupSpec group) {
-                for (picocli.CommandLine.Model.ArgSpec arg : group.args()) {
-                    if (arg.isOption()) { addOption((OptionSpec) arg); } else { addPositional((PositionalParamSpec) arg); }
-                }
-                for (ArgGroupSpec subgroup : group.subgroups()) { addGroup(subgroup); }
-            }
         }
 
         private OptionSpec parseOption(Definitions definitions) {
