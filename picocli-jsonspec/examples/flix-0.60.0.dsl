@@ -46,7 +46,7 @@ definitions {
 
   // Bundles the 14 flags above so each of check/build/run/test can pull them all in with one
   // "use xflags" instead of listing every name.
-  collection xflags {
+  bundle xflags {
     option --Xbenchmark-code-size
     option --Xbenchmark-incremental
     option --Xbenchmark-phases

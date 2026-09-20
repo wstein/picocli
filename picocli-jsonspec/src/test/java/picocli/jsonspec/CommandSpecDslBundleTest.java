@@ -10,20 +10,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * A {@code collection} inside {@code definitions} names a reusable bundle of already-defined
+ * A {@code bundle} inside {@code definitions} names a reusable bundle of already-defined
  * options/positionals; {@code use <name>} inside a command or group body expands the whole
  * bundle at that point (each member freshly cloned, same as an individual reference) instead of
  * listing every member name individually.
  */
-public class CommandSpecDslCollectionTest {
+public class CommandSpecDslBundleTest {
 
     @Test
-    public void useExpandsEveryOptionInTheCollection() {
+    public void useExpandsEveryOptionInTheBundle() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
                 "  option --Xbar : boolean\n" +
-                "  collection xflags {\n" +
+                "  bundle xflags {\n" +
                 "    option --Xfoo\n" +
                 "    option --Xbar\n" +
                 "  }\n" +
@@ -45,7 +45,7 @@ public class CommandSpecDslCollectionTest {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  positional files : File[] arity=0..*\n" +
-                "  collection inputs {\n" +
+                "  bundle inputs {\n" +
                 "    positional files\n" +
                 "  }\n" +
                 "}\n" +
@@ -64,7 +64,7 @@ public class CommandSpecDslCollectionTest {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
-                "  collection xflags { option --Xfoo }\n" +
+                "  bundle xflags { option --Xfoo }\n" +
                 "}\n" +
                 "command flix {\n" +
                 "  command check {\n" +
@@ -83,7 +83,7 @@ public class CommandSpecDslCollectionTest {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
-                "  collection xflags { option --Xfoo }\n" +
+                "  bundle xflags { option --Xfoo }\n" +
                 "}\n" +
                 "command flix {\n" +
                 "  group cooperative \"Experimental\" {\n" +
@@ -96,11 +96,11 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void twoUsesOfTheSameCollectionGetIndependentInstances() {
+    public void twoUsesOfTheSameBundleGetIndependentInstances() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
-                "  collection xflags { option --Xfoo }\n" +
+                "  bundle xflags { option --Xfoo }\n" +
                 "}\n" +
                 "command flix {\n" +
                 "  command check { use xflags }\n" +
@@ -113,9 +113,9 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void collectionMemberMustAlreadyBeDefined() {
+    public void bundleMemberMustAlreadyBeDefined() {
         try {
-            CommandSpecDsl.parse("definitions { collection xflags { option --nope } }\ncommand flix {}");
+            CommandSpecDsl.parse("definitions { bundle xflags { option --nope } }\ncommand flix {}");
             fail("expected DslParseException");
         } catch (DslParseException expected) {
             assertTrue(expected.getMessage().contains("--nope"));
@@ -123,7 +123,7 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void rejectsUseOfUndefinedCollection() {
+    public void rejectsUseOfUndefinedBundle() {
         try {
             CommandSpecDsl.parse("command flix { use nope }");
             fail("expected DslParseException");
@@ -133,12 +133,12 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void collectionCanBundleAGroup() {
+    public void bundleCanBundleAGroup() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --json : boolean\n" +
                 "  option --xml : boolean\n" +
-                "  collection outputFormat {\n" +
+                "  bundle outputFormat {\n" +
                 "    group exclusive \"Output format\" {\n" +
                 "      option --json\n" +
                 "      option --xml\n" +
@@ -157,11 +157,11 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void twoUsesOfACollectionGroupGetIndependentGroupInstances() {
+    public void twoUsesOfABundleGroupGetIndependentGroupInstances() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --json : boolean\n" +
-                "  collection outputFormat {\n" +
+                "  bundle outputFormat {\n" +
                 "    group exclusive { option --json }\n" +
                 "  }\n" +
                 "}\n" +
@@ -179,12 +179,12 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void collectionGroupCanBeExclusiveGroupWithMutualExclusionEnforced() {
+    public void bundleGroupCanBeExclusiveGroupWithMutualExclusionEnforced() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --json : boolean\n" +
                 "  option --xml : boolean\n" +
-                "  collection outputFormat {\n" +
+                "  bundle outputFormat {\n" +
                 "    group exclusive { option --json option --xml }\n" +
                 "  }\n" +
                 "}\n" +
@@ -200,11 +200,11 @@ public class CommandSpecDslCollectionTest {
     }
 
     @Test
-    public void collectionGroupCanBeHidden() {
+    public void bundleGroupCanBeHidden() {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
-                "  collection xflags {\n" +
+                "  bundle xflags {\n" +
                 "    group cooperative hidden \"Experimental\" { option --Xfoo }\n" +
                 "  }\n" +
                 "}\n" +
@@ -220,7 +220,7 @@ public class CommandSpecDslCollectionTest {
         CommandSpec spec = CommandSpecDsl.parse(
                 "definitions {\n" +
                 "  option --Xfoo : boolean\n" +
-                "  collection xflags { option --Xfoo }\n" +
+                "  bundle xflags { option --Xfoo }\n" +
                 "}\n" +
                 "command flix {\n" +
                 "  command check { use xflags }\n" +

@@ -50,17 +50,17 @@ public final class CommandSpecJson {
      */
     private static final class Definitions {
         static final Definitions EMPTY = new Definitions(java.util.Collections.<String, Map<String, Object>>emptyMap(),
-                java.util.Collections.<String, Map<String, Object>>emptyMap(), java.util.Collections.<String, Collection>emptyMap());
+                java.util.Collections.<String, Map<String, Object>>emptyMap(), java.util.Collections.<String, Bundle>emptyMap());
 
         final Map<String, Map<String, Object>> options;
         final Map<String, Map<String, Object>> positionalParams;
-        final Map<String, Collection> collections;
+        final Map<String, Bundle> bundles;
 
         Definitions(Map<String, Map<String, Object>> options, Map<String, Map<String, Object>> positionalParams,
-                    Map<String, Collection> collections) {
+                    Map<String, Bundle> bundles) {
             this.options = options;
             this.positionalParams = positionalParams;
-            this.collections = collections;
+            this.bundles = bundles;
         }
 
         @SuppressWarnings("unchecked")
@@ -68,14 +68,14 @@ public final class CommandSpecJson {
             if (json == null) { return EMPTY; }
             Map<String, Map<String, Object>> options = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("options"));
             Map<String, Map<String, Object>> positionalParams = (Map<String, Map<String, Object>>) (Map<String, ?>) mapOrEmpty(json.get("positionalParams"));
-            Definitions withoutCollections = new Definitions(options, positionalParams, java.util.Collections.<String, Collection>emptyMap());
+            Definitions withoutBundles = new Definitions(options, positionalParams, java.util.Collections.<String, Bundle>emptyMap());
 
-            Map<String, Collection> collections = new LinkedHashMap<String, Collection>();
-            Map<String, Object> collectionsJson = mapOrEmpty(json.get("collections"));
-            for (Map.Entry<String, Object> entry : collectionsJson.entrySet()) {
-                collections.put(entry.getKey(), Collection.from((Map<String, Object>) entry.getValue(), withoutCollections));
+            Map<String, Bundle> bundles = new LinkedHashMap<String, Bundle>();
+            Map<String, Object> bundlesJson = mapOrEmpty(json.get("bundles"));
+            for (Map.Entry<String, Object> entry : bundlesJson.entrySet()) {
+                bundles.put(entry.getKey(), Bundle.from((Map<String, Object>) entry.getValue(), withoutBundles));
             }
-            return new Definitions(options, positionalParams, collections);
+            return new Definitions(options, positionalParams, bundles);
         }
 
         @SuppressWarnings("unchecked")
@@ -99,33 +99,33 @@ public final class CommandSpecJson {
             return def;
         }
 
-        Collection resolveCollection(String name) {
-            Collection collection = collections.get(name);
-            if (collection == null) {
-                throw new IllegalArgumentException("Reference to undefined collection \"" + name + "\": not found in \"definitions.collections\"");
+        Bundle resolveBundle(String name) {
+            Bundle bundle = bundles.get(name);
+            if (bundle == null) {
+                throw new IllegalArgumentException("Reference to undefined bundle \"" + name + "\": not found in \"definitions.bundles\"");
             }
-            return collection;
+            return bundle;
         }
     }
 
     /**
      * A named, reusable bundle of already-defined option/positional names, plus any groups
-     * declared inline within the collection's own {@code "groups"} array, expanded by a
+     * declared inline within the bundle's own {@code "groups"} array, expanded by a
      * {@code "use"} array entry.
      */
-    private static final class Collection {
+    private static final class Bundle {
         final List<String> optionNames;
         final List<String> positionalLabels;
         final List<GroupTemplate> groups;
 
-        Collection(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
+        Bundle(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
             this.optionNames = optionNames;
             this.positionalLabels = positionalLabels;
             this.groups = groups;
         }
 
         @SuppressWarnings("unchecked")
-        static Collection from(Map<String, Object> json, Definitions definitionsSoFar) {
+        static Bundle from(Map<String, Object> json, Definitions definitionsSoFar) {
             List<String> optionNames = new ArrayList<String>();
             for (Object name : listOrEmpty(json.get("options"))) {
                 definitionsSoFar.resolveOption((String) name); // validates existence eagerly
@@ -140,14 +140,14 @@ public final class CommandSpecJson {
             for (Object group : listOrEmpty(json.get("groups"))) {
                 groups.add(GroupTemplate.from((Map<String, Object>) group, definitionsSoFar));
             }
-            return new Collection(optionNames, positionalLabels, groups);
+            return new Bundle(optionNames, positionalLabels, groups);
         }
     }
 
     /**
-     * A group declared inside a collection's {@code "groups"} array: unlike a normal argGroup
+     * A group declared inside a bundle's {@code "groups"} array: unlike a normal argGroup
      * object (read and attached immediately by {@link #readArgGroup}), this one may be
-     * materialized more than once -- once per {@code "use"} of the collection -- so its members
+     * materialized more than once -- once per {@code "use"} of the bundle -- so its members
      * are stored as templates and cloned fresh (via picocli's own
      * {@code OptionSpec.builder(original)}/{@code PositionalParamSpec.builder(original)}) at
      * each {@link #materialize}. Hidden handling mirrors {@link #readArgGroup}'s exactly.
@@ -193,7 +193,7 @@ public final class CommandSpecJson {
                 subgroups.add(GroupTemplate.from((Map<String, Object>) subgroup, definitions));
             }
             for (Object use : listOrEmpty(json.get("use"))) {
-                Collection nested = definitions.resolveCollection((String) use);
+                Bundle nested = definitions.resolveBundle((String) use);
                 for (String optionName : nested.optionNames) { options.add(readOption(definitions.resolveOption(optionName))); }
                 for (String label : nested.positionalLabels) { positionals.add(readPositional(definitions.resolvePositional(label))); }
                 subgroups.addAll(nested.groups);
@@ -320,12 +320,15 @@ public final class CommandSpecJson {
             sink.addPositional(readPositional(resolvePositionalJson(positional, definitions)));
         }
         for (Object use : listOrEmpty(json.get("use"))) {
-            Collection collection = definitions.resolveCollection((String) use);
-            for (String optionName : collection.optionNames) {
+            Bundle bundle = definitions.resolveBundle((String) use);
+            for (String optionName : bundle.optionNames) {
                 sink.addOption(readOption(definitions.resolveOption(optionName)));
             }
-            for (String label : collection.positionalLabels) {
+            for (String label : bundle.positionalLabels) {
                 sink.addPositional(readPositional(definitions.resolvePositional(label)));
+            }
+            for (GroupTemplate group : bundle.groups) {
+                group.materialize(sink);
             }
         }
     }

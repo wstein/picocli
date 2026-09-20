@@ -14,8 +14,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/** JSON equivalents of {@link CommandSpecDslHiddenGroupTest} and {@link CommandSpecDslCollectionTest}. */
-public class CommandSpecJsonHiddenGroupAndCollectionTest {
+/** JSON equivalents of {@link CommandSpecDslHiddenGroupTest} and {@link CommandSpecDslBundleTest}. */
+public class CommandSpecJsonHiddenGroupAndBundleTest {
 
     private static String usageOf(CommandSpec spec) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -66,12 +66,12 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void definitionsCollectionsAndUseExpandOptionsAndPositionals() {
+    public void definitionsBundlesAndUseExpandOptionsAndPositionals() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" }, " +
                 "                 \"--Xbar\": { \"names\": [\"--Xbar\"], \"type\": \"boolean\" } }," +
                 "  \"positionalParams\": { \"files\": { \"paramLabel\": \"<files>\", \"type\": \"File[]\", \"arity\": \"0..*\" } }," +
-                "  \"collections\": { \"xflags\": { \"options\": [\"--Xfoo\", \"--Xbar\"], \"positionalParams\": [\"files\"] } }" +
+                "  \"bundles\": { \"xflags\": { \"options\": [\"--Xfoo\", \"--Xbar\"], \"positionalParams\": [\"files\"] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [" +
                 "{ \"name\": \"check\", \"use\": [\"xflags\"] }" +
                 "]}");
@@ -84,10 +84,10 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void twoUsesOfTheSameCollectionGetIndependentInstances() {
+    public void twoUsesOfTheSameBundleGetIndependentInstances() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
+                "  \"bundles\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [" +
                 "{ \"name\": \"check\", \"use\": [\"xflags\"] }," +
                 "{ \"name\": \"build\", \"use\": [\"xflags\"] }" +
@@ -101,7 +101,7 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     public void useCanAppearOnAnArgGroup() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
+                "  \"bundles\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
                 "}, \"name\": \"flix\", \"argGroups\": [" +
                 "{ \"exclusive\": false, \"heading\": \"Experimental\", \"use\": [\"xflags\"] }" +
                 "]}");
@@ -111,7 +111,7 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void rejectsUseOfUndefinedCollection() {
+    public void rejectsUseOfUndefinedBundle() {
         try {
             CommandSpecJson.read("{ \"name\": \"flix\", \"use\": [\"nope\"] }");
             fail("expected IllegalArgumentException");
@@ -121,9 +121,9 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void rejectsCollectionReferencingUndefinedOption() {
+    public void rejectsBundleReferencingUndefinedOption() {
         try {
-            CommandSpecJson.read("{ \"definitions\": { \"collections\": {" +
+            CommandSpecJson.read("{ \"definitions\": { \"bundles\": {" +
                     "\"xflags\": { \"options\": [\"--nope\"] } } }, \"name\": \"flix\" }");
             fail("expected IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
@@ -132,11 +132,11 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void collectionCanBundleAGroup() {
+    public void bundleCanBundleAGroup() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--json\": { \"names\": [\"--json\"], \"type\": \"boolean\" }, " +
                 "                 \"--xml\": { \"names\": [\"--xml\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"outputFormat\": { \"groups\": [" +
+                "  \"bundles\": { \"outputFormat\": { \"groups\": [" +
                 "    { \"exclusive\": true, \"heading\": \"Output format\", \"options\": [\"--json\", \"--xml\"] }" +
                 "  ] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [" +
@@ -151,10 +151,10 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void twoUsesOfACollectionGroupGetIndependentGroupInstances() {
+    public void twoUsesOfABundleGroupGetIndependentGroupInstances() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--json\": { \"names\": [\"--json\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"outputFormat\": { \"groups\": [ { \"exclusive\": true, \"options\": [\"--json\"] } ] } }" +
+                "  \"bundles\": { \"outputFormat\": { \"groups\": [ { \"exclusive\": true, \"options\": [\"--json\"] } ] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [" +
                 "{ \"name\": \"check\", \"use\": [\"outputFormat\"] }," +
                 "{ \"name\": \"build\", \"use\": [\"outputFormat\"] }" +
@@ -165,10 +165,10 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
-    public void collectionGroupCanBeHidden() {
+    public void bundleGroupCanBeHidden() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"xflags\": { \"groups\": [" +
+                "  \"bundles\": { \"xflags\": { \"groups\": [" +
                 "    { \"exclusive\": false, \"hidden\": true, \"heading\": \"Experimental\", \"options\": [\"--Xfoo\"] }" +
                 "  ] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [ { \"name\": \"check\", \"use\": [\"xflags\"] } ]}");
@@ -182,7 +182,7 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     public void expandedOptionsActuallyParse() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
-                "  \"collections\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
+                "  \"bundles\": { \"xflags\": { \"options\": [\"--Xfoo\"] } }" +
                 "}, \"name\": \"flix\", \"subcommands\": [ { \"name\": \"check\", \"use\": [\"xflags\"] } ]}");
         CommandLine cmd = new CommandLine(spec);
 

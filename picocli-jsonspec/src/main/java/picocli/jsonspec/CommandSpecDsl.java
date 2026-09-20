@@ -89,17 +89,17 @@ public final class CommandSpecDsl {
     private static final class Definitions {
         static final Definitions EMPTY = new Definitions(
                 Collections.<String, OptionSpec>emptyMap(), Collections.<String, PositionalParamSpec>emptyMap(),
-                Collections.<String, Collection>emptyMap());
+                Collections.<String, Bundle>emptyMap());
 
         final Map<String, OptionSpec> options;
         final Map<String, PositionalParamSpec> positionalParams;
-        final Map<String, Collection> collections;
+        final Map<String, Bundle> bundles;
 
         Definitions(Map<String, OptionSpec> options, Map<String, PositionalParamSpec> positionalParams,
-                    Map<String, Collection> collections) {
+                    Map<String, Bundle> bundles) {
             this.options = options;
             this.positionalParams = positionalParams;
-            this.collections = collections;
+            this.bundles = bundles;
         }
 
         OptionSpec resolveOption(String name) {
@@ -118,25 +118,25 @@ public final class CommandSpecDsl {
             return PositionalParamSpec.builder(def).build();
         }
 
-        Collection resolveCollection(String name) {
-            Collection collection = collections.get(name);
-            if (collection == null) {
-                throw new DslParseException("Reference to undefined collection \"" + name + "\": not declared in the definitions block");
+        Bundle resolveBundle(String name) {
+            Bundle bundle = bundles.get(name);
+            if (bundle == null) {
+                throw new DslParseException("Reference to undefined bundle \"" + name + "\": not declared in the definitions block");
             }
-            return collection;
+            return bundle;
         }
     }
 
     /**
      * A named, reusable bundle of already-defined option/positional names, plus any groups
-     * declared inline within the {@code collection} block, expanded by a {@code use} statement.
+     * declared inline within the {@code bundle} block, expanded by a {@code use} statement.
      */
-    private static final class Collection {
+    private static final class Bundle {
         final List<String> optionNames;
         final List<String> positionalLabels;
         final List<GroupTemplate> groups;
 
-        Collection(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
+        Bundle(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
             this.optionNames = optionNames;
             this.positionalLabels = positionalLabels;
             this.groups = groups;
@@ -144,9 +144,9 @@ public final class CommandSpecDsl {
     }
 
     /**
-     * A group declared inside a {@code collection} block: unlike a normal inline group (built and
+     * A group declared inside a {@code bundle} block: unlike a normal inline group (built and
      * attached immediately by {@code parseGroup}), this one may be materialized more than once --
-     * once per {@code use} of the collection -- so its members are stored as templates and cloned
+     * once per {@code use} of the bundle -- so its members are stored as templates and cloned
      * fresh (via picocli's own {@code OptionSpec.builder(original)}/{@code PositionalParamSpec.builder(original)})
      * at each {@link #materialize}. Hidden handling mirrors {@code parseGroup}'s exactly.
      */
@@ -376,7 +376,7 @@ public final class CommandSpecDsl {
             expect(TokenKind.LBRACE, "'{'");
             Map<String, OptionSpec> options = new LinkedHashMap<String, OptionSpec>();
             Map<String, PositionalParamSpec> positionalParams = new LinkedHashMap<String, PositionalParamSpec>();
-            Map<String, Collection> collections = new LinkedHashMap<String, Collection>();
+            Map<String, Bundle> bundles = new LinkedHashMap<String, Bundle>();
             while (!check(TokenKind.RBRACE)) {
                 if (checkWord("option")) {
                     OptionSpec option = parseOption(Definitions.EMPTY);
@@ -384,12 +384,12 @@ public final class CommandSpecDsl {
                 } else if (checkWord("positional")) {
                     PositionalParamSpec positional = parsePositional(Definitions.EMPTY);
                     positionalParams.put(unwrapParamLabel(positional.paramLabel()), positional);
-                } else if (checkWord("collection")) {
-                    // Definitions available so far -- a collection may only bundle options/positionals
+                } else if (checkWord("bundle")) {
+                    // Definitions available so far -- a bundle may only include options/positionals
                     // already defined earlier in this same block, by bare reference (no ':').
-                    Definitions soFar = new Definitions(options, positionalParams, collections);
+                    Definitions soFar = new Definitions(options, positionalParams, bundles);
                     advance();
-                    String collectionName = expectWord();
+                    String bundleName = expectWord();
                     expect(TokenKind.LBRACE, "'{'");
                     List<String> optionNames = new ArrayList<String>();
                     List<String> positionalLabels = new ArrayList<String>();
@@ -399,7 +399,7 @@ public final class CommandSpecDsl {
                             advance();
                             String name = expectWord();
                             if (check(TokenKind.COLON)) {
-                                throw new DslParseException("Collection members must be bare references to already-defined options (no ':'); found a definition for \"" + name + "\"");
+                                throw new DslParseException("Bundle members must be bare references to already-defined options (no ':'); found a definition for \"" + name + "\"");
                             }
                             soFar.resolveOption(name); // validates existence; discarded, re-resolved fresh at each "use"
                             optionNames.add(name);
@@ -407,7 +407,7 @@ public final class CommandSpecDsl {
                             advance();
                             String label = expectWord();
                             if (check(TokenKind.COLON)) {
-                                throw new DslParseException("Collection members must be bare references to already-defined positional parameters (no ':'); found a definition for \"" + label + "\"");
+                                throw new DslParseException("Bundle members must be bare references to already-defined positional parameters (no ':'); found a definition for \"" + label + "\"");
                             }
                             soFar.resolvePositional(label);
                             positionalLabels.add(label);
@@ -418,13 +418,13 @@ public final class CommandSpecDsl {
                         }
                     }
                     expect(TokenKind.RBRACE, "'}'");
-                    collections.put(collectionName, new Collection(optionNames, positionalLabels, groupTemplates));
+                    bundles.put(bundleName, new Bundle(optionNames, positionalLabels, groupTemplates));
                 } else {
-                    throw new DslParseException("Expected 'option', 'positional', or 'collection' but found '" + current().text + "'");
+                    throw new DslParseException("Expected 'option', 'positional', or 'bundle' but found '" + current().text + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
-            return new Definitions(options, positionalParams, collections);
+            return new Definitions(options, positionalParams, bundles);
         }
 
         private String unwrapParamLabel(String paramLabel) {
@@ -474,31 +474,31 @@ public final class CommandSpecDsl {
             } else if ("group".equals(keyword)) {
                 parseGroup(definitions, sink);
             } else if ("use".equals(keyword)) {
-                expandCollection(definitions, sink);
+                expandBundle(definitions, sink);
             } else {
                 throw new DslParseException("Expected 'option', 'positional', 'group', or 'use' but found '" + keyword + "'");
             }
         }
 
-        /** {@code use <name>}: expands every member of a {@code definitions}-block {@code collection} into {@code sink}, each freshly resolved/cloned. */
-        private void expandCollection(Definitions definitions, ArgSink sink) {
+        /** {@code use <name>}: expands every member of a {@code definitions}-block {@code bundle} into {@code sink}, each freshly resolved/cloned. */
+        private void expandBundle(Definitions definitions, ArgSink sink) {
             expectKeyword("use");
             String name = expectWord();
-            Collection collection = definitions.resolveCollection(name);
-            for (String optionName : collection.optionNames) {
+            Bundle bundle = definitions.resolveBundle(name);
+            for (String optionName : bundle.optionNames) {
                 sink.addOption(definitions.resolveOption(optionName));
             }
-            for (String label : collection.positionalLabels) {
+            for (String label : bundle.positionalLabels) {
                 sink.addPositional(definitions.resolvePositional(label));
             }
-            for (GroupTemplate groupTemplate : collection.groups) {
+            for (GroupTemplate groupTemplate : bundle.groups) {
                 groupTemplate.materialize(sink);
             }
         }
 
         /**
-         * Parses a {@code group} declared inside a {@code collection} block into a
-         * {@link GroupTemplate} instead of materializing it immediately, since a collection's
+         * Parses a {@code group} declared inside a {@code bundle} block into a
+         * {@link GroupTemplate} instead of materializing it immediately, since a bundle's
          * group may be materialized more than once (once per {@code use}). Grammar is otherwise
          * identical to a normal inline group.
          */
@@ -545,7 +545,7 @@ public final class CommandSpecDsl {
                 } else if ("use".equals(keyword)) {
                     advance();
                     String name = expectWord();
-                    Collection nested = definitions.resolveCollection(name);
+                    Bundle nested = definitions.resolveBundle(name);
                     for (String optionName : nested.optionNames) { options.add(definitions.resolveOption(optionName)); }
                     for (String label : nested.positionalLabels) { positionals.add(definitions.resolvePositional(label)); }
                     subgroups.addAll(nested.groups);

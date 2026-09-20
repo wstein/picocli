@@ -128,7 +128,7 @@ public class FlixExampleTest {
      * The 14 --X* flags are hidden (via a {@code hidden} group -- per examples/README.md's
      * reasoning, a fully hidden group can't be a real picocli ArgGroupSpec without leaving
      * visible rendering artifacts) rather than shown under a visible heading, and pulled into
-     * each command via a "use xflags" collection reference instead of listed individually. A
+     * each command via a "use xflags" bundle reference instead of listed individually. A
      * plain, non-hidden --Xhelp flag is declared alongside them for a host application to wire
      * up (see FlixExperimentalHelp).
      */
