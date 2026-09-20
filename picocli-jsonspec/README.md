@@ -45,11 +45,12 @@ CommandSpec flixSpec = CommandSpecDsl.parse(dslText);
 ### Grammar
 
 ```
-spec        := command
+spec        := definitions? command
+definitions := 'definitions' '{' ( option | positional )* '}'
 command     := 'command' name [string] '{' member* '}'
 member      := option | positional | command
-option      := 'option' name (',' name)* ':' type [string] attr*
-positional  := 'positional' name ':' type [string] attr*
+option      := 'option' name (',' name)* ( ':' type [string] attr* )?
+positional  := 'positional' name ( ':' type [string] attr* )?
 attr        := 'default' '=' value
              | 'required'
              | 'arity' '=' value
@@ -57,6 +58,10 @@ name, type,
 value       := word            // any run of non-whitespace characters other than { } : , = "
 string      := '"' ... '"'     // escapes: \" \\ \n \t
 ```
+
+An `option`/`positional` with no `: type` part is a *reference* to a same-named definition from
+the top-level `definitions` block (see below), not a new definition. Inside `definitions` itself,
+`: type` is effectively required — there's nothing to reference yet.
 
 Notes:
 
@@ -74,6 +79,57 @@ Notes:
   `$defs.type.enum`, which is tested to stay in sync with the actual reader).
 - `attr*` may appear in any order and are all optional; `required` takes no value, `default=` and
   `arity=` do.
+
+## Reusing an option/positional across commands (`definitions`)
+
+Real CLIs often have one option meaningful to many commands (`--json`, `--threads`, ...). Rather
+than repeat its type/description/etc. in every command, describe it once in a top-level
+`definitions` block and reference it by name (no `: type`) from any command:
+
+```
+definitions {
+  option --json : boolean "enables json output."
+  positional files : File "input source files." arity=0..*
+}
+
+command flix {
+  command check {
+    option --json      // reference: no ':'
+    positional files   // reference: no ':'
+  }
+  command build {
+    option --json
+    option --threads : int "number of threads to use."   // still a full definition, only used here
+  }
+}
+```
+
+A definition and a reference can be freely mixed within one command's own list, in any order. An
+option reference must name exactly one option (the target); only a *definition* (with `:`) may
+declare multiple names at once. Each reference resolves to its own independent option/positional
+instance — this only removes duplication from the source text, not from the resulting
+`CommandSpec` (there's no shared runtime state between commands, and `CommandSpecJson.write()`
+always emits fully-inlined objects regardless of how the spec was originally authored).
+
+The JSON equivalent is a document-root `"definitions"` object; any `options[]`/`positionalParams[]`
+array entry may then be either a full object (as before) or a plain string naming a
+`definitions.options`/`definitions.positionalParams` entry:
+
+```json
+{
+  "definitions": {
+    "options": { "--json": { "names": ["--json"], "type": "boolean", "description": ["enables json output."] } },
+    "positionalParams": { "files": { "paramLabel": "<files>", "type": "File", "arity": "0..*" } }
+  },
+  "name": "flix",
+  "subcommands": [
+    { "name": "check", "options": ["--json"], "positionalParams": ["files"] }
+  ]
+}
+```
+
+See [`flix-0.60.0.dsl`](examples/flix-0.60.0.dsl) for a realistic file built around this — 24
+shared options/positionals defined once and referenced from up to 10 commands each.
 
 ## JSON
 
@@ -130,11 +186,12 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 |---|---|---|---|
 | `name` | string | only inside `subcommands` | Root may omit it (keeps picocli's own placeholder name). |
 | `description` | string[] | no | One entry per usage-help line. |
-| `options` | option[] | no | |
-| `positionalParams` | positionalParam[] | no | |
+| `options` | (option \| string)[] | no | A string entry is a reference into `definitions.options` (root only, see below). |
+| `positionalParams` | (positionalParam \| string)[] | no | A string entry is a reference into `definitions.positionalParams`. |
 | `subcommands` | command[] | no | Recursive; each entry requires `name`. |
+| `definitions` | object | no | **Document root only.** `{ "options": {name: option}, "positionalParams": {label: positionalParam} }` — named templates any command's `options`/`positionalParams` array can reference by (string) name instead of inlining. |
 
-**Option object** (`options[]`):
+**Option object** (`options[]`, or a value in `definitions.options`):
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -145,8 +202,9 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 | `required` | boolean | no, default `false` | An option with a `defaultValue` is reported as not required by picocli regardless of this flag (`ArgSpec#required()`'s documented "#261" behavior) — don't set both expecting `required` to win. |
 | `arity` | string | no | e.g. `"0"`, `"1"`, `"0..1"`, `"1..*"`, `"0..*"`; parsed by `Range.valueOf(String)`. |
 
-**Positional param object** (`positionalParams[]`): same fields as an option except `names` is
-replaced by an optional `paramLabel` (string, defaults to picocli's own `"PARAM"`).
+**Positional param object** (`positionalParams[]`, or a value in `definitions.positionalParams`):
+same fields as an option except `names` is replaced by an optional `paramLabel` (string, defaults
+to picocli's own `"PARAM"`).
 
 ## Merging into a host CLI
 
@@ -176,4 +234,5 @@ subcommand.
   build` does above, and pick default values that don't double as command/option names).
 
 See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecMergerTest`,
-`CommandSpecFixturesTest`, `CommandSpecSchemaTest`) for more complete, runnable examples.
+`CommandSpecFixturesTest`, `CommandSpecSchemaTest`, `CommandSpecDslDefinitionsTest`,
+`CommandSpecJsonDefinitionsTest`, `FlixExampleTest`) for more complete, runnable examples.

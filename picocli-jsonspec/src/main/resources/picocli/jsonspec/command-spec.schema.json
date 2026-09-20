@@ -21,17 +21,38 @@
         "description": { "$ref": "#/$defs/descriptionLines" },
         "options": {
           "type": "array",
-          "items": { "$ref": "#/$defs/option" }
+          "items": { "anyOf": [ { "$ref": "#/$defs/option" }, { "$ref": "#/$defs/definitionReference" } ] }
         },
         "positionalParams": {
           "type": "array",
-          "items": { "$ref": "#/$defs/positionalParam" }
+          "items": { "anyOf": [ { "$ref": "#/$defs/positionalParam" }, { "$ref": "#/$defs/definitionReference" } ] }
         },
         "subcommands": {
           "type": "array",
           "items": { "$ref": "#/$defs/namedCommand" }
+        },
+        "definitions": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Named option/positional-param templates that this document's options/positionalParams arrays can reference by (string) name instead of inlining, reducing duplication when many commands share the same option. Only actually read at the DOCUMENT ROOT: CommandSpecJson.read() does not look for a nested \"definitions\" on a subcommand object, so while this schema (for simplicity) does not forbid one there, it would be silently inert.",
+          "properties": {
+            "options": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/option" },
+              "description": "Keyed by whatever name a reference will use (conventionally the option's own long name, e.g. \"--json\"), but the key need not equal one of the option's own \"names\"."
+            },
+            "positionalParams": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/positionalParam" },
+              "description": "Keyed by whatever label a reference will use (conventionally the positional's own bare label before angle-bracket wrapping, e.g. \"files\")."
+            }
+          }
         }
       }
+    },
+    "definitionReference": {
+      "type": "string",
+      "description": "A reference to a same-named entry in the document root's definitions.options or definitions.positionalParams, instead of a full inline object."
     },
     "namedCommand": {
       "allOf": [ { "$ref": "#/$defs/command" } ],
