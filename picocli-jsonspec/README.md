@@ -75,8 +75,9 @@ Notes:
 - A positional's bare `name` (e.g. `files`) becomes its `paramLabel` wrapped in angle brackets
   (`<files>`), matching picocli's own convention for annotated fields.
 - `type` is one of the names in [`ArgTypes`](src/main/java/picocli/jsonspec/ArgTypes.java)'s
-  vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File` (see the schema's
-  `$defs.type.enum`, which is tested to stay in sync with the actual reader).
+  vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File` — optionally
+  suffixed with `[]` for a multi-value array type, e.g. `File[]` (see the schema's
+  `$defs.type.pattern`, which is tested to stay in sync with the actual reader).
 - `attr*` may appear in any order and are all optional; `required` takes no value, `default=` and
   `arity=` do.
 
@@ -196,7 +197,7 @@ The formal, versioned reference is the JSON Schema (linked above); this table is
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `names` | string[] | **yes**, ≥1 | e.g. `["-v", "--verbose"]`. |
-| `type` | string | no | One of the `ArgTypes` names. |
+| `type` | string | no | One of the `ArgTypes` names, optionally suffixed `[]` (e.g. `File[]`) for a multi-value array — required whenever `arity` allows more than one value. |
 | `description` | string[] | no | |
 | `defaultValue` | string | no | See the "not required if it has a default" note below. |
 | `required` | boolean | no, default `false` | An option with a `defaultValue` is reported as not required by picocli regardless of this flag (`ArgSpec#required()`'s documented "#261" behavior) — don't set both expecting `required` to win. |
@@ -220,8 +221,11 @@ subcommand.
 
 ## Current limitations
 
-- Argument types are scalar only: `String`, `boolean`, `int`, `long`, `double`, `File`
-  (`ArgTypes`). Array/`Collection`-typed options and positionals aren't supported yet.
+- Base types are `String`, `boolean`, `int`, `long`, `double`, `File` (`ArgTypes`), each usable
+  as a multi-value array by suffixing `[]` (e.g. `File[]`) — required whenever `arity` allows more
+  than one value, since picocli can only bind multiple matches to an array or `Collection` type.
+  `Collection`/`Map` types (which need an explicit auxiliary type due to generics erasure) aren't
+  supported yet; arrays cover the same need without that extra complexity.
 - No `ArgGroup`/mixin support yet — flat options and positional params per command level.
 - No execution wiring is provided or assumed: a merged-in subcommand has no `run()`/`call()`
   of its own. Attach one via the host command's own dispatch logic (e.g. an `IExecutionStrategy`

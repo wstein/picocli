@@ -66,6 +66,38 @@ public class CommandSpecJsonTest {
         assertArrayEquals(new String[] {"Input files"}, files.description());
     }
 
+    /**
+     * Regression test: {@link #readsPositionalParams} uses a scalar type, which declares the
+     * right arity/paramLabel but cannot actually collect more than one value -- picocli throws
+     * UnmatchedArgumentException on the second value. An array type ("File[]") is required for a
+     * multi-value positional to actually work.
+     */
+    @Test
+    public void arrayTypePositionalActuallyCollectsMultipleValues() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"positionalParams\": [" +
+                "{ \"paramLabel\": \"<files>\", \"type\": \"File[]\", \"arity\": \"0..*\" }" +
+                "]}");
+
+        PositionalParamSpec files = spec.positionalParameters().get(0);
+        assertEquals(File[].class, files.type());
+
+        new CommandLine(spec).parseArgs("a.flix", "b.flix", "c.flix");
+
+        assertArrayEquals(new File[] {new File("a.flix"), new File("b.flix"), new File("c.flix")}, (File[]) files.getValue());
+    }
+
+    @Test
+    public void writingAnArrayTypeRoundTripsThroughTheSuffixedName() {
+        CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"options\": [" +
+                "{ \"names\": [\"--tag\"], \"type\": \"String[]\", \"arity\": \"0..*\" }" +
+                "]}");
+
+        String json = CommandSpecJson.write(spec);
+
+        assertTrue(json.contains("\"String[]\""));
+        assertEquals(String[].class, CommandSpecJson.read(json).findOption("--tag").type());
+    }
+
     @Test
     public void readsNestedSubcommands() {
         CommandSpec spec = CommandSpecJson.read("{ \"name\": \"flix\", \"subcommands\": [" +

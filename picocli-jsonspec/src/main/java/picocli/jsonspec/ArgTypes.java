@@ -11,8 +11,14 @@ import java.util.Set;
  * {@code "File"}) and the actual {@link Class} picocli should use for an option or positional
  * parameter. Shared by {@link CommandSpecJson} and the DSL parser so both accept and produce
  * the same vocabulary.
- * <p>Scope is deliberately limited to scalar types for now; array/Collection-typed arguments
- * are not yet supported.</p>
+ * <p>Any scalar type name may be suffixed with {@code "[]"} (e.g. {@code "File[]"}) for a
+ * multi-value option/positional backed by a real array type. This is not just cosmetic: picocli
+ * requires an array or {@code Collection} type to bind more than one value to an option or
+ * positional parameter -- an {@code arity="0..*"} argument declared with a plain scalar type
+ * (e.g. {@code "File"}) throws {@code UnmatchedArgumentException} on the second value, since a
+ * scalar field can only ever hold one match. {@code Collection}/{@code Map} types (which need an
+ * explicit auxiliary type due to generics erasure) are not yet supported; arrays cover the same
+ * need without that extra complexity.</p>
  */
 final class ArgTypes {
 
@@ -39,15 +45,25 @@ final class ArgTypes {
         return Collections.unmodifiableSet(TYPES_BY_NAME.keySet());
     }
 
+    private static final String ARRAY_SUFFIX = "[]";
+
     static Class<?> toClass(String typeName) {
+        if (typeName.endsWith(ARRAY_SUFFIX)) {
+            String baseName = typeName.substring(0, typeName.length() - ARRAY_SUFFIX.length());
+            return java.lang.reflect.Array.newInstance(toClass(baseName), 0).getClass();
+        }
         Class<?> type = TYPES_BY_NAME.get(typeName);
         if (type == null) {
-            throw new IllegalArgumentException("Unknown type \"" + typeName + "\": supported types are " + names());
+            throw new IllegalArgumentException("Unknown type \"" + typeName + "\": supported types are " + names()
+                    + " (optionally suffixed with \"[]\" for a multi-value array type)");
         }
         return type;
     }
 
     static String toName(Class<?> type) {
+        if (type.isArray()) {
+            return toName(type.getComponentType()) + ARRAY_SUFFIX;
+        }
         String name = NAMES_BY_TYPE.get(type);
         return name != null ? name : type.getSimpleName();
     }

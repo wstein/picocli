@@ -31,4 +31,27 @@ public class ArgTypesTest {
             // ok
         }
     }
+
+    @Test
+    public void resolvesArrayTypeSuffix() {
+        assertEquals(File[].class, ArgTypes.toClass("File[]"));
+        assertEquals(String[].class, ArgTypes.toClass("String[]"));
+        assertEquals(int[].class, ArgTypes.toClass("int[]"));
+    }
+
+    @Test
+    public void rejectsArrayOfUnknownBaseType() {
+        try {
+            ArgTypes.toClass("Frobnicator[]");
+            org.junit.Assert.fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            org.junit.Assert.assertTrue(expected.getMessage().contains("Frobnicator"));
+        }
+    }
+
+    @Test
+    public void writesArrayTypeBackToItsSuffixedName() {
+        assertEquals("File[]", ArgTypes.toName(File[].class));
+        assertEquals("String[]", ArgTypes.toName(String[].class));
+    }
 }

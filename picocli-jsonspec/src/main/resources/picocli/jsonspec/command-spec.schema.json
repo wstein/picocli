@@ -99,8 +99,9 @@
     },
     "type": {
       "type": "string",
-      "enum": ["String", "boolean", "int", "long", "double", "File"],
-      "description": "See picocli.jsonspec.ArgTypes. Scalar types only, by design; array/Collection-typed options and positional parameters are not yet supported."
+      "pattern": "^(String|boolean|int|long|double|File)(\\[\\])?$",
+      "examples": ["String", "boolean", "File[]", "String[]"],
+      "description": "See picocli.jsonspec.ArgTypes. One of the scalar type names, optionally suffixed with \"[]\" for a multi-value array type -- required whenever arity allows more than one value: picocli can only bind multiple matches to an array or Collection type (Collection/Map types, which need an explicit auxiliary type due to generics erasure, are not yet supported; arrays cover the same need)."
     },
     "defaultValue": {
       "type": "string",

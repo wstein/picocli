@@ -72,6 +72,41 @@ public class CommandSpecDslTest {
         assertEquals("0..*", files.arity().toString());
     }
 
+    /**
+     * Regression test: a scalar type (as in {@link #parsesPositionalParams}) declares the right
+     * arity/paramLabel but cannot actually collect more than one value -- picocli throws
+     * UnmatchedArgumentException on the second value, since a scalar field can only ever hold
+     * one match. An array type is required for a multi-value positional to actually work.
+     */
+    @Test
+    public void arrayTypePositionalActuallyCollectsMultipleValues() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  positional files : File[] \"Input files\" arity=0..*\n" +
+                "}");
+
+        PositionalParamSpec files = spec.positionalParameters().get(0);
+        assertEquals(File[].class, files.type());
+
+        CommandLine cmd = new CommandLine(spec);
+        cmd.parseArgs("a.flix", "b.flix", "c.flix");
+
+        assertArrayEquals(new File[] {new File("a.flix"), new File("b.flix"), new File("c.flix")}, (File[]) files.getValue());
+    }
+
+    @Test
+    public void arrayTypeOptionActuallyCollectsMultipleValues() {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command flix {\n" +
+                "  option --tag : String[] arity=0..*\n" +
+                "}");
+
+        CommandLine cmd = new CommandLine(spec);
+        cmd.parseArgs("--tag", "a", "--tag", "b");
+
+        assertArrayEquals(new String[] {"a", "b"}, (String[]) spec.findOption("--tag").getValue());
+    }
+
     @Test
     public void parsesNestedSubcommands() {
         CommandSpec spec = CommandSpecDsl.parse(

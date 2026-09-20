@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -70,28 +71,33 @@ public class CommandSpecSchemaTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void schemaTypeEnumMatchesArgTypes() {
+    public void schemaTypePatternMatchesEveryArgTypesNameAndItsArraySuffix() {
         Map<String, Object> schema = schema();
         Map<String, Object> defs = (Map<String, Object>) schema.get("$defs");
-        Map<String, Object> typeDef = (Map<String, Object>) defs.get("type");
-        List<Object> enumValues = (List<Object>) typeDef.get("enum");
+        Pattern typePattern = Pattern.compile((String) ((Map<String, Object>) defs.get("type")).get("pattern"));
 
-        assertEquals(ArgTypes.names(), new HashSet<Object>(enumValues));
+        for (String name : ArgTypes.names()) {
+            assertTrue("schema type pattern should accept \"" + name + "\"", typePattern.matcher(name).matches());
+            assertTrue("schema type pattern should accept \"" + name + "[]\"", typePattern.matcher(name + "[]").matches());
+        }
+        assertFalse("schema type pattern should reject an unknown type", typePattern.matcher("Frobnicator").matches());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void everyFixtureTypeValueIsInTheSchemaEnum() {
+    public void everyFixtureTypeValueMatchesTheSchemaTypePattern() {
         Map<String, Object> schema = schema();
         Map<String, Object> defs = (Map<String, Object>) schema.get("$defs");
-        Set<Object> allowedTypes = new HashSet<Object>((List<Object>) ((Map<String, Object>) defs.get("type")).get("enum"));
+        Pattern typePattern = Pattern.compile((String) ((Map<String, Object>) defs.get("type")).get("pattern"));
 
         Map<String, Object> fixture = readClasspathJson("/picocli/jsonspec/fixtures/flix.json");
         Set<Object> typesInFixture = new HashSet<Object>();
         collectValuesOfKey(fixture, "type", typesInFixture);
 
         assertTrue("expected at least one \"type\" value in the fixture", !typesInFixture.isEmpty());
-        assertTrue("fixture uses a type not in the schema enum: " + typesInFixture, allowedTypes.containsAll(typesInFixture));
+        for (Object type : typesInFixture) {
+            assertTrue("fixture uses a type not matching the schema pattern: " + type, typePattern.matcher((String) type).matches());
+        }
     }
 
     @Test
