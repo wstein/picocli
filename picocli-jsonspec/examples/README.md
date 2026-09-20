@@ -44,9 +44,13 @@ reasoning:
   that needs the project's dependency graph resolved: `check`, `build`, `build-jar`,
   `build-fatjar`, `build-pkg`, `doc`, `run`, `test`, `repl`, and `outdated` (which must talk to
   GitHub to check for newer versions). Not `init` (nothing to resolve yet) or `release`
-  (publishing, not resolving).
-- **`--threads`**: only where compilation actually happens: `check`, `build`, `build-jar`,
-  `build-fatjar`, `build-pkg`, `doc`, `run`, `test`.
+  (publishing, not resolving). The two always travel together, so they're bundled as
+  `dependencyResolution`.
+- **`--threads`**: only where compilation actually happens — every `dependencyResolution` command
+  except `outdated` (which resolves but doesn't compile). Rather than repeat all three options,
+  `compileOptions` is `dependencyResolution` plus `--threads` (bundle composition), and every
+  command that needs all three just says `use compileOptions`; `outdated` uses
+  `dependencyResolution` directly instead.
 - **`--explain`**: only where user-facing compiler diagnostics can occur: `check`, `build`, `run`,
   `test`.
 - **`--json`**: only on commands with output worth machine-consuming: `check`, `build`, `run`,
@@ -71,7 +75,9 @@ reasoning:
   brackets the 14 as a visual unit too). `hidden` keeps them out of default `--help`/synopsis
   entirely; `--Xhelp` (this proxy's own addition, paired with the hidden group) is meant to reveal
   them on demand — see the DSL file's own comment on `--Xhelp` for what's still just a plan vs.
-  actually implemented.
+  actually implemented. `check`/`build`/`test` turn out to have *identical* bodies (`compileOptions`
+  + `--explain` + `--json` + `--Xhelp` + `xflags` + `files`), so that whole shape is itself bundled
+  as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.
 - **`<file>...`** (modeled as a `positional files : File ... arity=0..*`): attached to `check`,
   `build`, `run`, `test`, and `repl` (whose own `--help` text explicitly says "for the current
   project, or provided Flix source files") — the commands whose descriptions imply they operate

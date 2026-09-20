@@ -67,6 +67,31 @@ definitions {
   }
 
   positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
+
+  // The 10 commands needing GitHub-backed dependency resolution always need both together (see
+  // examples/README.md); 9 of those 10 also need --threads (all but outdated, which doesn't
+  // compile anything) -- so compileOptions builds on dependencyResolution rather than duplicating
+  // it, and outdated uses dependencyResolution directly instead of compileOptions.
+  bundle dependencyResolution {
+    option --github-token
+    option --no-install
+  }
+
+  bundle compileOptions {
+    use dependencyResolution
+    option --threads
+  }
+
+  // check/build/test are identical bodies; run adds --args/--entrypoint on top. All four are the
+  // "compile something and report on it" commands, so this bundle captures that whole shape.
+  bundle devLoop {
+    use compileOptions
+    option --explain
+    option --json
+    option --Xhelp
+    use xflags
+    positional files
+  }
 }
 
 command flix "The Flix Programming Language 0.60.0" {
@@ -79,82 +104,44 @@ command flix "The Flix Programming Language 0.60.0" {
   }
 
   command check "checks the current project for errors." {
-    option --explain
-    option --json
-    option --github-token
-    option --no-install
-    option --threads
-    option --Xhelp
-    use xflags
-    positional files
+    use devLoop
   }
 
   command build "builds (i.e. compiles) the current project." {
-    option --explain
-    option --json
-    option --github-token
-    option --no-install
-    option --threads
-    option --Xhelp
-    use xflags
-    positional files
+    use devLoop
   }
 
   command build-jar "builds a jar-file from the current project." {
     option --entrypoint
-    option --github-token
-    option --no-install
-    option --threads
+    use compileOptions
   }
 
   command build-fatjar "builds a fatjar-file from the current project." {
     option --entrypoint
-    option --github-token
-    option --no-install
-    option --threads
+    use compileOptions
   }
 
   command build-pkg "builds a fpkg-file from the current project." {
-    option --github-token
-    option --no-install
-    option --threads
+    use compileOptions
     option --yes
   }
 
   command doc "generates API documentation." {
-    option --github-token
-    option --no-install
-    option --threads
+    use compileOptions
   }
 
   command run "runs main for the current project." {
     option --args : String "arguments passed to main. Must be a single quoted string."
     option --entrypoint
-    option --explain
-    option --json
-    option --github-token
-    option --no-install
-    option --threads
-    option --Xhelp
-    use xflags
-    positional files
+    use devLoop
   }
 
   command test "runs the tests for the current project." {
-    option --explain
-    option --json
-    option --github-token
-    option --no-install
-    option --threads
-    option --Xhelp
-    use xflags
-    positional files
+    use devLoop
   }
 
   command repl "starts a repl for the current project, or provided Flix source files." {
-    option --github-token
-    option --no-install
-    option --threads
+    use compileOptions
     positional files
   }
 
@@ -169,8 +156,7 @@ command flix "The Flix Programming Language 0.60.0" {
   }
 
   command outdated "shows dependencies which have newer versions available." {
+    use dependencyResolution
     option --json
-    option --github-token
-    option --no-install
   }
 }
