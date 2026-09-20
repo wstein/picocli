@@ -1,5 +1,6 @@
 package picocli.spec;
 
+import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
@@ -74,7 +75,6 @@ public final class CommandSpecDsl {
         } catch (IllegalArgumentException ambiguity) {
             throw new DslParseException(ambiguity.getMessage());
         }
-        HelpSectionRenderer.install(spec);
         return spec;
     }
 
@@ -148,7 +148,7 @@ public final class CommandSpecDsl {
         if (option.hidden()) {
             out.append(" hidden");
         }
-        String helpSection = HelpSectionRenderer.getHelpSection(option);
+        String helpSection = Help.getHelpSection(option);
         if (helpSection != null) {
             out.append(" helpSection=").append(quote(helpSection));
         } else if (option.usageHelp()) {
@@ -194,7 +194,7 @@ public final class CommandSpecDsl {
         if (group.multiplicity() != null && !"0..1".equals(group.multiplicity().toString())) {
             out.append(" multiplicity=").append(group.multiplicity().toString());
         }
-        String helpSection = HelpSectionRenderer.getHelpSection(group);
+        String helpSection = Help.getHelpSection(group);
         if (helpSection != null) {
             out.append(" helpSection=").append(quote(helpSection));
         }
@@ -401,7 +401,6 @@ public final class CommandSpecDsl {
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
             if (helpSection != null) {
                 builder.helpSection(helpSection);
-                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
             }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
@@ -837,7 +836,6 @@ public final class CommandSpecDsl {
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
             if (helpSection != null) {
                 builder.helpSection(helpSection);
-                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
             }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
@@ -892,7 +890,6 @@ public final class CommandSpecDsl {
                     String section = expectWordOrString();
                     builder.usageHelp(true);
                     builder.helpSection(section);
-                    builder.descriptionKey(HelpSectionRenderer.PREFIX + section);
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();

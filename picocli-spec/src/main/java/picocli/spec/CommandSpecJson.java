@@ -1,6 +1,7 @@
 package picocli.spec;
 
 import picocli.CommandLine;
+import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.ArgSpec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -41,7 +42,6 @@ public final class CommandSpecJson {
         Definitions definitions = Definitions.from((Map<String, Object>) root.get("definitions"));
         CommandSpec spec = readCommand(root, definitions);
         SpecValidator.validate(spec);
-        HelpSectionRenderer.install(spec);
         return spec;
     }
 
@@ -227,7 +227,6 @@ public final class CommandSpecJson {
             if (multiplicity != null) { builder.multiplicity(multiplicity); }
             if (helpSection != null) {
                 builder.helpSection(helpSection);
-                builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
             }
             if (heading != null) { builder.heading(heading); }
             ArgSink groupSink = new GroupArgSink(builder);
@@ -379,7 +378,6 @@ public final class CommandSpecJson {
         String helpSection = (String) json.get("helpSection");
         if (helpSection != null) {
             builder.helpSection(helpSection);
-            builder.headingKey(HelpSectionRenderer.PREFIX + helpSection);
         }
         ArgSink groupSink = new GroupArgSink(builder);
         addOptionsPositionalsAndUses(json, definitions, groupSink);
@@ -417,7 +415,6 @@ public final class CommandSpecJson {
         if (helpSection != null) {
             builder.usageHelp(true);
             builder.helpSection(helpSection);
-            builder.descriptionKey(HelpSectionRenderer.PREFIX + helpSection);
         }
         Object hidden = json.get("hidden");
         if (hidden != null) { builder.hidden((Boolean) hidden); }
@@ -489,7 +486,7 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("names", new ArrayList<Object>(java.util.Arrays.asList(option.names())));
         putCommonArgSpecFields(json, option);
-        String helpSection = HelpSectionRenderer.getHelpSection(option);
+        String helpSection = Help.getHelpSection(option);
         if (helpSection != null) {
             json.put("helpSection", helpSection);
         } else if (option.usageHelp()) {
@@ -510,7 +507,7 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("exclusive", group.exclusive());
         json.put("multiplicity", group.multiplicity().toString());
-        String helpSection = HelpSectionRenderer.getHelpSection(group);
+        String helpSection = Help.getHelpSection(group);
         if (helpSection != null) { json.put("helpSection", helpSection); }
         if (group.heading() != null) { json.put("heading", group.heading()); }
 

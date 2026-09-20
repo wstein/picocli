@@ -104,7 +104,7 @@ public class FlixExperimentalHelpTest {
         CommandLine cmd = new CommandLine(flix);
 
         CommandLine docCmd = cmd.getSubcommands().get("doc");
-        String rendered = HelpSectionRenderer.renderSection(docCmd, "experimental");
+        String rendered = docCmd.getHelp().renderHelpSection("experimental");
         assertTrue(rendered.isEmpty());
     }
 }

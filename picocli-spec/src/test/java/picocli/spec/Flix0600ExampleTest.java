@@ -138,11 +138,11 @@ public class Flix0600ExampleTest {
         CommandSpec check = flix.subcommands().get("check").getCommandSpec();
 
         assertEquals(1, check.argGroups().size());
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.argGroups().get(0)));
+        assertEquals("experimental", CommandLine.Help.getHelpSection(check.argGroups().get(0)));
         assertFalse(check.findOption("--Xiterations").hidden());
         assertTrue(check.findOption("--Xhelp") != null);
         assertTrue(check.findOption("--Xhelp").usageHelp());
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(check.findOption("--Xhelp")));
+        assertEquals("experimental", CommandLine.Help.getHelpSection(check.findOption("--Xhelp")));
 
         CommandLine cmd = new CommandLine(flix);
         ParseResult result = cmd.parseArgs("check", "--Xfuzzer", "--Xchaos-monkey");

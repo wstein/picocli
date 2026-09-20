@@ -16384,8 +16384,11 @@ public class CommandLine {
             }
         }
 
-        /** Returns the help section name for the given group, or {@code null} if untagged. */
-        static String getHelpSection(ArgGroupSpec group) {
+        /** Returns the help section name for the given group, or {@code null} if untagged.
+         * @param group the arg group to inspect
+         * @return the help section name, or {@code null}
+         * @since 4.8 */
+        public static String getHelpSection(ArgGroupSpec group) {
             if (group == null) { return null; }
             if (group.helpSection() != null && !group.helpSection().isEmpty()) {
                 return group.helpSection();
@@ -16397,8 +16400,11 @@ public class CommandLine {
             return null;
         }
 
-        /** Returns the help section name for the given option, or {@code null} if untagged. */
-        static String getHelpSection(OptionSpec option) {
+        /** Returns the help section name for the given option, or {@code null} if untagged.
+         * @param option the option to inspect
+         * @return the help section name, or {@code null}
+         * @since 4.8 */
+        public static String getHelpSection(OptionSpec option) {
             if (option == null) { return null; }
             if (option.helpSection() != null && !option.helpSection().isEmpty()) {
                 return option.helpSection();

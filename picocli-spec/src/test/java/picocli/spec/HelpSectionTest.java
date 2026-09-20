@@ -3,6 +3,7 @@ package picocli.spec;
 import org.junit.Test;
 import picocli.AutoComplete;
 import picocli.CommandLine;
+import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
@@ -37,11 +38,11 @@ public class HelpSectionTest {
         OptionSpec xhelp = spec.findOption("--Xhelp");
         assertNotNull(xhelp);
         assertTrue("helpSection option implies usageHelp", xhelp.usageHelp());
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+        assertEquals("experimental", Help.getHelpSection(xhelp));
 
         assertEquals(1, spec.argGroups().size());
         ArgGroupSpec group = spec.argGroups().get(0);
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+        assertEquals("experimental", Help.getHelpSection(group));
 
         OptionSpec xalpha = spec.findOption("--Xalpha");
         assertNotNull(xalpha);
@@ -61,11 +62,11 @@ public class HelpSectionTest {
         OptionSpec xhelp = spec2.findOption("--Xhelp");
         assertNotNull(xhelp);
         assertTrue(xhelp.usageHelp());
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+        assertEquals("experimental", Help.getHelpSection(xhelp));
 
         assertEquals(1, spec2.argGroups().size());
         ArgGroupSpec group = spec2.argGroups().get(0);
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+        assertEquals("experimental", Help.getHelpSection(group));
         assertNotNull(spec2.findOption("--Xalpha"));
     }
 
@@ -79,11 +80,11 @@ public class HelpSectionTest {
         OptionSpec xhelp = spec2.findOption("--Xhelp");
         assertNotNull(xhelp);
         assertTrue(xhelp.usageHelp());
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(xhelp));
+        assertEquals("experimental", Help.getHelpSection(xhelp));
 
         assertEquals(1, spec2.argGroups().size());
         ArgGroupSpec group = spec2.argGroups().get(0);
-        assertEquals("experimental", HelpSectionRenderer.getHelpSection(group));
+        assertEquals("experimental", Help.getHelpSection(group));
         assertNotNull(spec2.findOption("--Xalpha"));
     }
 
