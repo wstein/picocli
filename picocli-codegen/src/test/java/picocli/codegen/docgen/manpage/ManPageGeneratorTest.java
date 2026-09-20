@@ -505,4 +505,40 @@ public class ManPageGeneratorTest {
         }
     }
 
+    @Test
+    public void testTaggedHelpSectionGroup() {
+        @Command(name = "testcmd")
+        class TestCmd {
+            @Option(names = "--help", usageHelp = true, description = "Show help.")
+            boolean help;
+
+            @Option(names = "--Xhelp", usageHelp = true, helpSection = "experimental", description = "Show experimental help.")
+            boolean xhelp;
+
+            @ArgGroup(helpSection = "experimental")
+            ExpGroup exp;
+
+            class ExpGroup {
+                @Option(names = "--exp-flag", description = "Experimental flag.")
+                boolean expFlag;
+            }
+        }
+
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ManPageGenerator.writeSingleManPage(pw, new CommandLine(new TestCmd()).getCommandSpec());
+        pw.flush();
+        String output = sw.toString();
+
+        // Synopsis should have --help but not --exp-flag
+        int synopsisStart = output.indexOf("// tag::picocli-generated-man-section-synopsis[]");
+        int synopsisEnd = output.indexOf("// end::picocli-generated-man-section-synopsis[]");
+        String synopsis = output.substring(synopsisStart, synopsisEnd);
+        assertTrue(synopsis.contains("--help"));
+        assertFalse(synopsis.contains("--exp-flag"));
+
+        // Options should have custom section for experimental
+        assertTrue(output.contains("== experimental Options"));
+        assertTrue(output.contains("*--exp-flag*::"));
+    }
 }

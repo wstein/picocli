@@ -528,7 +528,10 @@ public class ManPageGenerator implements Callable<Integer> {
         Collections.sort(groups, new SortByOrder<ArgGroupSpec>());
         for (ArgGroupSpec group : groups) {
             pw.println();
-            String heading = makeHeading(group.heading(), "Options Group");
+            String defaultHeading = (group.helpSection() != null && group.helpSection().length() > 0)
+                    ? group.helpSection() + " Options"
+                    : "Options Group";
+            String heading = group.heading() != null ? makeHeading(group.heading(), defaultHeading) : defaultHeading;
             pw.printf("== %s%n", COLOR_SCHEME.text(heading));
 
             for (PositionalParamSpec positional : group.allPositionalParametersNested()) {
@@ -550,7 +553,7 @@ public class ManPageGenerator implements Callable<Integer> {
     }
 
 
-    /** Returns the list of {@code ArgGroupSpec}s with a non-{@code null} heading. */
+    /** Returns the list of {@code ArgGroupSpec}s with a non-{@code null} heading or helpSection. */
     private static List<ArgGroupSpec> optionListGroups(CommandSpec commandSpec) {
         List<ArgGroupSpec> result = new ArrayList<ArgGroupSpec>();
         optionListGroups(commandSpec.argGroups(), result);
@@ -559,7 +562,7 @@ public class ManPageGenerator implements Callable<Integer> {
     private static void optionListGroups(List<ArgGroupSpec> groups, List<ArgGroupSpec> result) {
         for (ArgGroupSpec group : groups) {
             optionListGroups(group.subgroups(), result);
-            if (group.heading() != null) { result.add(group); }
+            if (group.heading() != null || (group.helpSection() != null && group.helpSection().length() > 0)) { result.add(group); }
         }
     }
 

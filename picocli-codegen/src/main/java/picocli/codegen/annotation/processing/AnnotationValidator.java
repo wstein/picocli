@@ -70,7 +70,7 @@ class AnnotationValidator {
 
     @SuppressWarnings("deprecation")
     private void validateOptions(Set<? extends Element> optionElements) {
-        final Map<Element, Integer> usageHelpOptions = new HashMap<Element, Integer>();
+        final Map<Element, Map<String, Integer>> usageHelpOptions = new HashMap<Element, Map<String, Integer>>();
         final Map<Element, Integer> versionHelpOptions = new HashMap<Element, Integer>();
         for (Element element : optionElements) {
             element.accept(new SimpleElementVisitor6<Void, Option>() {
@@ -99,7 +99,7 @@ class AnnotationValidator {
                         checkBooleanOptionType(e, type, "%s must be a boolean: only boolean options can be negatable.");
                     }
                     if (option.usageHelp()) {
-                        increment(usageHelpOptions, e.getEnclosingElement());
+                        incrementUsageHelp(usageHelpOptions, e.getEnclosingElement(), option.helpSection());
                         checkBooleanOptionType(e, type, "%s must be a boolean: a command can have max one usageHelp boolean flag that triggers display of the usage help message.");
                     }
                     if (option.versionHelp()) {
@@ -117,12 +117,40 @@ class AnnotationValidator {
             }, element.getAnnotation(Option.class));
         }
 
-        assertOneEntry(usageHelpOptions, "An command can only have one usageHelp option, but %s has %s.");
+        assertOneUsageHelpEntry(usageHelpOptions);
         assertOneEntry(versionHelpOptions, "An command can only have one versionHelp option, but %s has %s.");
     }
 
-    private void assertOneEntry(Map<Element, Integer> usageHelpOptions, String msg) {
-        for (Map.Entry<Element, Integer> entry : usageHelpOptions.entrySet()) {
+    private void incrementUsageHelp(Map<Element, Map<String, Integer>> usageHelpOptions, Element element, String helpSection) {
+        String section = helpSection == null ? "" : helpSection.trim();
+        Map<String, Integer> bySection = usageHelpOptions.get(element);
+        if (bySection == null) {
+            bySection = new HashMap<String, Integer>();
+            usageHelpOptions.put(element, bySection);
+        }
+        Integer count = bySection.get(section);
+        bySection.put(section, count == null ? 1 : count + 1);
+    }
+
+    private void assertOneUsageHelpEntry(Map<Element, Map<String, Integer>> usageHelpOptions) {
+        for (Map.Entry<Element, Map<String, Integer>> entry : usageHelpOptions.entrySet()) {
+            Element element = entry.getKey();
+            for (Map.Entry<String, Integer> sectionEntry : entry.getValue().entrySet()) {
+                String section = sectionEntry.getKey();
+                int count = sectionEntry.getValue();
+                if (count > 1) {
+                    if (section.length() == 0) {
+                        error(element, null, "An command can only have one usageHelp option, but %s has %s.", element.getSimpleName(), count);
+                    } else {
+                        error(element, null, "An command can only have one usageHelp option for helpSection '%s', but %s has %s.", section, element.getSimpleName(), count);
+                    }
+                }
+            }
+        }
+    }
+
+    private void assertOneEntry(Map<Element, Integer> map, String msg) {
+        for (Map.Entry<Element, Integer> entry : map.entrySet()) {
             if (entry.getValue() > 1) {
                 error(entry.getKey(), null, msg, entry.getKey().getSimpleName(), entry.getValue());
             }

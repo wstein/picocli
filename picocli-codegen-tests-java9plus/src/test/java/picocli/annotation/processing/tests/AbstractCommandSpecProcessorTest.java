@@ -312,4 +312,54 @@ public class AbstractCommandSpecProcessorTest {
         // assertThat(compilation).hadWarningContaining("Supported source version 'RELEASE_6' from annotation processor 'picocli.annotation.processing.tests");
     }
 
+    @Test
+    public void testTaggedHelpSectionCompilationSuccess() {
+        JavaFileObject src = JavaFileObjects.forSourceString("com.example.TaggedCmd",
+                "package com.example;\n" +
+                "import picocli.CommandLine.Command;\n" +
+                "import picocli.CommandLine.Option;\n" +
+                "import picocli.CommandLine.ArgGroup;\n" +
+                "@Command(name = \"tagged\")\n" +
+                "public class TaggedCmd {\n" +
+                "    @Option(names = \"--help\", usageHelp = true)\n" +
+                "    boolean help;\n" +
+                "    @Option(names = \"--Xhelp\", usageHelp = true, helpSection = \"experimental\")\n" +
+                "    boolean xhelp;\n" +
+                "    @ArgGroup(helpSection = \"experimental\")\n" +
+                "    ExpGroup exp;\n" +
+                "    static class ExpGroup {\n" +
+                "        @Option(names = \"--exp-flag\")\n" +
+                "        boolean expFlag;\n" +
+                "    }\n" +
+                "}\n"
+        );
+        Compilation compilation = javac()
+                .withProcessors(new CommandSpec2YamlProcessor())
+                .compile(src);
+        assertThat(compilation).succeeded();
+    }
+
+    @Test
+    public void testDuplicateUsageHelpForSameHelpSection() {
+        JavaFileObject src = JavaFileObjects.forSourceString("com.example.DupTaggedCmd",
+                "package com.example;\n" +
+                "import picocli.CommandLine.Command;\n" +
+                "import picocli.CommandLine.Option;\n" +
+                "@Command(name = \"duptagged\")\n" +
+                "public class DupTaggedCmd {\n" +
+                "    @Option(names = \"--Xhelp1\", usageHelp = true, helpSection = \"experimental\")\n" +
+                "    boolean xhelp1;\n" +
+                "    @Option(names = \"--Xhelp2\", usageHelp = true, helpSection = \"experimental\")\n" +
+                "    boolean xhelp2;\n" +
+                "}\n"
+        );
+        Compilation compilation = javac()
+                .withProcessors(new CommandSpec2YamlProcessor())
+                .compile(src);
+        assertThat(compilation).failed();
+        List<String> expected = new ArrayList<String>(Arrays.asList(
+                "An command can only have one usageHelp option for helpSection 'experimental', but DupTaggedCmd has 2."
+        ));
+        validateErrorMessages(compilation, expected, Collections.<String>emptyList());
+    }
 }
