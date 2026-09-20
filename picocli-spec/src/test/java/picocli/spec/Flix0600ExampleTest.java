@@ -150,4 +150,25 @@ public class Flix0600ExampleTest {
         assertTrue(checkResult.matchedOptionValue("--Xfuzzer", Boolean.FALSE));
         assertTrue(checkResult.matchedOptionValue("--Xchaos-monkey", Boolean.FALSE));
     }
+
+    @Test
+    public void roundTripsFlixSpec() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        String dsl = CommandSpecDsl.write(flix);
+        CommandSpec roundTripped = CommandSpecDsl.parse(dsl);
+
+        assertEquals(flix.name(), roundTripped.name());
+        assertEquals(flix.subcommands().keySet(), roundTripped.subcommands().keySet());
+        for (String subName : flix.subcommands().keySet()) {
+            CommandSpec origSub = flix.subcommands().get(subName).getCommandSpec();
+            CommandSpec rtSub = roundTripped.subcommands().get(subName).getCommandSpec();
+            assertEquals(subName + " option count", origSub.options().size(), rtSub.options().size());
+            assertEquals(subName + " positional count", origSub.positionalParameters().size(), rtSub.positionalParameters().size());
+        }
+
+        String json = CommandSpecJson.write(flix);
+        CommandSpec jsonRoundTripped = CommandSpecJson.read(json);
+        assertEquals(flix.name(), jsonRoundTripped.name());
+        assertEquals(flix.subcommands().keySet(), jsonRoundTripped.subcommands().keySet());
+    }
 }
