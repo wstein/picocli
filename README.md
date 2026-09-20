@@ -447,3 +447,7 @@ JSON field reference, or the [JSON Schema](https://wstein.github.io/picocli/json
 (latest; permanently-kept per-version copies at `.../jsonspec/schema/<version>/...`) and
 [Javadoc](https://wstein.github.io/picocli/apidocs/picocli-jsonspec/).
 
+[`picocli-jsonspec-tool`](picocli-jsonspec-tool/README.md) is a companion command line tool, built
+on top of `picocli-jsonspec`, for previewing what CLI a `.picocli`/`.json` spec produces and
+generating a shell completion script or AsciiDoc man pages for it — without writing any Java.
+

@@ -404,6 +404,20 @@ new CommandLine(uber).execute(args); // "myuber --config x flix build --release"
 `merge` rejects an imported spec with no name, and rejects a name collision with an existing
 subcommand.
 
+## Rendering a spec
+
+To see what CLI a `.picocli`/`.json` file actually produces, generate a shell completion script
+for it, or generate man pages, without writing any Java, see the sibling
+[`picocli-jsonspec-tool`](../picocli-jsonspec-tool) module — a picocli command line tool built on
+top of this one:
+
+```
+$ java -jar picocli-jsonspec-tool.jar preview flix.picocli       # recursive --help preview
+$ java -jar picocli-jsonspec-tool.jar completion flix.picocli    # bash/zsh completion script
+$ java -jar picocli-jsonspec-tool.jar manpage flix.picocli       # AsciiDoc man pages
+$ java -jar picocli-jsonspec-tool.jar validate flix.picocli      # load-and-report, nothing generated
+```
+
 ## Current limitations
 
 - Base types are `String`, `boolean`, `int`, `long`, `double`, `File` (`ArgTypes`), each usable
