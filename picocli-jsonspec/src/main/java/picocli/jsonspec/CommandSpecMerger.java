@@ -19,8 +19,10 @@ public final class CommandSpecMerger {
     /**
      * Attaches each of the given {@code imported} specs to {@code uber} as a subcommand named
      * after {@link CommandSpec#name() imported.name()}, and returns {@code uber}.
-     * @throws IllegalArgumentException if an imported spec has no name, or if {@code uber}
-     *      already has a subcommand with that name
+     * @throws IllegalArgumentException if an imported spec has no name, if {@code uber}
+     *      already has a subcommand with that name, or if merging introduces one of the two
+     *      parsing ambiguities {@link SpecValidator} checks for (e.g. an imported spec's name
+     *      colliding with an existing option's {@code defaultValue} on {@code uber})
      */
     public static CommandSpec merge(CommandSpec uber, CommandSpec... imported) {
         for (CommandSpec spec : imported) {
@@ -33,6 +35,7 @@ public final class CommandSpecMerger {
             }
             uber.addSubcommand(name, spec);
         }
+        SpecValidator.validate(uber);
         return uber;
     }
 }

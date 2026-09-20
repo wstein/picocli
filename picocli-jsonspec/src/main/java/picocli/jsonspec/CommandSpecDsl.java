@@ -69,6 +69,11 @@ public final class CommandSpecDsl {
         Definitions definitions = parser.parseDefinitionsBlockIfPresent();
         CommandSpec spec = parser.parseCommand(definitions);
         parser.expectEnd();
+        try {
+            SpecValidator.validate(spec);
+        } catch (IllegalArgumentException ambiguity) {
+            throw new DslParseException(ambiguity.getMessage());
+        }
         return spec;
     }
 

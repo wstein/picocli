@@ -37,7 +37,9 @@ public final class CommandSpecJson {
         }
         Map<String, Object> root = (Map<String, Object>) parsed;
         Definitions definitions = Definitions.from((Map<String, Object>) root.get("definitions"));
-        return readCommand(root, definitions);
+        CommandSpec spec = readCommand(root, definitions);
+        SpecValidator.validate(spec);
+        return spec;
     }
 
     /**

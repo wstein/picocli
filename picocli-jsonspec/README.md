@@ -281,14 +281,17 @@ subcommand.
 - No execution wiring is provided or assumed: a merged-in subcommand has no `run()`/`call()`
   of its own. Attach one via the host command's own dispatch logic (e.g. an `IExecutionStrategy`
   that recognizes commands originating from an imported spec and shells out accordingly).
-- A hungry (unbounded-arity) positional at the *same* command level as subcommands can compete
-  with a subcommand name for the same token, and a `defaultValue` that's textually identical to
-  a subcommand/option name can likewise be rejected when picocli applies it — both are picocli's
-  own parser being conservative about ambiguous input, not bugs in this module. Avoid the
-  collision (e.g. put file-consuming positionals on the subcommand that needs them, as `flix
-  build` does above, and pick default values that don't double as command/option names).
+- An option's `defaultValue` that's textually identical to a sibling subcommand's name is
+  rejected by picocli when it applies that default — unconditionally, on every invocation, even
+  with zero arguments given (confirmed empirically; not a bug in this module, picocli's parser
+  being conservative about a token that looks like a subcommand name). `read()`/`parse()`/`merge()`
+  all catch this automatically via `SpecValidator` and fail fast with a clear message, rather than
+  letting it surface as a confusing runtime exception. (An earlier version of this note also
+  warned that an unbounded-arity positional sibling to subcommands could "swallow" a subcommand
+  name; that turned out to be wrong on direct empirical testing — picocli correctly dispatches
+  into the subcommand regardless. Declared here for the record, not as a caveat to design around.)
 
 See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecMergerTest`,
 `CommandSpecFixturesTest`, `CommandSpecSchemaTest`, `CommandSpecDslDefinitionsTest`,
 `CommandSpecJsonDefinitionsTest`, `CommandSpecDslArgGroupTest`, `CommandSpecJsonArgGroupTest`,
-`FlixExampleTest`) for more complete, runnable examples.
+`SpecValidatorTest`, `FlixExampleTest`) for more complete, runnable examples.
