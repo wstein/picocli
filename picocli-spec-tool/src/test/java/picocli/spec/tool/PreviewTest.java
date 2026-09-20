@@ -62,7 +62,9 @@ public class PreviewTest {
 
         String printed = render(spec);
 
-        assertTrue(printed.contains("\n\n"));
+        // Normalize CRLF to LF first: picocli's usage() writes platform line endings, which on
+        // Windows means a "blank line" is "\r\n\r\n", not the literal "\n\n" this otherwise checks.
+        assertTrue(printed.replace("\r\n", "\n").contains("\n\n"));
     }
 
     /**
