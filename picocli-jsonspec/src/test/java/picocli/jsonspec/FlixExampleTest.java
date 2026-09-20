@@ -104,4 +104,23 @@ public class FlixExampleTest {
         assertEquals("hello world", run.matchedOptionValue("--args", (String) null));
         assertEquals(1, run.matchedPositionals().size());
     }
+
+    /**
+     * Regression test for a real bug this example shipped with: the shared "files" positional
+     * was declared with a scalar type ("File") at arity=0..*, which picocli rejects for a second
+     * value (UnmatchedArgumentException) since a scalar field can only ever hold one match. Now
+     * declared "File[]"; this proves multiple files actually parse, not just that one does.
+     */
+    @Test
+    public void filesPositionalActuallyAcceptsMultipleValues() throws IOException {
+        CommandSpec flix = CommandSpecDsl.parse(readExample());
+        CommandLine cmd = new CommandLine(flix);
+
+        ParseResult result = cmd.parseArgs("build", "A.flix", "B.flix", "C.flix");
+
+        ParseResult build = result.subcommand();
+        assertEquals(1, build.matchedPositionals().size());
+        File[] files = build.matchedPositionalValue(0, new File[0]);
+        assertEquals(3, files.length);
+    }
 }

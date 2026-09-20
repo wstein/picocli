@@ -38,7 +38,7 @@ definitions {
   option --Xchaos-monkey : boolean "[experimental] introduces randomness."
   option --Xiterations : int "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
 
-  positional files : File "input Flix source code files, Flix packages, and Java archives." arity=0..*
+  positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
 }
 
 command flix "The Flix Programming Language 0.60.0" {
