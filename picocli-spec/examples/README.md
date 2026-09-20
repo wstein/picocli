@@ -31,9 +31,8 @@ That curation is a judgment call, not something derivable purely from the `--hel
 reasoning:
 
 - **`--help`, `--version`**: meta-options that short-circuit normal parsing. Declared once at the
-  top level only, matching scopt's own structure (declared outside any command's `.children()`,
-  so they must precede the command name in the real tool too — `flix --help build` doesn't work
-  in flix any more than it would here).
+  top level (`--help` is marked `inherit` so subcommands also accept `--help` and receive shell
+  completion rules, matching standard subcommand help expectations).
 - **`--listen`**: also top level, with no subcommand at all — confirmed empirically
   (`./flixw --listen 8099` starts the WebSocket server standalone, printing
   `WebSocket server listening on: ws://localhost:8099` with no command verb involved). This

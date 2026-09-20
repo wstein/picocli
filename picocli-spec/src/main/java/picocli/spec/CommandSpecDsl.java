@@ -100,12 +100,12 @@ public final class CommandSpecDsl {
         out.append(" {\n");
 
         for (OptionSpec option : spec.options()) {
-            if (option.group() == null) {
+            if (option.group() == null && !option.inherited()) {
                 writeOption(option, out, indent + 1);
             }
         }
         for (PositionalParamSpec positional : spec.positionalParameters()) {
-            if (positional.group() == null) {
+            if (positional.group() == null && !positional.inherited()) {
                 writePositional(positional, out, indent + 1);
             }
         }

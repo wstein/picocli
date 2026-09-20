@@ -453,13 +453,13 @@ public final class CommandSpecJson {
 
         List<Object> options = new ArrayList<Object>();
         for (OptionSpec option : spec.options()) {
-            if (option.group() == null) { options.add(writeOption(option)); }
+            if (option.group() == null && !option.inherited()) { options.add(writeOption(option)); }
         }
         if (!options.isEmpty()) { json.put("options", options); }
 
         List<Object> positionals = new ArrayList<Object>();
         for (PositionalParamSpec positional : spec.positionalParameters()) {
-            if (positional.group() == null) { positionals.add(writePositional(positional)); }
+            if (positional.group() == null && !positional.inherited()) { positionals.add(writePositional(positional)); }
         }
         if (!positionals.isEmpty()) { json.put("positionalParams", positionals); }
 
