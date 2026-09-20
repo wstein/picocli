@@ -108,14 +108,20 @@ public final class CommandSpecJson {
         }
     }
 
-    /** A named, reusable bundle of already-defined option/positional names, expanded by a {@code "use"} array entry. */
+    /**
+     * A named, reusable bundle of already-defined option/positional names, plus any groups
+     * declared inline within the collection's own {@code "groups"} array, expanded by a
+     * {@code "use"} array entry.
+     */
     private static final class Collection {
         final List<String> optionNames;
         final List<String> positionalLabels;
+        final List<GroupTemplate> groups;
 
-        Collection(List<String> optionNames, List<String> positionalLabels) {
+        Collection(List<String> optionNames, List<String> positionalLabels, List<GroupTemplate> groups) {
             this.optionNames = optionNames;
             this.positionalLabels = positionalLabels;
+            this.groups = groups;
         }
 
         @SuppressWarnings("unchecked")
@@ -130,7 +136,87 @@ public final class CommandSpecJson {
                 definitionsSoFar.resolvePositional((String) label);
                 positionalLabels.add((String) label);
             }
-            return new Collection(optionNames, positionalLabels);
+            List<GroupTemplate> groups = new ArrayList<GroupTemplate>();
+            for (Object group : listOrEmpty(json.get("groups"))) {
+                groups.add(GroupTemplate.from((Map<String, Object>) group, definitionsSoFar));
+            }
+            return new Collection(optionNames, positionalLabels, groups);
+        }
+    }
+
+    /**
+     * A group declared inside a collection's {@code "groups"} array: unlike a normal argGroup
+     * object (read and attached immediately by {@link #readArgGroup}), this one may be
+     * materialized more than once -- once per {@code "use"} of the collection -- so its members
+     * are stored as templates and cloned fresh (via picocli's own
+     * {@code OptionSpec.builder(original)}/{@code PositionalParamSpec.builder(original)}) at
+     * each {@link #materialize}. Hidden handling mirrors {@link #readArgGroup}'s exactly.
+     */
+    private static final class GroupTemplate {
+        final boolean exclusive;
+        final String multiplicity;
+        final boolean hidden;
+        final String heading;
+        final List<OptionSpec> options;
+        final List<PositionalParamSpec> positionals;
+        final List<GroupTemplate> subgroups;
+
+        GroupTemplate(boolean exclusive, String multiplicity, boolean hidden, String heading,
+                      List<OptionSpec> options, List<PositionalParamSpec> positionals, List<GroupTemplate> subgroups) {
+            this.exclusive = exclusive;
+            this.multiplicity = multiplicity;
+            this.hidden = hidden;
+            this.heading = heading;
+            this.options = options;
+            this.positionals = positionals;
+            this.subgroups = subgroups;
+        }
+
+        @SuppressWarnings("unchecked")
+        static GroupTemplate from(Map<String, Object> json, Definitions definitions) {
+            boolean hidden = Boolean.TRUE.equals(json.get("hidden"));
+            Object exclusiveValue = json.get("exclusive");
+            boolean exclusive = exclusiveValue == null || (Boolean) exclusiveValue;
+            String multiplicity = (String) json.get("multiplicity");
+            String heading = (String) json.get("heading");
+
+            List<OptionSpec> options = new ArrayList<OptionSpec>();
+            for (Object option : listOrEmpty(json.get("options"))) {
+                options.add(readOption(resolveOptionJson(option, definitions)));
+            }
+            List<PositionalParamSpec> positionals = new ArrayList<PositionalParamSpec>();
+            for (Object positional : listOrEmpty(json.get("positionalParams"))) {
+                positionals.add(readPositional(resolvePositionalJson(positional, definitions)));
+            }
+            List<GroupTemplate> subgroups = new ArrayList<GroupTemplate>();
+            for (Object subgroup : listOrEmpty(json.get("subgroups"))) {
+                subgroups.add(GroupTemplate.from((Map<String, Object>) subgroup, definitions));
+            }
+            for (Object use : listOrEmpty(json.get("use"))) {
+                Collection nested = definitions.resolveCollection((String) use);
+                for (String optionName : nested.optionNames) { options.add(readOption(definitions.resolveOption(optionName))); }
+                for (String label : nested.positionalLabels) { positionals.add(readPositional(definitions.resolvePositional(label))); }
+                subgroups.addAll(nested.groups);
+            }
+            return new GroupTemplate(exclusive, multiplicity, hidden, heading, options, positionals, subgroups);
+        }
+
+        void materialize(ArgSink sink) {
+            if (hidden) {
+                ArgSink hidingSink = new HidingArgSink(sink);
+                for (OptionSpec option : options) { hidingSink.addOption(option); }
+                for (PositionalParamSpec positional : positionals) { hidingSink.addPositional(positional); }
+                for (GroupTemplate subgroup : subgroups) { subgroup.materialize(hidingSink); }
+                return;
+            }
+            ArgGroupSpec.Builder builder = ArgGroupSpec.builder().exclusive(exclusive);
+            if (multiplicity != null) { builder.multiplicity(multiplicity); }
+            if (heading != null) { builder.heading(heading); }
+            ArgSink groupSink = new GroupArgSink(builder);
+            for (OptionSpec option : options) { groupSink.addOption(OptionSpec.builder(option).build()); }
+            for (PositionalParamSpec positional : positionals) { groupSink.addPositional(PositionalParamSpec.builder(positional).build()); }
+            for (GroupTemplate subgroup : subgroups) { subgroup.materialize(groupSink); }
+            sink.addGroup(builder.build());
         }
     }
 

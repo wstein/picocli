@@ -132,6 +132,53 @@ public class CommandSpecJsonHiddenGroupAndCollectionTest {
     }
 
     @Test
+    public void collectionCanBundleAGroup() {
+        CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
+                "  \"options\": { \"--json\": { \"names\": [\"--json\"], \"type\": \"boolean\" }, " +
+                "                 \"--xml\": { \"names\": [\"--xml\"], \"type\": \"boolean\" } }," +
+                "  \"collections\": { \"outputFormat\": { \"groups\": [" +
+                "    { \"exclusive\": true, \"heading\": \"Output format\", \"options\": [\"--json\", \"--xml\"] }" +
+                "  ] } }" +
+                "}, \"name\": \"flix\", \"subcommands\": [" +
+                "{ \"name\": \"check\", \"use\": [\"outputFormat\"] }" +
+                "]}");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertEquals(1, check.argGroups().size());
+        assertTrue(check.argGroups().get(0).exclusive());
+        assertEquals("Output format", check.argGroups().get(0).heading());
+        assertEquals(2, check.options().size());
+    }
+
+    @Test
+    public void twoUsesOfACollectionGroupGetIndependentGroupInstances() {
+        CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
+                "  \"options\": { \"--json\": { \"names\": [\"--json\"], \"type\": \"boolean\" } }," +
+                "  \"collections\": { \"outputFormat\": { \"groups\": [ { \"exclusive\": true, \"options\": [\"--json\"] } ] } }" +
+                "}, \"name\": \"flix\", \"subcommands\": [" +
+                "{ \"name\": \"check\", \"use\": [\"outputFormat\"] }," +
+                "{ \"name\": \"build\", \"use\": [\"outputFormat\"] }" +
+                "]}");
+
+        assertTrue(spec.subcommands().get("check").getCommandSpec().argGroups().get(0)
+                != spec.subcommands().get("build").getCommandSpec().argGroups().get(0));
+    }
+
+    @Test
+    public void collectionGroupCanBeHidden() {
+        CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
+                "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
+                "  \"collections\": { \"xflags\": { \"groups\": [" +
+                "    { \"exclusive\": false, \"hidden\": true, \"heading\": \"Experimental\", \"options\": [\"--Xfoo\"] }" +
+                "  ] } }" +
+                "}, \"name\": \"flix\", \"subcommands\": [ { \"name\": \"check\", \"use\": [\"xflags\"] } ]}");
+
+        CommandSpec check = spec.subcommands().get("check").getCommandSpec();
+        assertTrue(check.argGroups().isEmpty());
+        assertTrue(check.findOption("--Xfoo").hidden());
+    }
+
+    @Test
     public void expandedOptionsActuallyParse() {
         CommandSpec spec = CommandSpecJson.read("{ \"definitions\": {" +
                 "  \"options\": { \"--Xfoo\": { \"names\": [\"--Xfoo\"], \"type\": \"boolean\" } }," +
