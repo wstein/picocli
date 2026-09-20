@@ -85,8 +85,8 @@ Notes:
 - A positional's bare `name` (e.g. `files`) becomes its `paramLabel` wrapped in angle brackets
   (`<files>`), matching picocli's own convention for annotated fields.
 - `type` is one of the names in [`ArgTypes`](src/main/java/picocli/spec/ArgTypes.java)'s
-  vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File`, `URI`, `URL`,
-  `BigDecimal`, `BigInteger` — optionally
+  vocabulary — currently `String`, `boolean`, `int`, `long`, `double`, `File`, `Path`, `URI`,
+  `URL`, `BigDecimal`, `BigInteger` — optionally
   suffixed with `[]` for a multi-value array type, e.g. `File[]` (see the schema's
   `$defs.type.pattern`, which is tested to stay in sync with the actual reader).
 - `attr*` may appear in any order and are all optional; `required`/`inherit`/`usageHelp`/
@@ -447,14 +447,12 @@ $ java -jar picocli-spec-tool-<version>-all.jar validate flix.picocli      # loa
 
 ## Current limitations
 
-- Base types are `String`, `boolean`, `int`, `long`, `double`, `File`, `URI`, `URL`,
+- Base types are `String`, `boolean`, `int`, `long`, `double`, `File`, `Path`, `URI`, `URL`,
   `BigDecimal`, `BigInteger` (`ArgTypes`), each usable
   as a multi-value array by suffixing `[]` (e.g. `File[]`) — required whenever `arity` allows more
   than one value, since picocli can only bind multiple matches to an array or `Collection` type.
   `Collection`/`Map` types (which need an explicit auxiliary type due to generics erasure) aren't
   supported yet; arrays cover the same need without that extra complexity.
-  `java.nio.file.Path` is not in the vocabulary: picocli core registers its converter reflectively
-  to stay Java 6 source-compatible, and this module targets Java 6 too.
 - No `@Mixin`-equivalent for reusing a whole pre-built fragment of a command's structure across
   *files*; `definitions`/references (above) cover reuse of individual options/positionals within
   one file.

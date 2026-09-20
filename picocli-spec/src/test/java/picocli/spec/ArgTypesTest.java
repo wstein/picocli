@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,11 +25,12 @@ public class ArgTypesTest {
         }
         assertEquals(new HashSet<Class<?>>(Arrays.<Class<?>>asList(
                 String.class, boolean.class, int.class, long.class, double.class, File.class,
-                URI.class, URL.class, BigDecimal.class, BigInteger.class)), resolved);
+                Path.class, URI.class, URL.class, BigDecimal.class, BigInteger.class)), resolved);
     }
 
     @Test
     public void resolvesTypesPicocliHasBuiltInConvertersFor() {
+        assertEquals(Path.class, ArgTypes.toClass("Path"));
         assertEquals(URI.class, ArgTypes.toClass("URI"));
         assertEquals(URL.class, ArgTypes.toClass("URL"));
         assertEquals(BigDecimal.class, ArgTypes.toClass("BigDecimal"));

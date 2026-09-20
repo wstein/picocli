@@ -216,8 +216,8 @@
     },
     "type": {
       "type": "string",
-      "pattern": "^(String|boolean|int|long|double|File|URI|URL|BigDecimal|BigInteger)(\\[\\])?$",
-      "examples": ["String", "boolean", "File[]", "String[]", "URI"],
+      "pattern": "^(String|boolean|int|long|double|File|Path|URI|URL|BigDecimal|BigInteger)(\\[\\])?$",
+      "examples": ["String", "boolean", "File[]", "String[]", "Path", "URI"],
       "description": "See picocli.spec.ArgTypes. One of the scalar type names, optionally suffixed with \"[]\" for a multi-value array type -- required whenever arity allows more than one value: picocli can only bind multiple matches to an array or Collection type (Collection/Map types, which need an explicit auxiliary type due to generics erasure, are not yet supported; arrays cover the same need)."
     },
     "defaultValue": {

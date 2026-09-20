@@ -38,15 +38,18 @@ public class CommandSpecDslTest {
                 "  option --url : URL\n" +
                 "  option --ratio : BigDecimal\n" +
                 "  option --count : BigInteger\n" +
+                "  option --out : Path\n" +
                 "}");
 
         ParseResult result = new CommandLine(spec).parseArgs(
-                "--uri=urn:isbn:0451450523", "--url=https://picocli.info/", "--ratio=1.5", "--count=42");
+                "--uri=urn:isbn:0451450523", "--url=https://picocli.info/", "--ratio=1.5", "--count=42",
+                "--out=build/out.txt");
 
         assertEquals(java.net.URI.create("urn:isbn:0451450523"), result.matchedOptionValue("--uri", (java.net.URI) null));
         assertEquals("https://picocli.info/", result.matchedOptionValue("--url", (java.net.URL) null).toString());
         assertEquals(new java.math.BigDecimal("1.5"), result.matchedOptionValue("--ratio", (java.math.BigDecimal) null));
         assertEquals(java.math.BigInteger.valueOf(42), result.matchedOptionValue("--count", (java.math.BigInteger) null));
+        assertEquals(java.nio.file.Paths.get("build/out.txt"), result.matchedOptionValue("--out", (java.nio.file.Path) null));
     }
 
     @Test
