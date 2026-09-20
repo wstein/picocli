@@ -2,7 +2,7 @@
 
 Real-world specs, kept here (not under `src/test/resources`) so they stay easy to find and read
 on GitHub as documentation in their own right. Each is still sanity-checked by a test in
-`src/test/java/picocli/spec/` (see `FlixExampleTest` and `Flix0762ExampleTest`).
+`src/test/java/picocli/spec/` (see `Flix0600ExampleTest` and `Flix0762ExampleTest`).
 
 ## `flix-0.60.0.picocli`
 

@@ -19,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Sanity-checks {@code examples/flix-0.76.2.picocli} -- a realistic spec for the real flix CLI at
- * a much later version than {@link FlixExampleTest}'s {@code flix-0.60.0.picocli}, curated from
+ * a much later version than {@link Flix0600ExampleTest}'s {@code flix-0.60.0.picocli}, curated from
  * reading flix's actual command implementations (Bootstrap.scala) at git tag v0.76.2 rather than
  * from a running {@code flixw --help}. See examples/README.md for the reasoning, including three
  * genuine, source-verified differences from how the 0.60.0 file curated the equivalent options.

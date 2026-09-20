@@ -447,5 +447,5 @@ See the test classes (`CommandSpecDslTest`, `CommandSpecJsonTest`, `CommandSpecM
 `CommandSpecFixturesTest`, `CommandSpecSchemaTest`, `CommandSpecDslDefinitionsTest`,
 `CommandSpecJsonDefinitionsTest`, `CommandSpecDslArgGroupTest`, `CommandSpecJsonArgGroupTest`,
 `CommandSpecDslHiddenGroupTest`, `CommandSpecJsonHiddenGroupAndBundleTest`,
-`CommandSpecDslBundleTest`, `ArgTypesTest`, `SpecValidatorTest`, `FlixExampleTest`,
+`CommandSpecDslBundleTest`, `ArgTypesTest`, `SpecValidatorTest`, `Flix0600ExampleTest`,
 `FlixExperimentalHelpTest`, `Flix0762ExampleTest`) for more complete, runnable examples.

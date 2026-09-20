@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
  * GitHub as documentation in its own right. Loaded here via a path relative to the module
  * directory, which is Gradle's default test working directory for this project.
  */
-public class FlixExampleTest {
+public class Flix0600ExampleTest {
 
     private static String readExample() throws IOException {
         File file = new File("examples/flix-0.60.0.picocli");

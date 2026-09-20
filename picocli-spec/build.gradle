@@ -22,7 +22,7 @@ dependencies {
 }
 
 test {
-    // FlixExampleTest reads examples/*.picocli by a path relative to this module's directory
+    // Flix0600ExampleTest reads examples/*.picocli by a path relative to this module's directory
     // (Gradle's default test working directory) rather than as a classpath resource, so
     // Gradle's up-to-date check wouldn't otherwise notice when that file changes.
     inputs.dir('examples')
