@@ -79,6 +79,12 @@ reasoning:
 - picocli's built-in `usageHelp`/`versionHelp` option behavior (auto-printing help/version and
   exiting) isn't part of the DSL/JSON vocabulary yet — `--help`/`--version` here are plain
   booleans, not wired to short-circuit parsing.
-- No option inheritance (`ScopeType.INHERIT`) in the DSL/JSON format yet, which is why options
-  that are copy-pasted across `check`/`build`/`run`/`test` above are genuinely duplicated in the
-  file rather than declared once and shared.
+- No real picocli option inheritance (`ScopeType.INHERIT`) in the DSL/JSON format. That wouldn't
+  have fit this file well anyway: `flix`'s command tree is flat, and each shared option applies
+  to an arbitrary, overlapping *subset* of siblings (the `--X*` flags: 4 of 14 commands;
+  `--github-token`: a different 10 of 14) — not "root + every descendant", which is the only
+  shape tree inheritance can express. Instead, the shared options and the `files` positional are
+  each declared once in the top-level `definitions { ... }` block and referenced by name from
+  the commands that need them (`option --explain` with no `:`, instead of repeating its type and
+  description). Each reference still gets its own independent `OptionSpec` instance under the
+  hood; this only removes duplication in the *source text*, not the resulting `CommandSpec`.

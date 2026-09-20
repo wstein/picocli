@@ -21,6 +21,13 @@ dependencies {
     api rootProject
 }
 
+test {
+    // FlixExampleTest reads examples/*.dsl by a path relative to this module's directory
+    // (Gradle's default test working directory) rather than as a classpath resource, so
+    // Gradle's up-to-date check wouldn't otherwise notice when that file changes.
+    inputs.dir('examples')
+}
+
 jar {
     manifest {
         attributes 'Specification-Title'   : 'Picocli JSON Spec',
