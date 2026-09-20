@@ -44,23 +44,26 @@ definitions {
   option --Xchaos-monkey : boolean "[experimental] introduces randomness."
   option --Xiterations : int "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
 
-  // Bundles the 14 flags above so each of check/build/run/test can pull them all in with one
-  // "use xflags" instead of listing every name.
+  // Bundles the 14 flags above, under the hidden/heading group, so each of check/build/run/test
+  // can pull in the whole thing with one "use xflags" instead of repeating both the group
+  // wrapper and every option name.
   bundle xflags {
-    option --Xbenchmark-code-size
-    option --Xbenchmark-incremental
-    option --Xbenchmark-phases
-    option --Xbenchmark-frontend
-    option --Xbenchmark-throughput
-    option --Xlib
-    option --Xno-deprecated
-    option --Xprint-phases
-    option --Xsummary
-    option --Xfuzzer
-    option --Xprint-typer
-    option --Xsubeffecting
-    option --Xchaos-monkey
-    option --Xiterations
+    group cooperative hidden "The following options are experimental:%n" {
+      option --Xbenchmark-code-size
+      option --Xbenchmark-incremental
+      option --Xbenchmark-phases
+      option --Xbenchmark-frontend
+      option --Xbenchmark-throughput
+      option --Xlib
+      option --Xno-deprecated
+      option --Xprint-phases
+      option --Xsummary
+      option --Xfuzzer
+      option --Xprint-typer
+      option --Xsubeffecting
+      option --Xchaos-monkey
+      option --Xiterations
+    }
   }
 
   positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
@@ -82,9 +85,7 @@ command flix "The Flix Programming Language 0.60.0" {
     option --no-install
     option --threads
     option --Xhelp
-    group cooperative hidden "The following options are experimental:%n" {
-      use xflags
-    }
+    use xflags
     positional files
   }
 
@@ -95,9 +96,7 @@ command flix "The Flix Programming Language 0.60.0" {
     option --no-install
     option --threads
     option --Xhelp
-    group cooperative hidden "The following options are experimental:%n" {
-      use xflags
-    }
+    use xflags
     positional files
   }
 
@@ -137,9 +136,7 @@ command flix "The Flix Programming Language 0.60.0" {
     option --no-install
     option --threads
     option --Xhelp
-    group cooperative hidden "The following options are experimental:%n" {
-      use xflags
-    }
+    use xflags
     positional files
   }
 
@@ -150,9 +147,7 @@ command flix "The Flix Programming Language 0.60.0" {
     option --no-install
     option --threads
     option --Xhelp
-    group cooperative hidden "The following options are experimental:%n" {
-      use xflags
-    }
+    use xflags
     positional files
   }
 
