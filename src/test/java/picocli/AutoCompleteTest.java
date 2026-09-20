@@ -319,6 +319,33 @@ public class AutoCompleteTest {
         }
     }
 
+    @Command(name = "quoter", description = "Isn't it C:\\great?")
+    static class QuoteExample {
+        @Option(names = "--path", description = "A path like C:\\temp or 'here'") String path;
+    }
+
+    @Test
+    public void testFishEscapesSingleQuotesAndBackslashes() {
+        String script = AutoComplete.fish("my app's", new CommandLine(new QuoteExample()));
+
+        // inside a fish single-quoted string only \' and \\ are escapes, everything else is literal
+        assertTrue(script, script.contains("complete -c 'my app\\'s' -e\n"));
+        assertTrue(script, script.contains("complete -c 'my app\\'s' -l 'path'"));
+        assertTrue(script, script.contains(" -d 'A path like C:\\\\temp or \\'here\\''"));
+        assertFalse(script, script.contains("app's'")); // an unescaped quote would end the fish string early
+    }
+
+    @Test
+    public void testFishEscapesSubcommandNamesInConditions() {
+        CommandLine hierarchy = new CommandLine(new TopLevel())
+                .addSubcommand("it's", new QuoteExample());
+
+        String script = AutoComplete.fish("app", hierarchy);
+
+        assertTrue(script, script.contains("-n 'not __fish_seen_subcommand_from it\\'s'"));
+        assertTrue(script, script.contains("-n '__fish_seen_subcommand_from it\\'s'"));
+    }
+
     @Test
     public void testBashAcceptsNullCommand() throws Exception {
         File temp = File.createTempFile("abc", "b");
