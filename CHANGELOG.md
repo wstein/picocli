@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v4.9.2] - 2026-09-21
+
+### Added
+- **`mixinStandardHelpOptions` in picocli-spec**:
+  - DSL support: `mixinStandardHelpOptions` directive inside command blocks.
+  - JSON Schema support: `"mixinStandardHelpOptions": true` property on command objects in `command-spec.schema.json`.
+  - Core integration: Automatically calls `CommandSpec#mixinStandardHelpOptions(true)` without manual `-h`/`--help` and `-V`/`--version` definitions.
+  - Lossless Serialization: `CommandSpecJson.write()` and `CommandSpecDsl.write()` emit `mixinStandardHelpOptions` while suppressing duplicated synthetic standard help options in flat option lists.
+- **Complete Flix CLI Spec Suite (v0.60.0 – v0.76.2)**:
+  - Scanned and mapped all distinct CLI evolution points across 31 git tags in flix's history, producing targeted `.picocli` specifications and test suites:
+    - `flix-0.67.0.picocli`: Added `clean` subcommand.
+    - `flix-0.67.1.picocli`: Added `format` subcommand, file-argument restrictions, removal of `--args`, reduction to 10 experimental flags.
+    - `flix-0.68.0.picocli`: Added `eff-check` and `eff-lock` subcommands, removed compiler `--explain` flag.
+    - `flix-0.73.0.picocli`: Added `--top` compiler profiling flag.
+    - `flix-0.75.2.picocli`: Added experimental `--Xnewmono` flag (11 experimental flags).
+    - `flix-0.75.3.picocli`: Added `build-classes` subcommand, updated descriptions for `clean` and `--Xprint-phases`.
+    - `flix-0.76.0.picocli`: Added `stat` subcommand, added `--Xverify`, removed `--Xsummary`.
+  - Added CLI version range progression matrix in `picocli-spec/examples/README.md`.
+- **Repository AI Agent Guidance**: Added canonical `AGENTS.md` and `.github/copilot-instructions.md` for AI workflows.
+
+### Changed
+- **Flix Examples Modernization**: Updated all flix specs to use `mixinStandardHelpOptions` and `Path[]` for positional file arguments.
+
+---
+
 ## [v4.9.1] - 2026-09-21
 
 ### Added
