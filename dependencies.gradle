@@ -5,10 +5,10 @@ ext {
     // PICOCLI VERSION
 
     // projectPreviousPublishedVersion is non-SNAPSHOT, only published releases
-    projectPreviousPublishedVersion = "4\\.9\\.1"      // for task bumpReadmeVersion
+    projectPreviousPublishedVersion = "4\\.9\\.2"      // for task bumpReadmeVersion
     // projectPreviousVersionRegex may be a SNAPSHOT
-    projectPreviousVersionRegex     = "4\\.9\\.1"      // for task bumpVersion
-    projectVersion                  = "4.9.2"          // for all build tasks
+    projectPreviousVersionRegex     = "4\\.9\\.2"      // for task bumpVersion
+    projectVersion                  = "4.9.3"          // for all build tasks
     releaseDate                     = "2026-09-21"     // for task bumpVersion
     releaseDatePreviousRegex        = "2026\\-09\\-21" // for task bumpVersion
 

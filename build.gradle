@@ -164,6 +164,17 @@ jar {
                    'Main-Class'            : 'picocli.AutoComplete'
     }
 }
+// Bundles picocli-spec's classes into this same jar so a downstream consumer with a
+// single-jar companion-asset model (flixw) gains CommandSpecDsl/CommandSpecJson/
+// CommandSpecMerger without fetching or verifying a second artifact. Guarded the same
+// way settings.gradle excludes the module itself: picocli-spec targets Java 11 bytecode
+// and is absent from the build entirely under Java 8.
+if (JavaVersion.current().isJava11Compatible()) {
+    jar {
+        dependsOn(':picocli-spec:classes')
+        from { project(':picocli-spec').sourceSets.main.output }
+    }
+}
 configurations {
     apiElements {
         canBeConsumed = true
