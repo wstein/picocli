@@ -6,7 +6,7 @@
 // which delegates to Bootstrap#clean() via Bootstrap.bootstrap(cwd, options.githubToken) and
 // therefore uses dependencyResolution.
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and referenced by name
 // (option --explain, no ':') rather than via inheritance.
 

@@ -8,7 +8,7 @@
 //    Bootstrap#checkEffects / Bootstrap#lockEffects and using compileOptions.
 // 2. Removes the --explain option from the compiler CLI.
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and pulled in via "use".
 
 definitions {

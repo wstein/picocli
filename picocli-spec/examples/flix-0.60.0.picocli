@@ -7,7 +7,7 @@
 // and what each command needs. See picocli-spec/examples/README.md for the reasoning behind
 // each judgment call.
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and referenced by name
 // (option --explain, no ':') rather than via inheritance: flix's command tree is flat and each
 // shared option applies to an arbitrary, overlapping subset of siblings, which inheritance can't

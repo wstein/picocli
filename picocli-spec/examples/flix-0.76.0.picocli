@@ -7,7 +7,7 @@
 // 2. Introduces the experimental '--Xverify' flag ("enables internal verifiers of compiler invariants.").
 // 3. Removes the '--Xsummary' flag from experimental options.
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and pulled in via "use".
 
 definitions {

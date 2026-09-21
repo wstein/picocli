@@ -8,7 +8,7 @@
 // 2. Updates 'clean' description to "removes the build directory (class files and generated documentation)."
 // 3. Updates '--Xprint-phases' description to "[experimental] writes the ASTs after each phase to './build/asts/'."
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and pulled in via "use".
 
 definitions {

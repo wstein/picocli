@@ -6,7 +6,7 @@
 // Introduces the experimental '--Xnewmono' flag ("uses the constraint-based monomorphization
 // pipeline instead of the demand-driven one."), bringing the experimental flags count to 11.
 //
-// --help/--version are marked usageHelp/versionHelp below and genuinely short-circuit execution.
+// Standard help/version options are provided via mixinStandardHelpOptions and genuinely short-circuit execution.
 // Shared options/positionals are declared once in definitions { ... } and pulled in via "use".
 
 definitions {

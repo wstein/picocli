@@ -95,8 +95,8 @@ reasoning:
   picocli's execution strategy natively intercepts it, renders only the experimental options group, and short-circuits
   execution with exit code 0. See `FlixExperimentalHelpTest` for tests exercising this behavior. `check`/`build`/`test`
   turn out to have *identical* bodies (`compileOptions` + `--explain` + `--json` + `--Xhelp` + `xflags` + `files`), so that
-  whole shape is itself bundled as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.`/`--entrypoint` on top.
-- **`<file>...`** (modeled as a `positional files : File ... arity=0..*`): attached to `check`,
+  whole shape is itself bundled as `devLoop`; `run` reuses `devLoop` too, adding only its own `--args`/`--entrypoint` on top.
+- **`<file>...`** (modeled as a `positional files : Path[] ... arity=0..*`): attached to `check`,
   `build`, `run`, `test`, and `repl` (whose own `--help` text explicitly says "for the current
   project, or provided Flix source files") — the commands whose descriptions imply they operate
   on ad hoc source files, as opposed to `build-jar`/`build-pkg`/`doc`/etc. which operate on "the
@@ -114,8 +114,9 @@ reasoning:
   `CommandSpecDslTest.doubleDashSeparatorPassesRawTokensToAnArrayTypePositional`, not just assumed.
   `--args` (a single quoted string, per flix's own text) remains the closest *named* equivalent
   for the common case, but raw multi-token passthrough already works with no format change.
-- **`usageHelp`/`versionHelp`**: resolved — see the module README. `--help`/`--version` above are
-  now marked `usageHelp`/`versionHelp` and genuinely short-circuit execution.
+- **`mixinStandardHelpOptions`**: standard help/version options (`-h`/`--help`, `-V`/`--version`)
+  are provided natively via `mixinStandardHelpOptions` without needing manual option declarations,
+  and genuinely short-circuit execution.
 - **Option inheritance (`ScopeType.INHERIT`)**: also resolved as a format capability (see the
   module README), but deliberately *not* used in this file: `flix`'s command tree is flat, and
   each shared option applies to an arbitrary, overlapping *subset* of siblings (the `--X*` flags:
