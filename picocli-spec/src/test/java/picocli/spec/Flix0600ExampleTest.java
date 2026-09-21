@@ -120,6 +120,7 @@ public class Flix0600ExampleTest {
 
         ParseResult build = result.subcommand();
         assertEquals(1, build.matchedPositionals().size());
+        File[] files = build.matchedPositionalValue(0, new File[0]);
         java.nio.file.Path[] files = build.matchedPositionalValue(0, new java.nio.file.Path[0]);
         assertEquals(3, files.length);
     }

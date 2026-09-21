@@ -62,6 +62,7 @@ definitions {
   // Only check/doc/format/test actually read cmdOpts.files (confirmed in Bootstrap.scala; see
   // examples/README.md) -- unlike flix-0.60.0.picocli, build/run/repl do NOT accept file
   // arguments in this version and so do not reference this positional.
+  positional files : File[] "input Flix source code files." arity=0..*
   positional files : Path[] "input Flix source code files." arity=0..*
 
   // clean/outdated both call Bootstrap.bootstrap(cwd, githubToken) but never actually compile.
@@ -90,8 +91,7 @@ definitions {
 }
 
 command flix "The Flix Programming Language 0.76.2" {
-  option --help : boolean "prints this usage information." usageHelp inherit
-  option --version : boolean "prints the version number." versionHelp
+  mixinStandardHelpOptions
 
   // Confirmed (Main.scala) to affect nothing except --version's own output in this version --
   // no subcommand reads it. Kept top-level, paired with --version, not attached to any command.

@@ -65,6 +65,7 @@ definitions {
     }
   }
 
+  positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
   positional files : Path[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
 
   // The 10 commands needing GitHub-backed dependency resolution always need both together (see
@@ -94,8 +95,7 @@ definitions {
 }
 
 command flix "The Flix Programming Language 0.60.0" {
-  option --help : boolean "prints this usage information." usageHelp inherit
-  option --version : boolean "prints the version number." versionHelp
+  mixinStandardHelpOptions
   option --listen : int "starts the socket server and listens on the given port."
 
   command init "creates a new project in the current directory." {
