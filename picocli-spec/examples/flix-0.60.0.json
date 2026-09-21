@@ -1,0 +1,1285 @@
+{
+  "$schema": "https://wstein.github.io/picocli/spec/schema/command-spec.schema.json",
+  "name": "flix",
+  "description": [
+    "The Flix Programming Language 0.60.0"
+  ],
+  "mixinStandardHelpOptions": true,
+  "options": [
+    {
+      "names": [
+        "--listen"
+      ],
+      "type": "int",
+      "description": [
+        "starts the socket server and listens on the given port."
+      ],
+      "arity": "1"
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "init",
+      "description": [
+        "creates a new project in the current directory."
+      ],
+      "options": [
+        {
+          "names": [
+            "--yes"
+          ],
+          "type": "boolean",
+          "description": [
+            "automatically answer yes to all prompts."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "check",
+      "description": [
+        "checks the current project for errors."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--explain"
+          ],
+          "type": "boolean",
+          "description": [
+            "provides suggestions on how to solve a problem."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "type": "boolean",
+          "description": [
+            "enables json output."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files, Flix packages, and Java archives."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints the ASTs after the each phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsummary"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints a summary of the compiled modules."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xfuzzer"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables compiler fuzzing."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-typer"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] writes constraints to dot files."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xchaos-monkey"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] introduces randomness."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xiterations"
+              ],
+              "type": "int",
+              "description": [
+                "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
+              ],
+              "arity": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "description": [
+        "builds (i.e. compiles) the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--explain"
+          ],
+          "type": "boolean",
+          "description": [
+            "provides suggestions on how to solve a problem."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "type": "boolean",
+          "description": [
+            "enables json output."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files, Flix packages, and Java archives."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints the ASTs after the each phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsummary"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints a summary of the compiled modules."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xfuzzer"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables compiler fuzzing."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-typer"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] writes constraints to dot files."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xchaos-monkey"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] introduces randomness."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xiterations"
+              ],
+              "type": "int",
+              "description": [
+                "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
+              ],
+              "arity": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "build-jar",
+      "description": [
+        "builds a jar-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "build-fatjar",
+      "description": [
+        "builds a fatjar-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "build-pkg",
+      "description": [
+        "builds a fpkg-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "type": "boolean",
+          "description": [
+            "automatically answer yes to all prompts."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "doc",
+      "description": [
+        "generates API documentation."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": [
+        "runs main for the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--args"
+          ],
+          "type": "String",
+          "description": [
+            "arguments passed to main. Must be a single quoted string."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--explain"
+          ],
+          "type": "boolean",
+          "description": [
+            "provides suggestions on how to solve a problem."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "type": "boolean",
+          "description": [
+            "enables json output."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files, Flix packages, and Java archives."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints the ASTs after the each phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsummary"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints a summary of the compiled modules."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xfuzzer"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables compiler fuzzing."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-typer"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] writes constraints to dot files."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xchaos-monkey"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] introduces randomness."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xiterations"
+              ],
+              "type": "int",
+              "description": [
+                "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
+              ],
+              "arity": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": [
+        "runs the tests for the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--explain"
+          ],
+          "type": "boolean",
+          "description": [
+            "provides suggestions on how to solve a problem."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "type": "boolean",
+          "description": [
+            "enables json output."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files, Flix packages, and Java archives."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints the ASTs after the each phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsummary"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] prints a summary of the compiled modules."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xfuzzer"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables compiler fuzzing."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-typer"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] writes constraints to dot files."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xchaos-monkey"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] introduces randomness."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xiterations"
+              ],
+              "type": "int",
+              "description": [
+                "[experimental] sets the maximum number of constraint resolution iterations during typechecking"
+              ],
+              "arity": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "repl",
+      "description": [
+        "starts a repl for the current project, or provided Flix source files."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files, Flix packages, and Java archives."
+          ],
+          "arity": "0..*"
+        }
+      ]
+    },
+    {
+      "name": "lsp",
+      "description": [
+        "starts the Plain-LSP server."
+      ]
+    },
+    {
+      "name": "lsp-vscode",
+      "description": [
+        "starts the VSCode-LSP server and listens on the given port."
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<port>",
+          "type": "int",
+          "description": [
+            "the port number to listen on."
+          ],
+          "required": true,
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "description": [
+        "releases a new version to GitHub."
+      ],
+      "options": [
+        {
+          "names": [
+            "--yes"
+          ],
+          "type": "boolean",
+          "description": [
+            "automatically answer yes to all prompts."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "outdated",
+      "description": [
+        "shows dependencies which have newer versions available."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--json"
+          ],
+          "type": "boolean",
+          "description": [
+            "enables json output."
+          ],
+          "arity": "0"
+        }
+      ]
+    }
+  ]
+}

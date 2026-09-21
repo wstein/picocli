@@ -1,0 +1,1548 @@
+{
+  "$schema": "https://wstein.github.io/picocli/spec/schema/command-spec.schema.json",
+  "name": "flix",
+  "description": [
+    "The Flix Programming Language 0.76.2"
+  ],
+  "mixinStandardHelpOptions": true,
+  "options": [
+    {
+      "names": [
+        "--json"
+      ],
+      "type": "boolean",
+      "description": [
+        "enables json output."
+      ],
+      "arity": "0"
+    },
+    {
+      "names": [
+        "--listen"
+      ],
+      "type": "int",
+      "description": [
+        "starts the socket server and listens on the given port."
+      ],
+      "arity": "1"
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "init",
+      "description": [
+        "creates a new project in the current directory."
+      ]
+    },
+    {
+      "name": "check",
+      "description": [
+        "checks the current project for errors."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] writes the ASTs after each phase to './build/asts/'."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xverify"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables internal verifiers of compiler invariants."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xnewmono"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] uses the constraint-based monomorphization pipeline instead of the demand-driven one."
+              ],
+              "arity": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "build",
+      "description": [
+        "builds (i.e. compiles) the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] writes the ASTs after each phase to './build/asts/'."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xverify"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables internal verifiers of compiler invariants."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xnewmono"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] uses the constraint-based monomorphization pipeline instead of the demand-driven one."
+              ],
+              "arity": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "build-classes",
+      "description": [
+        "builds the current project and writes the class files to the build directory."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "build-jar",
+      "description": [
+        "builds a jar-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "build-fatjar",
+      "description": [
+        "builds a fatjar-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "build-pkg",
+      "description": [
+        "builds a fpkg-file from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "clean",
+      "description": [
+        "removes the build directory (class files and generated documentation)."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "doc",
+      "description": [
+        "generates API documentation."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--library"
+          ],
+          "type": "boolean",
+          "description": [
+            "documents the bundled library instead of the current project."
+          ],
+          "arity": "0"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files."
+          ],
+          "arity": "0..*"
+        }
+      ]
+    },
+    {
+      "name": "format",
+      "description": [
+        "formats Flix source code files."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files."
+          ],
+          "arity": "0..*"
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": [
+        "runs main for the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--entrypoint"
+          ],
+          "type": "String",
+          "description": [
+            "specifies the main entry point."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] writes the ASTs after each phase to './build/asts/'."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xverify"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables internal verifiers of compiler invariants."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xnewmono"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] uses the constraint-based monomorphization pipeline instead of the demand-driven one."
+              ],
+              "arity": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "description": [
+        "runs the tests for the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--Xhelp"
+          ],
+          "type": "boolean",
+          "description": [
+            "shows the experimental options for this command."
+          ],
+          "arity": "0",
+          "helpSection": "experimental"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<files>",
+          "type": "Path[]",
+          "description": [
+            "input Flix source code files."
+          ],
+          "arity": "0..*"
+        }
+      ],
+      "argGroups": [
+        {
+          "exclusive": false,
+          "multiplicity": "0..1",
+          "helpSection": "experimental",
+          "heading": "The following options are experimental:%n",
+          "options": [
+            {
+              "names": [
+                "--Xbenchmark-code-size"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the size of the generated JVM files."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-incremental"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase in incremental mode."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of each compiler phase."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-frontend"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the frontend."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xbenchmark-throughput"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] benchmarks the performance of the entire compiler."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xlib"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] controls the amount of std. lib. to include (nix, min, all)."
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xno-deprecated"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] disables deprecated features."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xprint-phases"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] writes the ASTs after each phase to './build/asts/'."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xverify"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] enables internal verifiers of compiler invariants."
+              ],
+              "arity": "0"
+            },
+            {
+              "names": [
+                "--Xsubeffecting"
+              ],
+              "type": "String",
+              "description": [
+                "[experimental] enables sub-effecting in select places"
+              ],
+              "arity": "1"
+            },
+            {
+              "names": [
+                "--Xnewmono"
+              ],
+              "type": "boolean",
+              "description": [
+                "[experimental] uses the constraint-based monomorphization pipeline instead of the demand-driven one."
+              ],
+              "arity": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "repl",
+      "description": [
+        "starts a repl for the current project, or provided Flix source files."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "lsp",
+      "description": [
+        "starts the Plain-LSP server."
+      ]
+    },
+    {
+      "name": "lsp-vscode",
+      "description": [
+        "starts the VSCode-LSP server and listens on the given port."
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<port>",
+          "type": "int",
+          "description": [
+            "the port number to listen on."
+          ],
+          "required": true,
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "description": [
+        "releases a new version to GitHub."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "type": "boolean",
+          "description": [
+            "automatically answer yes to all prompts."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "install",
+      "description": [
+        "adds a dependency to the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--yes"
+          ],
+          "type": "boolean",
+          "description": [
+            "automatically answer yes to all prompts."
+          ],
+          "arity": "0"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<package>",
+          "type": "String",
+          "description": [
+            "the package to add, e.g. 'flix/museum-clerk' or 'flix/museum-clerk@1.1.0'."
+          ],
+          "required": true,
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "remove",
+      "description": [
+        "removes a dependency from the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<package>",
+          "type": "String",
+          "description": [
+            "the package to remove, e.g. 'flix/museum-clerk'."
+          ],
+          "required": true,
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "upgrade",
+      "description": [
+        "declares a dependency of the current project at another version."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        }
+      ],
+      "positionalParams": [
+        {
+          "paramLabel": "<package>",
+          "type": "String",
+          "description": [
+            "the package to upgrade, e.g. 'flix/museum-clerk' or 'flix/museum-clerk@1.1.0'."
+          ],
+          "required": true,
+          "arity": "1"
+        }
+      ]
+    },
+    {
+      "name": "outdated",
+      "description": [
+        "shows dependencies which have newer versions available."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "stat",
+      "description": [
+        "prints statistics about the current project."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "eff-check",
+      "description": [
+        "checks that dependencies respect the 'effects.lock' file."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    },
+    {
+      "name": "eff-lock",
+      "description": [
+        "locks the current effect signatures."
+      ],
+      "options": [
+        {
+          "names": [
+            "--github-token"
+          ],
+          "type": "String",
+          "description": [
+            "API key to use for GitHub dependency resolution."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--no-install"
+          ],
+          "type": "boolean",
+          "description": [
+            "disables automatic installation of dependencies."
+          ],
+          "arity": "0"
+        },
+        {
+          "names": [
+            "--threads"
+          ],
+          "type": "int",
+          "description": [
+            "number of threads to use for compilation."
+          ],
+          "arity": "1"
+        },
+        {
+          "names": [
+            "--top"
+          ],
+          "type": "boolean",
+          "description": [
+            "displays a live view of where the compiler spends its time."
+          ],
+          "arity": "0"
+        }
+      ]
+    }
+  ]
+}
