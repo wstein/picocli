@@ -76,6 +76,11 @@ public class CommandSpecSchemaTest {
         assertTrue(commandProperties.containsKey("helpSection"));
         Map<String, Object> helpSecProp = (Map<String, Object>) commandProperties.get("helpSection");
         assertEquals("string", helpSecProp.get("type"));
+
+        assertTrue(commandProperties.containsKey("helpSections"));
+        Map<String, Object> helpSecsProp = (Map<String, Object>) commandProperties.get("helpSections");
+        assertEquals("array", helpSecsProp.get("type"));
+        assertTrue(defs.containsKey("helpSectionDef"));
     }
 
     @Test

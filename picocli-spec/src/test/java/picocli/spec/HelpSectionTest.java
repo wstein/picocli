@@ -6,6 +6,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.HelpSectionSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
@@ -143,6 +144,37 @@ public class HelpSectionTest {
         assertTrue(json.contains("\"helpSection\": \"experimental\""));
         CommandSpec specFromJson = CommandSpecJson.read(json);
         assertEquals("experimental", specFromJson.positionalParameters().get(0).helpSection());
+    }
+
+    @Test
+    public void testSectionMetadataDslAndJsonRoundTrip() {
+        String dsl = "command myapp {\n" +
+                "  section experimental \"Flags still under development.\" heading=\"Experimental Options:%n\" emptyMessage=\"No experimental options for this command.%n\" notice=\"%nRun 'myapp --Xhelp' to inspect experimental flags.%n\"\n" +
+                "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+                "}";
+
+        CommandSpec spec1 = CommandSpecDsl.parse(dsl);
+        HelpSectionSpec expSec = spec1.helpSectionSpec("experimental");
+        assertNotNull(expSec);
+        assertEquals("Experimental Options:%n", expSec.heading());
+        assertEquals("No experimental options for this command.%n", expSec.emptyMessage());
+        assertEquals("%nRun 'myapp --Xhelp' to inspect experimental flags.%n", expSec.notice());
+        assertEquals(1, expSec.description().length);
+        assertEquals("Flags still under development.", expSec.description()[0]);
+
+        String writtenDsl = CommandSpecDsl.write(spec1);
+        assertTrue(writtenDsl.contains("section experimental"));
+        assertTrue(writtenDsl.contains("heading=\"Experimental Options:%n\""));
+        CommandSpec specFromDsl = CommandSpecDsl.parse(writtenDsl);
+        HelpSectionSpec dslSec = specFromDsl.helpSectionSpec("experimental");
+        assertEquals(expSec, dslSec);
+
+        String json = CommandSpecJson.write(spec1);
+        assertTrue(json.contains("\"helpSections\""));
+        assertTrue(json.contains("\"emptyMessage\": \"No experimental options for this command.%n\""));
+        CommandSpec specFromJson = CommandSpecJson.read(json);
+        HelpSectionSpec jsonSec = specFromJson.helpSectionSpec("experimental");
+        assertEquals(expSec, jsonSec);
     }
 
     @Test

@@ -3,6 +3,7 @@ package picocli.spec;
 import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.HelpSectionSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
@@ -131,6 +132,9 @@ public final class CommandSpecDsl {
         for (ArgGroupSpec group : spec.argGroups()) {
             writeGroup(group, out, indent + 1);
         }
+        for (HelpSectionSpec sec : spec.helpSectionSpecs().values()) {
+            writeSection(sec, out, indent + 1);
+        }
         for (picocli.CommandLine sub : spec.subcommands().values()) {
             writeCommand(sub.getCommandSpec(), out, indent + 1);
         }
@@ -206,6 +210,25 @@ public final class CommandSpecDsl {
         String helpSection = Help.getHelpSection(positional);
         if (helpSection != null && !helpSection.isEmpty()) {
             out.append(" helpSection=").append(quote(helpSection));
+        }
+        out.append("\n");
+    }
+
+    private static void writeSection(HelpSectionSpec sec, StringBuilder out, int indent) {
+        indent(out, indent);
+        out.append("section ").append(sec.name());
+        String desc = joinDescription(sec.description());
+        if (desc != null && !desc.isEmpty()) {
+            out.append(" ").append(quote(desc));
+        }
+        if (sec.heading() != null && !sec.heading().isEmpty()) {
+            out.append(" heading=").append(quote(sec.heading()));
+        }
+        if (sec.emptyMessage() != null && !sec.emptyMessage().isEmpty()) {
+            out.append(" emptyMessage=").append(quote(sec.emptyMessage()));
+        }
+        if (sec.notice() != null && !sec.notice().isEmpty()) {
+            out.append(" notice=").append(quote(sec.notice()));
         }
         out.append("\n");
     }
@@ -717,13 +740,15 @@ public final class CommandSpecDsl {
                 if ("command".equals(keyword)) {
                     CommandSpec sub = parseCommand(definitions);
                     spec.addSubcommand(sub.name(), sub);
+                } else if ("section".equals(keyword)) {
+                    spec.addHelpSectionSpec(parseSection());
                 } else if ("mixinStandardHelpOptions".equals(keyword)) {
                     advance();
                     mixinStandardHelp = true;
                 } else if (isMemberKeyword(keyword)) {
                     parseMember(definitions, sink);
                 } else {
-                    throw new DslParseException("Expected 'option', 'positional', 'group', 'use', 'mixinStandardHelpOptions', or 'command' but found '" + keyword + "'");
+                    throw new DslParseException("Expected 'option', 'positional', 'group', 'section', 'use', 'mixinStandardHelpOptions', or 'command' but found '" + keyword + "'");
                 }
             }
             expect(TokenKind.RBRACE, "'}'");
@@ -767,6 +792,28 @@ public final class CommandSpecDsl {
             for (GroupTemplate groupTemplate : bundle.groups) {
                 groupTemplate.materialize(sink);
             }
+        }
+
+        private HelpSectionSpec parseSection() {
+            expectKeyword("section");
+            String name = expectWordOrString();
+            HelpSectionSpec.Builder builder = HelpSectionSpec.builder(name);
+            if (check(TokenKind.STRING)) {
+                builder.description(splitDescription(advance().text));
+            }
+            while (checkWord("heading") || checkWord("emptyMessage") || checkWord("notice")) {
+                String attr = advance().text;
+                expect(TokenKind.EQUALS, "'='");
+                String value = expectWordOrString();
+                if ("heading".equals(attr)) {
+                    builder.heading(value);
+                } else if ("emptyMessage".equals(attr)) {
+                    builder.emptyMessage(value);
+                } else if ("notice".equals(attr)) {
+                    builder.notice(value);
+                }
+            }
+            return builder.build();
         }
 
         /**

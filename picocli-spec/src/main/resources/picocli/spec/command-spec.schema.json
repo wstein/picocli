@@ -23,6 +23,11 @@
           "type": "string",
           "description": "Optional help section tag for this command (e.g. \"experimental\"). Tagged commands are excluded from the parent command's standard usage help and rendered only when the matching help section is requested on demand."
         },
+        "helpSections": {
+          "type": "array",
+          "description": "Optional definitions of on-demand help section metadata (headings, description lines, empty messages, notices).",
+          "items": { "$ref": "#/$defs/helpSectionDef" }
+        },
         "mixinStandardHelpOptions": {
           "type": "boolean",
           "default": false,
@@ -220,6 +225,30 @@
           "description": "Optional help section tag for this positional parameter (e.g. \"experimental\"). Tagged positional parameters are excluded from standard usage help and rendered only when the matching help section is requested on demand."
         },
         "scope": { "$ref": "#/$defs/scope" }
+      }
+    },
+    "helpSectionDef": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The section name/tag matching helpSection attributes on options, positional parameters, or subcommands."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Heading displayed above the section when rendered on demand."
+        },
+        "description": { "$ref": "#/$defs/descriptionLines" },
+        "emptyMessage": {
+          "type": "string",
+          "description": "Fallback message displayed when no elements in this section are present."
+        },
+        "notice": {
+          "type": "string",
+          "description": "Custom notice displayed in standard usage help pointing to this section."
+        }
       }
     },
     "descriptionLines": {

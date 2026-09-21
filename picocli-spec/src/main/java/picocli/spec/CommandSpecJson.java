@@ -5,6 +5,7 @@ import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.ArgSpec;
 import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Model.HelpSectionSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 import picocli.spec.json.Json;
@@ -314,6 +315,27 @@ public final class CommandSpecJson {
         if (helpSection != null) {
             spec.helpSection(helpSection);
         }
+        List<Object> helpSections = (List<Object>) json.get("helpSections");
+        if (helpSections != null) {
+            for (Object item : helpSections) {
+                if (item instanceof Map) {
+                    Map<String, Object> secMap = (Map<String, Object>) item;
+                    String secName = (String) secMap.get("name");
+                    if (secName != null && !secName.isEmpty()) {
+                        HelpSectionSpec.Builder secBuilder = HelpSectionSpec.builder(secName);
+                        String heading = (String) secMap.get("heading");
+                        if (heading != null) { secBuilder.heading(heading); }
+                        String[] desc = readStringArray(secMap.get("description"));
+                        if (desc != null) { secBuilder.description(desc); }
+                        String emptyMessage = (String) secMap.get("emptyMessage");
+                        if (emptyMessage != null) { secBuilder.emptyMessage(emptyMessage); }
+                        String notice = (String) secMap.get("notice");
+                        if (notice != null) { secBuilder.notice(notice); }
+                        spec.addHelpSectionSpec(secBuilder.build());
+                    }
+                }
+            }
+        }
 
         ArgSink sink = new CommandArgSink(spec);
         addOptionsPositionalsAndUses(json, definitions, sink);
@@ -474,6 +496,25 @@ public final class CommandSpecJson {
         String helpSection = Help.getHelpSection(spec);
         if (helpSection != null) {
             json.put("helpSection", helpSection);
+        }
+        if (!spec.helpSectionSpecs().isEmpty()) {
+            List<Object> sections = new ArrayList<Object>();
+            for (HelpSectionSpec sec : spec.helpSectionSpecs().values()) {
+                Map<String, Object> secJson = new LinkedHashMap<String, Object>();
+                secJson.put("name", sec.name());
+                if (sec.heading() != null && !sec.heading().isEmpty()) {
+                    secJson.put("heading", sec.heading());
+                }
+                putDescriptionIfPresent(secJson, sec.description());
+                if (sec.emptyMessage() != null && !sec.emptyMessage().isEmpty()) {
+                    secJson.put("emptyMessage", sec.emptyMessage());
+                }
+                if (sec.notice() != null && !sec.notice().isEmpty()) {
+                    secJson.put("notice", sec.notice());
+                }
+                sections.add(secJson);
+            }
+            json.put("helpSections", sections);
         }
         if (spec.mixinStandardHelpOptions()) {
             json.put("mixinStandardHelpOptions", Boolean.TRUE);
