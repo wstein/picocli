@@ -2,26 +2,15 @@
 
 Real-world specs, kept here (not under `src/test/resources`) so they stay easy to find and read
 on GitHub as documentation in their own right. Each is sanity-checked by a corresponding test in
-`src/test/java/picocli/spec/` (e.g. `Flix0600ExampleTest`, `Flix0670ExampleTest`, `Flix0762ExampleTest`).
+`src/test/java/picocli/spec/` (e.g. `Flix0600ExampleTest`, `FlixExamplesRoundTripTest`).
 
-## Flix Version Progression (v0.60.0 – v0.76.2)
-
-Scanning git tags `v0.60.0` through `v0.76.2` in flix's repository (`Main.scala`, `Bootstrap.scala`,
-`Options.scala`, `TestMain.scala`) reveals that the CLI evolved across nine distinct version ranges.
-Each version range is represented by a dedicated `.picocli` spec file capturing the exact command set,
-options, and behavioral rules in effect for that range:
-
-| Version Range | Spec File | Tests | Key CLI Changes |
-|---|---|---|---|
-| `v0.60.0` – `v0.66.2` | `flix-0.60.0.picocli` | `Flix0600ExampleTest` | 14 subcommands, 14 experimental flags, `--args`, `--explain`, global `--listen` |
-| `v0.67.0` | `flix-0.67.0.picocli` | `Flix0670ExampleTest` | Adds `clean` subcommand |
-| `v0.67.1` – `v0.67.2` | `flix-0.67.1.picocli` | `Flix0671ExampleTest` | Adds `format` subcommand; restricts file arguments strictly to `check`/`doc`/`format`/`test`; drops `--args` in favor of `--`; removes 4 experimental flags (`Xfuzzer`, `Xprint-typer`, `Xchaos-monkey`, `Xiterations`) |
-| `v0.68.0` – `v0.72.0` | `flix-0.68.0.picocli` | `Flix0680ExampleTest` | Adds `eff-check` and `eff-lock` subcommands; removes `--explain` |
-| `v0.73.0` – `v0.75.1` | `flix-0.73.0.picocli` | `Flix0730ExampleTest` | Adds `--top` compiler profiling option to `compileOptions` |
-| `v0.75.2` | `flix-0.75.2.picocli` | `Flix0752ExampleTest` | Adds experimental `--Xnewmono` flag (11 experimental flags) |
-| `v0.75.3` | `flix-0.75.3.picocli` | `Flix0753ExampleTest` | Adds `build-classes` subcommand; updates `clean` description and `--Xprint-phases` description |
-| `v0.76.0` – `v0.76.1` | `flix-0.76.0.picocli` | `Flix0760ExampleTest` | Adds `stat` subcommand; adds experimental `--Xverify`; removes `--Xsummary` |
-| `v0.76.2` | `flix-0.76.2.picocli` | `Flix0762ExampleTest` | Adds package management commands (`install`, `remove`, `upgrade`); adds `--library` to `doc` |
+> **Note on Flix Multi-Version Progression:**
+> The complete catalogue of curated Flix CLI specs spanning nine version ranges (from `v0.60.0`
+> up to `v0.76.2`) is maintained in the downstream bootstrap wrapper repository:
+> [`flixw/src/assets/picocli/`](https://github.com/wstein/flixw/tree/main/src/assets/picocli).
+> Here in `picocli-spec`, `flix-0.60.0.picocli` (and companion `flix-0.60.0.json`) is retained as
+> the canonical real-world regression example demonstrating bundles, groups, subcommands,
+> mixins, and round-trip parsing fidelity.
 
 ## `flix-0.60.0.picocli`
 
@@ -127,108 +116,6 @@ reasoning:
   independent `OptionSpec` instance under the hood; this only removes duplication in the *source
   text*, not the resulting `CommandSpec`.
 
-## `flix-0.76.2.picocli`
-
-A picocli-spec DSL spec for the same real [flix](https://flix.dev) CLI, at a much later
-version. Built differently from `flix-0.60.0.picocli`: no `flixw` binary was available when this
-file was first written, so it was curated entirely from reading flix's actual source at git tag
-[`v0.76.2`](https://github.com/flix/flix/tree/v0.76.2) —
-[`Main.scala`](https://github.com/flix/flix/blob/v0.76.2/main/src/ca/uwaterloo/flix/Main.scala)
-for the scopt declarations (option/command names, `--help` text, verbatim) and
-[`Bootstrap.scala`](https://github.com/flix/flix/blob/v0.76.2/main/src/ca/uwaterloo/flix/api/Bootstrap.scala)
-for what each command's implementation actually does with each option — necessary because scopt
-only records which text is a *global* option, never which subcommands actually consult it, or
-whether a subcommand even accepts file arguments at all. Reading the implementation instead of
-just the option declarations surfaced real per-command differences a `--help` transcription alone
-would have missed. The actual flix-0.76.2 jar was later obtained and every finding below was
-confirmed by running it directly — `--help`, plus exercising `build`/`run`/`repl`/`check`/`test`/
-`doc`/`format` with a loose file argument, `--version --json`, `check --json`, `--listen`
-standalone, and `init --yes`/`build-pkg` — matching flix-0.60.0.picocli's own empirical bar, not
-just source-inference.
-
-### New commands since 0.60.0
-
-`build-classes`, `clean`, `format`, `install`, `remove`, `upgrade`, `stat`, `eff-check`, `eff-lock`
-were added. All of them were curated the same way as 0.60.0's commands: which of
-`compileOptions`/`dependencyResolution` (see below) they need was decided by which of
-`Bootstrap.bootstrap`/`Bootstrap#mkFlix` each command's `case` branch in `Main.scala` actually
-calls, not by guessing from the command's name or one-line description.
-
-flix also declares three more subcommands — `Xperf`, `Xmemory`, `Xzhegalkin` — internal
-benchmarking/profiling tools for compiler developers. Unlike the `--X*` *options* (which scopt
-still lists in `--help`, just under an "experimental" heading), these are declared `.hidden()` at
-the *command* level: scopt never shows them in `--help` at all. This proxy doesn't expose them
-either, for the same reason it never fabricates functionality the wrapped tool doesn't actually
-present to its own users.
-
-### Three genuine differences from how `flix-0.60.0.picocli` curated the equivalent options
-
-Reading `Bootstrap.scala` rather than trusting `--help` text and command descriptions alone turned
-up three real, version-specific findings (confirmed by grepping the actual dependency/option
-usage across the whole cloned source tree, not just `Main.scala`, and later confirmed again by
-actually running the flix-0.76.2 jar):
-
-1. **`--no-install`'s underlying `installDeps` flag is set but never read.** It flows from the CLI
-   into `CmdOpts` into `Options`, but no call in `Bootstrap.scala` (or anywhere else in the
-   `main/src` tree) ever consults `options.installDeps` — the automatic-dependency-installation
-   behavior it's supposed to disable isn't gated on it anywhere in this version. It's still
-   declared here (flix's own `--help` still documents it, so a proxy mirrors that), but it's
-   worth knowing this flag is currently a no-op if you're relying on it.
-   (`build --no-install` on a fresh project still ran the full "Resolving Flix dependencies...
-   Downloading..." sequence identically to `build` without the flag -- consistent with, though
-   not a rigorous proof of, the grep-confirmed fact that `options.installDeps` is never read.
-   The test project declared no actual dependencies, so there was nothing for the flag to
-   meaningfully skip; a project with real unresolved dependencies would be a stronger check.)
-2. **`--json` only ever affects `--version`'s own output.** `Main.scala` reads `cmdOpts.json`
-   exactly twice: once to build `options.json`, and once directly in `printVersion(cmdOpts.json)`.
-   Nothing in `Bootstrap.scala` reads `options.json`. Unlike `flix-0.60.0.picocli` (which attached
-   `--json` to `check`/`build`/`run`/`test`/`outdated`, matching that version's actual behavior),
-   this file keeps `--json` top-level only, paired with `--version`, since attaching it to any
-   subcommand here would be documenting a feature that doesn't do anything. Confirmed empirically:
-   `--version --json` produces `{"major":0,"minor":76,"revision":2}`; `check --json` on a real
-   file produces byte-identical output to plain `check` (empty on success either way).
-3. **File-argument support varies per command, and doesn't match every command's own `--help`
-   text.** Each `case Command.X =>` branch in `Main.scala` either unconditionally rejects a
-   non-empty `cmdOpts.files` ("The '...' command does not support file arguments.") or branches on
-   whether it's empty to allow ad hoc file compilation. Only `check`, `doc`, `format`, and `test`
-   accept files; `build`, `run`, and `repl` explicitly reject them — even though `repl`'s own
-   `--help` text still reads "starts a repl for the current project, **or provided Flix source
-   files**," which the code no longer honors. `flix-0.60.0.picocli` gave the shared `files`
-   positional to `check`/`build`/`run`/`test`/`repl`; that would be wrong for this version, so this
-   file only references it from the four commands confirmed (by the code, not the text) to accept
-   it — see `Flix0762ExampleTest.onlyCheckDocFormatAndTestAcceptFileArguments`. Confirmed
-   empirically against the real jar: `build Main.flix`/`run Main.flix`/`repl Main.flix` each print
-   exactly `"The '<cmd>' command does not support file arguments."` and exit; `check Main.flix`,
-   `test Main.flix`, `doc Main.flix`, and `format Main.flix` all run against the file with no such
-   rejection.
-
-### Everything else, briefly
-
-- **`--entrypoint`**: still only where a runnable main matters: `build-jar`, `build-fatjar`, `run`.
-- **`--yes`**: only `install` (`Bootstrap#install` calls `selectMount` with `assumeYes`) and
-  `release` (confirmation prompt before publishing). Not `init` (no prompt exists in
-  `Bootstrap#init`'s implementation at all) and not `build-pkg` (no confirmation logic either) —
-  both would have been wrong guesses from the command names alone; `flix-0.60.0.picocli` gave
-  `--yes` to `init`/`build-pkg`/`release`, which doesn't hold up for this version's `init`/
-  `build-pkg` on inspection of the actual implementation. Confirmed empirically: `init --yes`
-  and plain `build-pkg` (no prompt shown either way) both behave identically with or without
-  the flag.
-- **`--top`** (new global option, "displays a live view of where the compiler spends its time."):
-  bundled into `compileOptions` alongside `--threads`, since both are only meaningful where actual
-  compilation happens.
-- **`--library`** (new, `doc`-only): "documents the bundled library instead of the current
-  project." — scoped to `doc` alone, matching its own `.children(...)` declaration in `Main.scala`.
-- **The 11 experimental `--X*` flags**: a different, mostly non-overlapping set from 0.60.0's 14
-  (`Xsummary`/`Xfuzzer`/`Xprint-typer`/`Xchaos-monkey` are gone from the CLI; `Xverify`/`Xnewmono`
-  are new) — same `xflags` bundle mechanism, scoped to the same four core dev-loop commands
-  (`check`/`build`/`run`/`test`) for the same "keep other commands' `--help` clean" reasoning.
-- **`install`/`remove`/`upgrade`**: each takes one required `package` positional with its own
-  distinct description text (verbatim from `Main.scala`), so each is declared inline rather than
-  through `definitions` — there's exactly one use of each, so a shared definition would buy
-  nothing. All three take `--github-token` directly (not through the `dependencyResolution`
-  bundle): they call `Bootstrap.install`/`remove`/`upgrade` directly with just the token, never
-  `Bootstrap.bootstrap`, so `--no-install` doesn't apply to them.
-
 ## Working with Examples via `picospec`
 
 You can inspect, validate, convert, and generate shell completions for any of these spec files directly using the standalone `picocli-spec-tool` fat jar:
@@ -237,15 +124,15 @@ You can inspect, validate, convert, and generate shell completions for any of th
 # Build the fat jar
 ./gradlew :picocli-spec-tool:shadowJar
 
-# Preview the full usage help for flix v0.76.2
-java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar preview picocli-spec/examples/flix-0.76.2.picocli
+# Preview the full usage help for flix v0.60.0
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar preview picocli-spec/examples/flix-0.60.0.picocli
 
 # Validate a spec file
 java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar validate picocli-spec/examples/flix-0.60.0.picocli
 
 # Generate fish shell autocompletion
-java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar completion picocli-spec/examples/flix-0.76.2.picocli --shell=fish
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar completion picocli-spec/examples/flix-0.60.0.picocli --shell=fish
 
 # Convert a DSL spec to JSON
-java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar convert picocli-spec/examples/flix-0.76.2.picocli --to-json
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar convert picocli-spec/examples/flix-0.60.0.picocli --to-json
 ```

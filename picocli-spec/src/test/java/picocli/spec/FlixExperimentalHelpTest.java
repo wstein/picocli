@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests {@code examples/flix-0.60.0.picocli}'s and {@code examples/flix-0.76.2.picocli}'s {@code --Xhelp}:
+ * Tests {@code examples/flix-0.60.0.picocli}'s {@code --Xhelp}:
  * the declarative {@code helpSection="experimental"} group and trigger option natively render
  * experimental options on demand, exclude them from standard {@code --help}, and keep them
  * available for shell autocompletion.
@@ -80,7 +80,7 @@ public class FlixExperimentalHelpTest {
 
     @Test
     public void shellCompletionIncludesExperimentalOptions() throws IOException {
-        File file = new File("examples/flix-0.76.2.picocli");
+        File file = new File("examples/flix-0.60.0.picocli");
         String dsl = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
         CommandSpec flix = CommandSpecDsl.parse(dsl);
         CommandLine cmd = new CommandLine(flix);

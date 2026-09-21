@@ -198,7 +198,7 @@ String dslText2 = CommandSpecDsl.write(spec2);
 ### Test Files Location
 
 Example fixture files:
-- `picocli-spec/examples/flix-0.60.0.picocli`, `flix-0.75.3.picocli`, etc. (versioned Flix examples)
+- `picocli-spec/examples/flix-0.60.0.picocli` (Flix v0.60.0 example; multi-version progression in `flixw/src/assets/picocli/`)
 - `picocli-spec/src/test/resources/picocli/spec/examples/` (test fixtures)
 
 ## Release Process

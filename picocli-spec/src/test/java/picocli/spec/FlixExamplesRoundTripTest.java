@@ -11,15 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Parameterized round-trip fidelity test exercising all 9 real-world Flix .picocli spec files
+ * Parameterized round-trip fidelity test exercising the real-world Flix .picocli spec file
  * in {@code picocli-spec/examples/}.
  *
- * Validates that for every version range (v0.60.0 through v0.76.2):
+ * Validates that:
  * 1. The .picocli DSL parses cleanly.
  * 2. Emitting DSL via {@link CommandSpecDsl#write} and re-parsing yields an equivalent spec.
  * 3. Emitting JSON via {@link CommandSpecJson#write} and re-reading yields an equivalent spec.
@@ -29,16 +30,8 @@ public class FlixExamplesRoundTripTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection<String> specFiles() {
-        return Arrays.asList(
-                "flix-0.60.0.picocli",
-                "flix-0.67.0.picocli",
-                "flix-0.67.1.picocli",
-                "flix-0.68.0.picocli",
-                "flix-0.73.0.picocli",
-                "flix-0.75.2.picocli",
-                "flix-0.75.3.picocli",
-                "flix-0.76.0.picocli",
-                "flix-0.76.2.picocli"
+        return Collections.singletonList(
+                "flix-0.60.0.picocli"
         );
     }
 

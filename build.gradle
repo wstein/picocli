@@ -164,15 +164,28 @@ jar {
                    'Main-Class'            : 'picocli.AutoComplete'
     }
 }
-// Bundles picocli-spec's classes into this same jar so a downstream consumer with a
-// single-jar companion-asset model (flixw) gains CommandSpecDsl/CommandSpecJson/
-// CommandSpecMerger without fetching or verifying a second artifact. Guarded the same
-// way settings.gradle excludes the module itself: picocli-spec targets Java 11 bytecode
+// Bundles picocli-spec's classes and curated specs into this same jar so a downstream
+// consumer with a single-jar companion-asset model (flixw) gains CommandSpecDsl/CommandSpecJson/
+// CommandSpecMerger and versioned specs on classpath without fetching or verifying a second artifact.
+// Guarded the same way settings.gradle excludes the module itself: picocli-spec targets Java 11 bytecode
 // and is absent from the build entirely under Java 8.
 if (JavaVersion.current().isJava11Compatible()) {
     jar {
         dependsOn(':picocli-spec:classes')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from { project(':picocli-spec').sourceSets.main.output }
+        from(project(':picocli-spec').file('examples')) {
+            into 'specs'
+            include 'flix-*.picocli'
+            include 'flix-*.json'
+        }
+        if (rootProject.file('../flixw/src/assets/picocli').exists()) {
+            from(rootProject.file('../flixw/src/assets/picocli')) {
+                into 'specs'
+                include 'flix-*.picocli'
+                include 'flix-*.json'
+            }
+        }
     }
 }
 configurations {
