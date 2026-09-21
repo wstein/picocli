@@ -9,12 +9,15 @@ import picocli.CommandLine.Option;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
 public class TaggedHelpSectionTest {
 
-    @Command(name = "mycmd", description = "Test command with tagged help groups.")
+    @Command(name = "mycmd", description = "Test command with tagged help groups.",
+            subcommands = { MyCmd.StdSub.class, MyCmd.ExpSub.class })
     static class MyCmd implements Runnable {
         @Option(names = "--help", usageHelp = true, description = "Show this help message and exit.")
         boolean help;
@@ -37,6 +40,16 @@ public class TaggedHelpSectionTest {
             String beta;
         }
 
+        @Command(name = "std-sub", description = "Standard subcommand.")
+        static class StdSub implements Runnable {
+            public void run() {}
+        }
+
+        @Command(name = "exp-sub", helpSection = "experimental", description = "Experimental subcommand.")
+        static class ExpSub implements Runnable {
+            public void run() {}
+        }
+
         public void run() {}
     }
 
@@ -47,6 +60,9 @@ public class TaggedHelpSectionTest {
 
         OptionSpec option = OptionSpec.builder("--Xhelp").helpSection("experimental").build();
         assertEquals("experimental", option.helpSection());
+
+        CommandLine.Model.CommandSpec cmdSpec = CommandLine.Model.CommandSpec.create().helpSection("experimental");
+        assertEquals("experimental", cmdSpec.helpSection());
     }
 
     @Test
@@ -60,6 +76,14 @@ public class TaggedHelpSectionTest {
         assertFalse(cmd.getCommandSpec().argGroups().isEmpty());
         ArgGroupSpec expGroup = cmd.getCommandSpec().argGroups().get(0);
         assertEquals("experimental", expGroup.helpSection());
+
+        CommandLine expSub = cmd.getSubcommands().get("exp-sub");
+        assertNotNull(expSub);
+        assertEquals("experimental", expSub.getCommandSpec().helpSection());
+
+        CommandLine stdSub = cmd.getSubcommands().get("std-sub");
+        assertNotNull(stdSub);
+        assertEquals("", stdSub.getCommandSpec().helpSection());
     }
 
     @Test
@@ -81,6 +105,10 @@ public class TaggedHelpSectionTest {
         assertFalse(usage.contains("Experimental Options:"));
         assertFalse(usage.contains("--Xalpha"));
         assertFalse(usage.contains("--Xbeta"));
+
+        // Subcommands in standard help
+        assertTrue(usage.contains("std-sub"));
+        assertFalse("Standard help should exclude experimental subcommand", usage.contains("exp-sub"));
     }
 
     @Test
@@ -98,6 +126,10 @@ public class TaggedHelpSectionTest {
         assertTrue(usage.contains("--Xalpha"));
         assertTrue(usage.contains("--Xbeta"));
 
+        // Experimental subcommand rendered on demand
+        assertTrue("Experimental help should contain exp-sub", usage.contains("exp-sub"));
+        assertFalse("Experimental help should not contain std-sub", usage.contains("std-sub"));
+
         // Standard options omitted from experimental help
         assertFalse(usage.contains("--standard"));
         assertFalse(usage.contains("Show this help message and exit."));
@@ -114,5 +146,38 @@ public class TaggedHelpSectionTest {
         String fish = AutoComplete.fish("mycmd", cmd);
         assertTrue("Fish should suggest Xalpha", fish.contains("Xalpha"));
         assertTrue("Fish should suggest Xbeta", fish.contains("Xbeta"));
+    }
+
+    @Test
+    public void testHelpSectionDiscoveryAndLookupApi() {
+        CommandLine cmd = new CommandLine(new MyCmd());
+        CommandLine.Model.CommandSpec spec = cmd.getCommandSpec();
+
+        Set<String> sections = spec.helpSections();
+        assertTrue("helpSections should contain 'experimental'", sections.contains("experimental"));
+
+        java.util.Optional<OptionSpec> trigger = spec.findHelpSectionTrigger("experimental");
+        assertTrue(trigger.isPresent());
+        assertEquals("--Xhelp", trigger.get().longestName());
+
+        java.util.Optional<OptionSpec> missingTrigger = spec.findHelpSectionTrigger("nonexistent");
+        assertFalse(missingTrigger.isPresent());
+
+        java.util.Optional<String> sectionFromFlag = spec.findHelpSectionForOption("--Xhelp");
+        assertTrue(sectionFromFlag.isPresent());
+        assertEquals("experimental", sectionFromFlag.get());
+
+        java.util.Optional<String> sectionFromGroupOpt = spec.findHelpSectionForOption("--Xalpha");
+        assertTrue(sectionFromGroupOpt.isPresent());
+        assertEquals("experimental", sectionFromGroupOpt.get());
+
+        java.util.Optional<String> sectionFromStd = spec.findHelpSectionForOption("--standard");
+        assertFalse(sectionFromStd.isPresent());
+
+        StringWriter sw = new StringWriter();
+        cmd.printHelpSection("experimental", new PrintWriter(sw));
+        String rendered = sw.toString();
+        assertTrue(rendered.contains("Experimental Options:"));
+        assertTrue(rendered.contains("exp-sub"));
     }
 }

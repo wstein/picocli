@@ -2789,6 +2789,26 @@ public class CommandLine {
         return usage(new StringBuilder(), getHelpFactory().create(getCommandSpec(), colorScheme)).toString();
     }
 
+    /** Prints the specified on-demand help section to the given {@code PrintWriter}.
+     * @param sectionName the help section name to render
+     * @param out the PrintWriter to print to
+     * @since 4.9.4 */
+    public void printHelpSection(String sectionName, PrintWriter out) {
+        Help help = getHelpFactory().create(getCommandSpec(), getColorScheme());
+        out.print(help.renderHelpSection(sectionName));
+        out.flush();
+    }
+
+    /** Prints the specified on-demand help section to the given {@code PrintStream}.
+     * @param sectionName the help section name to render
+     * @param out the PrintStream to print to
+     * @since 4.9.4 */
+    public void printHelpSection(String sectionName, PrintStream out) {
+        Help help = getHelpFactory().create(getCommandSpec(), getColorScheme());
+        out.print(help.renderHelpSection(sectionName));
+        out.flush();
+    }
+
     private StringBuilder usage(StringBuilder sb, Help help) {
         String activeSection = help.activeHelpSection();
         if (activeSection != null) {
@@ -4823,6 +4843,13 @@ public class CommandLine {
          */
         boolean hidden() default false;
 
+        /** Optional help section tag for this command (e.g., {@code "experimental"}).
+         * Tagged commands are excluded from the parent command's standard usage help command list,
+         * and rendered only when the matching help section is requested on demand.
+         * @return the help section tag for this command, or empty string if not tagged
+         * @since 4.9.4 */
+        String helpSection() default "";
+
         /** Set the base name of the ResourceBundle to find option and positional parameters descriptions, as well as
          * usage help message sections and section headings. <p>See {@link Messages} for more details and an example.</p>
          * @return the base name of the ResourceBundle for usage help strings
@@ -6314,6 +6341,7 @@ public class CommandLine {
             private Boolean interpolateVariables;
 
             private String name;
+            private String helpSection = "";
             private Set<String> aliases = new LinkedHashSet<String>();
             private Boolean isHelpCommand;
             private IVersionProvider versionProvider;
@@ -6348,6 +6376,7 @@ public class CommandLine {
                 result.isAddMethodSubcommands = isAddMethodSubcommands;
                 result.interpolateVariables = interpolateVariables;
                 result.name = name;
+                result.helpSection = helpSection;
                 result.aliases = aliases;
                 result.isHelpCommand = isHelpCommand;
                 result.versionProvider = versionProvider;
@@ -7342,6 +7371,73 @@ public class CommandLine {
              * @return this CommandSpec for method chaining */
             public CommandSpec name(String name) { this.name = name; return this; }
 
+            /** Returns the optional help section tag of this command (may be empty string if not tagged).
+             * @return the help section tag of this command
+             * @since 4.9.4 */
+            public String helpSection() { return helpSection; }
+
+            /** Sets the optional help section tag for this command.
+             * @param helpSection the help section tag (e.g. {@code "experimental"})
+             * @return this CommandSpec for method chaining
+             * @since 4.9.4 */
+            public CommandSpec helpSection(String helpSection) {
+                this.helpSection = helpSection == null ? "" : helpSection;
+                return this;
+            }
+
+            /** Returns the set of all help section names present in this command, including options, arg groups,
+             * and subcommands.
+             * @return an unmodifiable set of help section names (excluding empty string)
+             * @since 4.9.4 */
+            public Set<String> helpSections() {
+                Set<String> result = new LinkedHashSet<String>();
+                for (ArgGroupSpec group : argGroups()) {
+                    String s = Help.getHelpSection(group);
+                    if (s != null && !s.isEmpty()) { result.add(s); }
+                }
+                for (OptionSpec opt : options()) {
+                    String s = Help.getHelpSection(opt);
+                    if (s != null && !s.isEmpty()) { result.add(s); }
+                }
+                for (CommandLine sub : subcommands().values()) {
+                    String s = Help.getHelpSection(sub.getCommandSpec());
+                    if (s != null && !s.isEmpty()) { result.add(s); }
+                }
+                return Collections.unmodifiableSet(result);
+            }
+
+            /** Finds the option marked {@code usageHelp=true} that triggers the specified help section on demand.
+             * @param sectionName the help section name
+             * @return an {@code Optional} containing the trigger option if found, or empty
+             * @since 4.9.4 */
+            public Optional<OptionSpec> findHelpSectionTrigger(String sectionName) {
+                if (sectionName == null || sectionName.isEmpty()) { return Optional.empty(); }
+                for (OptionSpec opt : options()) {
+                    if (opt.usageHelp() && sectionName.equals(Help.getHelpSection(opt))) {
+                        return Optional.of(opt);
+                    }
+                }
+                return Optional.empty();
+            }
+
+            /** Finds the help section name associated with the option having the given name (short or long), or its enclosing group.
+             * @param optionName the option name (e.g., {@code "--Xhelp"} or {@code "-X"})
+             * @return an {@code Optional} containing the section name if tagged, or empty
+             * @since 4.9.4 */
+            public Optional<String> findHelpSectionForOption(String optionName) {
+                if (optionName == null || optionName.isEmpty()) { return Optional.empty(); }
+                OptionSpec opt = findOption(optionName);
+                if (opt != null) {
+                    String s = Help.getHelpSection(opt);
+                    if (s != null && !s.isEmpty()) { return Optional.of(s); }
+                    if (opt.group() != null) {
+                        s = Help.getHelpSection(opt.group());
+                        if (s != null && !s.isEmpty()) { return Optional.of(s); }
+                    }
+                }
+                return Optional.empty();
+            }
+
             /** Sets the alternative names by which this subcommand is recognized on the command line.
              * @return this CommandSpec for method chaining
              * @since 3.1 */
@@ -7528,6 +7624,7 @@ public class CommandLine {
 
                 aliases(cmd.aliases());
                 updateName(cmd.name());
+                updateHelpSection(cmd.helpSection());
                 updateVersion(cmd.version());
                 updateHelpCommand(cmd.helpCommand());
                 updateSubcommandsRepeatable(cmd.subcommandsRepeatable());
@@ -7560,6 +7657,7 @@ public class CommandLine {
             void initExitCodeOnInvalidInput(int exitCode)       { if (initializable(exitCodeOnInvalidInput, exitCode, ExitCode.USAGE)) { exitCodeOnInvalidInput = exitCode; } }
             void initExitCodeOnExecutionException(int exitCode) { if (initializable(exitCodeOnExecutionException, exitCode, ExitCode.SOFTWARE)) { exitCodeOnExecutionException = exitCode; } }
             void updateName(String value)                   { if (isNonDefault(value, DEFAULT_COMMAND_NAME))                {name = value;} }
+            void updateHelpSection(String value)            { if (value != null && !value.isEmpty())                        {helpSection = value;} }
             void initModelTransformer(IModelTransformer value) { if (modelTransformer == null) {modelTransformer = value;}}
             void updateModelTransformer(Class<? extends IModelTransformer> value, IFactory factory) {
                 if (isNonDefault(value, NoOpModelTransformer.class)) { this.modelTransformer = DefaultFactory.create(factory, value); }
@@ -15837,7 +15935,9 @@ public class CommandLine {
                 String key = commandNames.toString().substring(1, commandNames.toString().length() - 1);
                 Help sub = getHelpFactory().create(commandLine.commandSpec, colorScheme).withCommandNames(commandNames);
                 allCommands.put(key, sub);
-                if (!sub.commandSpec().usageMessage().hidden()) {
+                String subSection = getHelpSection(sub.commandSpec());
+                boolean inSection = subSection != null && !subSection.isEmpty();
+                if (!sub.commandSpec().usageMessage().hidden() && !inSection) {
                     visibleCommands.put(key, sub);
                 }
             }
@@ -16416,6 +16516,18 @@ public class CommandLine {
             return null;
         }
 
+        /** Returns the help section name for the given command, or {@code null} if untagged.
+         * @param command the command spec to inspect
+         * @return the help section name, or {@code null}
+         * @since 4.9.4 */
+        public static String getHelpSection(CommandSpec command) {
+            if (command == null) { return null; }
+            if (command.helpSection() != null && !command.helpSection().isEmpty()) {
+                return command.helpSection();
+            }
+            return null;
+        }
+
         /** Returns the active help section requested on the command line, or {@code null} for standard help.
          * @since 4.8 */
         public String activeHelpSection() {
@@ -16482,6 +16594,21 @@ public class CommandLine {
                 Layout layout = createDefaultLayout();
                 layout.addOptions(looseOptions, parameterLabelRenderer());
                 sb.append(layout);
+            }
+
+            Map<String, Help> sectionCommands = new LinkedHashMap<String, Help>();
+            for (Map.Entry<String, Help> entry : allCommands.entrySet()) {
+                Help sub = entry.getValue();
+                if (!sub.commandSpec().usageMessage().hidden() && sectionName.equals(getHelpSection(sub.commandSpec()))) {
+                    sectionCommands.put(entry.getKey(), sub);
+                }
+            }
+            if (!sectionCommands.isEmpty()) {
+                if (sb.length() > 0 && !sb.toString().endsWith("%n") && !sb.toString().endsWith("\n")) {
+                    sb.append(String.format("%n"));
+                }
+                sb.append(commandListHeading());
+                sb.append(commandList(sectionCommands));
             }
 
             return sb.toString();
