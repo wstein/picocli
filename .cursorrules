@@ -1,0 +1,28 @@
+# Cursor Rules
+
+See `/agents.md` for comprehensive development guidance for this picocli fork, covering:
+- Project structure and modules
+- Build and test commands
+- Architecture and design patterns
+- Java version support
+- Testing conventions
+- Release process
+- Common workflows
+
+This file acts as a unified reference for all AI systems working on this codebase (Claude Code, Copilot, Cursor, Codex).
+
+## Key Points
+
+**Zero Dependencies**: picocli core and picocli-spec must have zero runtime dependencies.
+
+**Dual Format (DSL & JSON)**: picocli-spec supports both `.picocli` (DSL) and `.json` formats with lossless round-trip fidelity.
+
+**Module Organization**: Java version compatibility is critical—tests are split across modules. Always check `settings.gradle` before referencing test modules.
+
+**Build Command**: `./gradlew clean build` (use Gradle wrapper, never `gradle` directly)
+
+**Testing**: Run tests with `./gradlew test` or target specific modules/test classes.
+
+**Release**: Automated via GitHub Actions on tag push (`v*.*.*`).
+
+Refer to `/agents.md` for detailed guidance on architecture, workflows, and conventions.

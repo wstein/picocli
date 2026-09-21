@@ -1,0 +1,35 @@
+# Codex Configuration for picocli fork
+
+[project]
+name = "picocli fork (wstein)"
+description = "Fork of remkop/picocli with fish completion, picocli-spec DSL/JSON, spec-tool, and on-demand help sections"
+repository = "https://github.com/wstein/picocli"
+branch = "develop"
+
+[docs]
+# Point to the unified agent guidance file
+guidance = "agents.md"
+
+[build]
+system = "gradle"
+command = "./gradlew clean build"
+
+[test]
+command = "./gradlew test"
+integration_tests = "picocli-tests-java8 picocli-tests-java9plus"
+
+[language]
+primary = "java"
+minimum_version = "8"
+target_versions = ["5", "6", "8", "11"]
+
+[context]
+# Key architectural constraints
+key_constraints = [
+  "Zero runtime dependencies (no Jackson, Gson, etc.)",
+  "Dual DSL/JSON format with round-trip fidelity",
+  "Multi-Java test organization (see settings.gradle)",
+  "Gradle wrapper only (never use gradle directly)"
+]
+
+release_process = "git tag v<version> → CI runs release.yml → Maven/Javadoc/Schema to gh-pages"

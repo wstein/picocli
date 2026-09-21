@@ -1,0 +1,27 @@
+{
+  "project": {
+    "name": "picocli fork (wstein)",
+    "description": "Fork of remkop/picocli with fish completion, picocli-spec DSL/JSON, spec-tool, and on-demand help sections",
+    "repository": "https://github.com/wstein/picocli",
+    "language": "java",
+    "build_system": "gradle"
+  },
+  "guidance": {
+    "primary_doc": "agents.md",
+    "description": "Unified guidance for all AI systems (Claude, Copilot, Cursor, Codex, Gemini)"
+  },
+  "build": {
+    "command": "./gradlew clean build",
+    "wrapper_required": true
+  },
+  "test": {
+    "command": "./gradlew test",
+    "single_test": "./gradlew :<module>:test --tests <ClassName>"
+  },
+  "key_constraints": [
+    "Zero runtime dependencies beyond picocli core",
+    "Both DSL (.picocli) and JSON (.json) formats with lossless round-trip",
+    "Tests split by Java version in separate modules",
+    "Always use ./gradlew wrapper"
+  ]
+}
