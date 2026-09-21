@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v4.9.3] - 2026-09-21
+
+### Added
+- **Bundled `picocli-spec` in main jar**:
+  - The published `picocli-${version}.jar` now shades `picocli.spec.*` (`CommandSpecDsl`, `CommandSpecJson`, `CommandSpecMerger`) when built on Java 11+, allowing single-jar consumers (like `flixw`) to parse DSL/JSON specs without a separate dependency.
+
+### Changed
+- **Spec Migration to flixw**:
+  - Retained `flix-0.60.0.picocli` as the canonical real-world DSL example in `picocli-spec/examples/`, migrating the remaining version range progression (`v0.67.0` to `v0.76.2`) to `flixw`.
+
+---
+
 ## [v4.9.2] - 2026-09-21
 
 ### Added
