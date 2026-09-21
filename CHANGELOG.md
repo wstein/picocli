@@ -14,6 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `@Command(helpSection = "...")` and `CommandSpec.helpSection(String)` allow tagging commands and subcommands with an on-demand help section name (e.g. `"experimental"`).
   - Tagged subcommands are automatically omitted from the parent command's standard `--help` command list.
   - When the corresponding section is triggered (e.g. `--Xhelp`), tagged subcommands are rendered in their own command list alongside tagged options and groups.
+- **Positional Parameter `helpSection`**:
+  - `@Parameters(helpSection = "...")`, `PositionalParamSpec.Builder.helpSection(String)`, and `ArgSpec.helpSection()` allow tagging positional parameters with on-demand help section names.
+  - Tagged positional parameters are automatically omitted from standard `--help` usage and detailed synopsis, and rendered only when the matching help section is requested.
+  - `CommandSpec.findHelpSectionForPositional(String paramLabel)`: returns `Optional<String>` for the section name associated with a positional parameter.
+  - DSL syntax: `positional <label> : <type> helpSection="<section>" ...`.
+  - JSON Schema: Added `"helpSection"` property to `positionalParam` in `command-spec.schema.json`.
+- **Help Section Metadata & Customization (`HelpSectionSpec` / `@HelpSection`)**:
+  - `HelpSectionSpec` model and `@HelpSection` / `@HelpSections` annotations for declaring section metadata: `heading`, `description`, `emptyMessage`, and `notice`.
+  - Supported via `@Command(helpSections = { ... })` and `CommandSpec.addHelpSectionSpec(HelpSectionSpec)`.
+  - When rendered on demand, loose options and commands receive the declared section heading and description.
+  - Configurable empty fallback message (`emptyMessage`) returned when no elements match the section on that command (instead of an empty string).
+  - DSL syntax: `section <name> ["<description>"] [heading="..."] [emptyMessage="..."] [notice="..."]`.
+  - JSON Schema: Added `"helpSections"` array property on `command` objects in `command-spec.schema.json`.
+- **Automated Help Sections Notice in Standard Usage Help**:
+  - `UsageMessageSpec.SECTION_KEY_HELP_SECTIONS_NOTICE` ("helpSectionsNotice") added to default usage section layout.
+  - `Help.helpSectionsNotice()` auto-generates a footer note (e.g. `Run '<cmd> --Xhelp' to view experimental options and commands.`) when a command has elements in that section and a trigger option is present.
+  - Custom notice support via `HelpSectionSpec.notice()` or `@HelpSection(notice = "...")`.
+  - Configurable via `UsageMessageSpec.showHelpSectionsNotice(boolean)` or `@Command(showHelpSectionsNotice = true|false)`.
 - **Help Section Discovery & Trigger Lookup API**:
   - `CommandSpec.helpSections()`: returns an unmodifiable `Set<String>` of all help section names in the command tree.
   - `CommandSpec.findHelpSectionTrigger(String sectionName)`: returns `Optional<OptionSpec>` for the option marked `usageHelp=true` triggering that section.

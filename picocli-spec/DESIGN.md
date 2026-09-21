@@ -53,7 +53,11 @@ spec        := definitions? command
 definitions := 'definitions' '{' ( option | positional | bundle )* '}'
 bundle      := 'bundle' name '{' ( option | positional | group | use )* '}'
 command     := 'command' name ['helpSection' '=' value] [string] '{' member* '}'
-member      := option | positional | group | use | command | 'mixinStandardHelpOptions'
+member      := option | positional | group | section | use | command | 'mixinStandardHelpOptions'
+section     := 'section' name [string] sectionAttr*
+sectionAttr := 'heading' '=' value
+             | 'emptyMessage' '=' value
+             | 'notice' '=' value
 group       := 'group' ('exclusive' | 'cooperative') ['hidden'] ['helpSection' '=' value] ['multiplicity' '=' value] [string]
                '{' ( option | positional | group | use )* '}'
 use         := 'use' name
