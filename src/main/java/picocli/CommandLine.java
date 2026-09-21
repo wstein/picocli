@@ -9768,13 +9768,13 @@ public class CommandLine {
                  * @see Parameters#paramLabel() */
                 public String paramLabel()     { return paramLabel; }
 
-                /** Returns whether usage syntax decorations around the {@linkplain #paramLabel() paramLabel} should be suppressed.
+                /** Returns whether usage syntax decorations around the {@linkplain ArgSpec#paramLabel() paramLabel} should be suppressed.
                  * The default is {@code false}: by default, the paramLabel is surrounded with {@code '['} and {@code ']'} characters
                  * if the value is optional and followed by ellipses ("...") when multiple values can be specified.
                  * @since 3.6.0 */
                 public boolean hideParamSyntax()     { return hideParamSyntax; }
 
-                /** Returns auxiliary type information used when the {@link #type()} is a generic container like
+                /** Returns auxiliary type information used when the {@link ArgSpec#type()} is a generic container like
                  * {@code Collection}, {@code Map}, {@code Optional} or an abstract class.
                  * @see Option#type() */
                 public Class<?>[] auxiliaryTypes() { return auxiliaryTypes; }
@@ -9842,7 +9842,7 @@ public class CommandLine {
                  * the option will be reset to the initial value before parsing (regardless of whether a default value exists),
                  * to clear values that would otherwise remain from parsing previous input. */
                 public Object initialValue()   { return initialValue; }
-                /** Determines whether the option or positional parameter will be reset to the {@link #initialValue()}
+                /** Determines whether the option or positional parameter will be reset to the {@link ArgSpec#initialValue()}
                  * before parsing new input.*/
                 public boolean hasInitialValue() { return hasInitialValue; }
 
@@ -9906,15 +9906,15 @@ public class CommandLine {
                 /** Sets the name of the option or positional parameter used in the usage help message, and returns this builder. */
                 public T paramLabel(String paramLabel)       { this.paramLabel = Assert.notNull(paramLabel, "paramLabel"); return self(); }
 
-                /** Sets whether usage syntax decorations around the {@linkplain #paramLabel() paramLabel} should be suppressed.
+                /** Sets whether usage syntax decorations around the {@linkplain ArgSpec#paramLabel() paramLabel} should be suppressed.
                  * The default is {@code false}: by default, the paramLabel is surrounded with {@code '['} and {@code ']'} characters
                  * if the value is optional and followed by ellipses ("...") when multiple values can be specified.
                  * @since 3.6.0 */
                 public T hideParamSyntax(boolean hideParamSyntax) { this.hideParamSyntax = hideParamSyntax; return self(); }
 
                 /** Sets auxiliary type information, and returns this builder.
-                 * @param types  the element type(s) when the {@link #type()} is a generic type like {@code Collection}, {@code Map} or {@code Optional};
-                 * or the concrete type when the {@link #type()} is an abstract class. */
+                 * @param types  the element type(s) when the {@link ArgSpec#type()} is a generic type like {@code Collection}, {@code Map} or {@code Optional};
+                 * or the concrete type when the {@link ArgSpec#type()} is an abstract class. */
                 public T auxiliaryTypes(Class<?>... types)   { this.auxiliaryTypes = Assert.notNull(types, "types").clone(); return self(); }
 
                 /** Sets option/positional param-specific converter (or converters for Maps), and returns this builder. */
@@ -9997,7 +9997,7 @@ public class CommandLine {
                 //   testDontClearListOptionOldValueBeforeParseIfInitialValueFalse and testDontClearArrayOptionOldValueBeforeParse
                 public T initialValue(Object initialValue)   { this.initialValue = initialValue; /*initialValueState = InitialValueState.CACHED;*/ return self(); }
 
-                /** Determines whether the option or positional parameter will be reset to the {@link #initialValue()}
+                /** Determines whether the option or positional parameter will be reset to the {@link ArgSpec#initialValue()}
                  * before parsing new input.*/
                 public T hasInitialValue(boolean hasInitialValue)   { this.hasInitialValue = hasInitialValue; return self(); }
 
