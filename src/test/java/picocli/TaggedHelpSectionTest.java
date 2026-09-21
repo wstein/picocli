@@ -7,6 +7,8 @@ import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Option;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Optional;
@@ -309,5 +311,140 @@ public class TaggedHelpSectionTest {
         cmd.getCommandSpec().usageMessage().showHelpSectionsNotice(false);
         String usageNoNotice = cmd.getUsageMessage();
         assertFalse(usageNoNotice.contains("Experimental options omitted."));
+    }
+
+    @Test
+    public void testPrintHelpSectionPrintStream() {
+        CommandLine cmd = new CommandLine(new MyCmd());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        cmd.printHelpSection("experimental", new PrintStream(baos));
+        String rendered = baos.toString();
+        assertTrue(rendered.contains("Experimental Options:"));
+        assertTrue(rendered.contains("exp-sub"));
+    }
+
+    @Test
+    public void testHelpSectionSpecBuilderAndGetters() {
+        CommandLine.Model.HelpSectionSpec.Builder builder = CommandLine.Model.HelpSectionSpec.builder("test");
+        assertEquals("test", builder.name());
+        assertEquals("", builder.heading());
+        assertEquals(0, builder.description().length);
+        assertEquals("", builder.emptyMessage());
+        assertEquals("", builder.notice());
+
+        builder.heading("Header:%n")
+                .description("Line 1", "Line 2")
+                .emptyMessage("Empty!")
+                .notice("Notice!");
+
+        assertEquals("Header:%n", builder.heading());
+        assertArrayEquals(new String[]{"Line 1", "Line 2"}, builder.description());
+        assertEquals("Empty!", builder.emptyMessage());
+        assertEquals("Notice!", builder.notice());
+
+        CommandLine.Model.HelpSectionSpec spec = builder.build();
+        assertEquals("test", spec.name());
+        assertEquals("Header:%n", spec.heading());
+        assertArrayEquals(new String[]{"Line 1", "Line 2"}, spec.description());
+        assertEquals("Empty!", spec.emptyMessage());
+        assertEquals("Notice!", spec.notice());
+
+        // Test defensive copies
+        String[] desc = spec.description();
+        desc[0] = "Mutated";
+        assertEquals("Line 1", spec.description()[0]);
+
+        // Test null handling in builder
+        builder.heading(null).description((String[]) null).emptyMessage(null).notice(null);
+        CommandLine.Model.HelpSectionSpec nullsSpec = builder.build();
+        assertEquals("", nullsSpec.heading());
+        assertEquals(0, nullsSpec.description().length);
+        assertEquals("", nullsSpec.emptyMessage());
+        assertEquals("", nullsSpec.notice());
+
+        // Test copy builder
+        CommandLine.Model.HelpSectionSpec copy = CommandLine.Model.HelpSectionSpec.builder(spec).build();
+        assertEquals(spec, copy);
+        assertEquals(spec.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    public void testHelpSectionSpecEqualsAndHashCode() {
+        CommandLine.Model.HelpSectionSpec spec1 = CommandLine.Model.HelpSectionSpec.builder("sec")
+                .heading("H")
+                .description("D")
+                .emptyMessage("E")
+                .notice("N")
+                .build();
+        CommandLine.Model.HelpSectionSpec spec2 = CommandLine.Model.HelpSectionSpec.builder("sec")
+                .heading("H")
+                .description("D")
+                .emptyMessage("E")
+                .notice("N")
+                .build();
+
+        CommandLine.Model.HelpSectionSpec sameRef = spec1;
+        assertTrue(spec1.equals(sameRef));
+        assertEquals(spec1, spec2);
+        assertEquals(spec2, spec1);
+        assertEquals(spec1.hashCode(), spec2.hashCode());
+
+        assertNotEquals(spec1, null);
+        assertNotEquals(spec1, "different type");
+
+        assertNotEquals(spec1, CommandLine.Model.HelpSectionSpec.builder("other").heading("H").description("D").emptyMessage("E").notice("N").build());
+        assertNotEquals(spec1, CommandLine.Model.HelpSectionSpec.builder("sec").heading("diff").description("D").emptyMessage("E").notice("N").build());
+        assertNotEquals(spec1, CommandLine.Model.HelpSectionSpec.builder("sec").heading("H").description("diff").emptyMessage("E").notice("N").build());
+        assertNotEquals(spec1, CommandLine.Model.HelpSectionSpec.builder("sec").heading("H").description("D").emptyMessage("diff").notice("N").build());
+        assertNotEquals(spec1, CommandLine.Model.HelpSectionSpec.builder("sec").heading("H").description("D").emptyMessage("E").notice("diff").build());
+    }
+
+    @Command(name = "no-elements",
+            helpSections = {
+                    @CommandLine.HelpSection(name = "alpha")
+            })
+    static class NoElementsCmd implements Runnable {
+        @Option(names = "-A", usageHelp = true, helpSection = "alpha")
+        boolean alphaHelp;
+        public void run() {}
+    }
+
+    @Command(name = "multi-notice",
+            helpSections = {
+                    @CommandLine.HelpSection(name = "s1", notice = "Notice 1"),
+                    @CommandLine.HelpSection(name = "s2", notice = "Notice 2\n")
+            })
+    static class MultiNoticeCmd implements Runnable {
+        public void run() {}
+    }
+
+    @Command(name = "disabled-notice", showHelpSectionsNotice = false,
+            helpSections = {
+                    @CommandLine.HelpSection(name = "exp", notice = "Notice")
+            })
+    static class DisabledNoticeCmd implements Runnable {
+        public void run() {}
+    }
+
+    @Test
+    public void testHelpSectionsNoticeEdgeCases() {
+        // Trigger present but no elements in section (hasSectionElements == false)
+        CommandLine cmdNoElem = new CommandLine(new NoElementsCmd());
+        assertEquals("", cmdNoElem.getHelp().helpSectionsNotice());
+
+        // Multi notice appending and newline formatting
+        CommandLine cmdMulti = new CommandLine(new MultiNoticeCmd());
+        String multiNotice = cmdMulti.getHelp().helpSectionsNotice();
+        assertTrue(multiNotice.contains("Notice 1"));
+        assertTrue(multiNotice.contains("Notice 2"));
+
+        // Annotation showHelpSectionsNotice = false
+        CommandLine cmdDisabled = new CommandLine(new DisabledNoticeCmd());
+        assertFalse(cmdDisabled.getCommandSpec().usageMessage().showHelpSectionsNotice());
+        assertEquals("", cmdDisabled.getHelp().helpSectionsNotice());
+
+        // Command with no sections
+        CommandLine cmdPlain = new CommandLine(CommandLine.Model.CommandSpec.create());
+        assertEquals("", cmdPlain.getHelp().helpSectionsNotice());
     }
 }
