@@ -65,7 +65,6 @@ definitions {
     }
   }
 
-  positional files : File[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
   positional files : Path[] "input Flix source code files, Flix packages, and Java archives." arity=0..*
 
   // The 10 commands needing GitHub-backed dependency resolution always need both together (see

@@ -22,7 +22,6 @@
         "-o",
         "--output"
       ],
-      "type": "String",
       "type": "Path",
       "description": [
         "Output directory"
@@ -64,7 +63,6 @@
       "positionalParams": [
         {
           "paramLabel": "<files>",
-          "type": "File",
           "type": "Path",
           "description": [
             "Input files to compile"
