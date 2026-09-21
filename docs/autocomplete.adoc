@@ -107,7 +107,7 @@ Make sure to use `>>` (append), using a single `>` would overwrite the file.
 
 `~/.bashrc` indicates `.bashrc` is in your home directory.
 
-(See <<Installing Completion Scripts Permanently in Bash/ZSH>>.)
+(See <<Installing Completion Scripts Permanently in Bash/ZSH/Fish>>.)
 
 === Distribution
 
