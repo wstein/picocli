@@ -125,6 +125,10 @@ public class TaggedHelpSectionTest {
         // Positional parameters in standard help
         assertTrue(usage.contains("Standard file argument."));
         assertFalse("Standard help should exclude experimental positional parameter", usage.contains("Experimental file argument."));
+
+        // Auto-generated notice in standard help
+        assertTrue("Standard help should include notice pointing to trigger option",
+                usage.contains("Run 'mycmd --Xhelp' to view experimental options and commands."));
     }
 
     @Test
@@ -278,5 +282,32 @@ public class TaggedHelpSectionTest {
 
         CommandLine cmd = new CommandLine(spec);
         assertEquals(String.format("No performance tuning options.%n"), cmd.getHelp().renderHelpSection("perf"));
+    }
+
+    @Command(name = "custom-notice",
+            helpSections = {
+                    @CommandLine.HelpSection(name = "experimental",
+                            notice = "%nExperimental options omitted. Run 'custom-notice -X' to inspect.%n")
+            })
+    static class CustomNoticeCmd implements Runnable {
+        @Option(names = "-X", usageHelp = true, helpSection = "experimental", description = "Show experimental.")
+        boolean xhelp;
+
+        @Option(names = "--foo", helpSection = "experimental", description = "Experimental foo.")
+        boolean foo;
+
+        public void run() {}
+    }
+
+    @Test
+    public void testHelpSectionsNoticeCustomAndDisabled() {
+        CommandLine cmd = new CommandLine(new CustomNoticeCmd());
+        String usage = cmd.getUsageMessage();
+        assertTrue(usage.contains("Experimental options omitted. Run 'custom-notice -X' to inspect."));
+
+        // Disable notice via usageMessage()
+        cmd.getCommandSpec().usageMessage().showHelpSectionsNotice(false);
+        String usageNoNotice = cmd.getUsageMessage();
+        assertFalse(usageNoNotice.contains("Experimental options omitted."));
     }
 }

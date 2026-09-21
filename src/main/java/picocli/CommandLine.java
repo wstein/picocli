@@ -4862,6 +4862,12 @@ public class CommandLine {
          * @since 4.9.4 */
         HelpSection[] helpSections() default {};
 
+        /** Returns whether standard usage help should include an automated notice for on-demand help sections.
+         * Default is {@code true}.
+         * @return whether to display on-demand help sections notice
+         * @since 4.9.4 */
+        boolean showHelpSectionsNotice() default true;
+
         /** Set the base name of the ResourceBundle to find option and positional parameters descriptions, as well as
          * usage help message sections and section headings. <p>See {@link Messages} for more details and an example.</p>
          * @return the base name of the ResourceBundle for usage help strings
@@ -4960,6 +4966,9 @@ public class CommandLine {
         String[] description() default {};
         /** Message rendered when no options, positional parameters, or subcommands match this section on the command. */
         String emptyMessage() default "";
+        /** Optional custom notice rendered in standard usage help to advertise this on-demand section.
+         * If omitted and a trigger option is defined, a default notice will be auto-generated. */
+        String notice() default "";
     }
 
     /**
@@ -7759,6 +7768,7 @@ public class CommandLine {
                                 .heading(hs.heading())
                                 .description(hs.description())
                                 .emptyMessage(hs.emptyMessage())
+                                .notice(hs.notice())
                                 .build());
                     }
                 }
@@ -7990,6 +8000,11 @@ public class CommandLine {
              * @since 3.9 */
             public static final String SECTION_KEY_COMMAND_LIST = "commandList";
 
+            /** {@linkplain #sectionKeys() Section key} to {@linkplain #sectionMap() control} the {@linkplain IHelpSectionRenderer section renderer} for the Help Sections Notice section.
+             * The default renderer for this section calls {@link Help#helpSectionsNotice()}.
+             * @since 4.9.4 */
+            public static final String SECTION_KEY_HELP_SECTIONS_NOTICE = "helpSectionsNotice";
+
             /** {@linkplain #sectionKeys() Section key} to {@linkplain #sectionMap() control} the {@linkplain IHelpSectionRenderer section renderer} for the Exit Code List Heading section.
              * The default renderer for this section calls {@link Help#exitCodeListHeading(Object...)}.
              * @since 4.0 */
@@ -8077,6 +8092,7 @@ public class CommandLine {
                     SECTION_KEY_END_OF_OPTIONS,
                     SECTION_KEY_COMMAND_LIST_HEADING,
                     SECTION_KEY_COMMAND_LIST,
+                    SECTION_KEY_HELP_SECTIONS_NOTICE,
                     SECTION_KEY_EXIT_CODE_LIST_HEADING,
                     SECTION_KEY_EXIT_CODE_LIST,
                     SECTION_KEY_FOOTER_HEADING,
@@ -8094,6 +8110,7 @@ public class CommandLine {
             private Boolean showDefaultValues;
             private Boolean showAtFileInUsageHelp;
             private Boolean showEndOfOptionsDelimiterInUsageHelp;
+            private Boolean showHelpSectionsNotice;
             private Boolean hidden;
             private Boolean autoWidth;
             private Character requiredOptionMarker;
@@ -8325,6 +8342,7 @@ public class CommandLine {
                 result.put(SECTION_KEY_COMMAND_LIST_HEADING,   new IHelpSectionRenderer() { public String render(Help help) { return help.commandListHeading(); } });
                 //e.g.    add       adds the frup to the frooble
                 result.put(SECTION_KEY_COMMAND_LIST,           new IHelpSectionRenderer() { public String render(Help help) { return help.commandList(); } });
+                result.put(SECTION_KEY_HELP_SECTIONS_NOTICE,   new IHelpSectionRenderer() { public String render(Help help) { return help.helpSectionsNotice(); } });
                 result.put(SECTION_KEY_EXIT_CODE_LIST_HEADING, new IHelpSectionRenderer() { public String render(Help help) { return help.exitCodeListHeading(); } });
                 result.put(SECTION_KEY_EXIT_CODE_LIST,         new IHelpSectionRenderer() { public String render(Help help) { return help.exitCodeList(); } });
                 result.put(SECTION_KEY_FOOTER_HEADING,         new IHelpSectionRenderer() { public String render(Help help) { return help.footerHeading(); } });
@@ -8450,6 +8468,17 @@ public class CommandLine {
 
             /** Returns whether the synopsis line(s) should show an abbreviated synopsis without detailed option names. */
             public boolean abbreviateSynopsis() { return (abbreviateSynopsis == null) ? DEFAULT_ABBREVIATE_SYNOPSIS : abbreviateSynopsis; }
+
+            /** Returns whether standard usage help should display an automated notice for on-demand help sections.
+             * @return {@code true} if help section notices should be shown in standard help
+             * @since 4.9.4 */
+            public boolean showHelpSectionsNotice() { return showHelpSectionsNotice == null || showHelpSectionsNotice; }
+
+            /** Sets whether standard usage help should display an automated notice for on-demand help sections.
+             * @param show whether to show help section notices
+             * @return this UsageMessageSpec for method chaining
+             * @since 4.9.4 */
+            public UsageMessageSpec showHelpSectionsNotice(boolean show) { this.showHelpSectionsNotice = show; return this; }
 
             /** Returns the optional custom synopsis lines to use instead of the auto-generated synopsis.
              * Initialized from {@link Command#customSynopsis()} if the {@code Command} annotation is present,
@@ -8734,6 +8763,7 @@ public class CommandLine {
                 if (isNonDefault(cmd.showAtFileInUsageHelp(), DEFAULT_SHOW_AT_FILE))          {showAtFileInUsageHelp = cmd.showAtFileInUsageHelp();}
                 if (isNonDefault(cmd.showDefaultValues(), DEFAULT_SHOW_DEFAULT_VALUES))       {showDefaultValues = cmd.showDefaultValues();}
                 if (isNonDefault(cmd.showEndOfOptionsDelimiterInUsageHelp(), DEFAULT_SHOW_END_OF_OPTIONS)) {showEndOfOptionsDelimiterInUsageHelp = cmd.showEndOfOptionsDelimiterInUsageHelp();}
+                if (!cmd.showHelpSectionsNotice())                                             {showHelpSectionsNotice = false;}
                 if (isNonDefault(cmd.sortOptions(), DEFAULT_SORT_OPTIONS))                    {sortOptions = cmd.sortOptions();}
                 if (isNonDefault(cmd.sortSynopsis(), DEFAULT_SORT_SYNOPSIS))                  {sortSynopsis = cmd.sortSynopsis();}
                 if (isNonDefault(cmd.synopsisHeading(), DEFAULT_SYNOPSIS_HEADING))            {synopsisHeading = cmd.synopsisHeading();}
@@ -11418,6 +11448,7 @@ public class CommandLine {
             private final String heading;
             private final String[] description;
             private final String emptyMessage;
+            private final String notice;
 
             public static Builder builder(String name) { return new Builder(name); }
             public static Builder builder(HelpSectionSpec original) { return new Builder(original); }
@@ -11427,6 +11458,7 @@ public class CommandLine {
                 private String heading = "";
                 private String[] description = new String[0];
                 private String emptyMessage = "";
+                private String notice = "";
 
                 public Builder(String name) {
                     this.name = Assert.notNull(name, "name");
@@ -11436,6 +11468,7 @@ public class CommandLine {
                     this.heading = original.heading;
                     this.description = original.description.clone();
                     this.emptyMessage = original.emptyMessage;
+                    this.notice = original.notice;
                 }
                 public String name() { return name; }
                 public Builder heading(String heading) { this.heading = heading == null ? "" : heading; return this; }
@@ -11444,6 +11477,8 @@ public class CommandLine {
                 public String[] description() { return description.clone(); }
                 public Builder emptyMessage(String emptyMessage) { this.emptyMessage = emptyMessage == null ? "" : emptyMessage; return this; }
                 public String emptyMessage() { return emptyMessage; }
+                public Builder notice(String notice) { this.notice = notice == null ? "" : notice; return this; }
+                public String notice() { return notice; }
                 public HelpSectionSpec build() { return new HelpSectionSpec(this); }
             }
 
@@ -11452,16 +11487,19 @@ public class CommandLine {
                 this.heading = builder.heading;
                 this.description = builder.description.clone();
                 this.emptyMessage = builder.emptyMessage;
+                this.notice = builder.notice;
             }
 
             public String name() { return name; }
             public String heading() { return heading; }
             public String[] description() { return description.clone(); }
             public String emptyMessage() { return emptyMessage; }
+            public String notice() { return notice; }
 
             public int hashCode() {
                 return 17 + 37 * Assert.hashCode(name) + 37 * Assert.hashCode(heading)
-                        + 37 * Arrays.hashCode(description) + 37 * Assert.hashCode(emptyMessage);
+                        + 37 * Arrays.hashCode(description) + 37 * Assert.hashCode(emptyMessage)
+                        + 37 * Assert.hashCode(notice);
             }
             public boolean equals(Object obj) {
                 if (obj == this) { return true; }
@@ -11470,7 +11508,8 @@ public class CommandLine {
                 return Assert.equals(name, other.name)
                         && Assert.equals(heading, other.heading)
                         && Arrays.equals(description, other.description)
-                        && Assert.equals(emptyMessage, other.emptyMessage);
+                        && Assert.equals(emptyMessage, other.emptyMessage)
+                        && Assert.equals(notice, other.notice);
             }
         }
 
@@ -16890,6 +16929,52 @@ public class CommandLine {
             }
 
             return sb.toString();
+        }
+
+        /** Returns an informational notice rendered in standard usage help for each on-demand help section that has
+         * a defined trigger option or custom notice message, or an empty string if disabled or no on-demand help sections are defined.
+         * @return formatted help sections notice
+         * @since 4.9.4 */
+        public String helpSectionsNotice() {
+            if (!commandSpec.usageMessage().showHelpSectionsNotice()) { return ""; }
+            Set<String> sections = commandSpec.helpSections();
+            if (sections.isEmpty()) { return ""; }
+            StringBuilder sb = new StringBuilder();
+            for (String sectionName : sections) {
+                HelpSectionSpec sectionSpec = commandSpec.helpSectionSpec(sectionName);
+                if (sectionSpec != null && sectionSpec.notice() != null && !sectionSpec.notice().isEmpty()) {
+                    String notice = sectionSpec.notice();
+                    if (sb.length() > 0 && !sb.toString().endsWith("%n") && !sb.toString().endsWith("\n")) {
+                        sb.append(String.format("%n"));
+                    }
+                    sb.append(String.format(notice.endsWith("%n") || notice.endsWith("\n") ? notice : notice + "%n"));
+                    continue;
+                }
+                Optional<OptionSpec> trigger = commandSpec.findHelpSectionTrigger(sectionName);
+                if (trigger.isPresent() && hasSectionElements(sectionName)) {
+                    String cmdName = commandSpec.qualifiedName();
+                    String trigName = trigger.get().longestName();
+                    sb.append(String.format("%nRun '%s %s' to view %s options and commands.%n",
+                            cmdName, trigName, sectionName));
+                }
+            }
+            return sb.toString();
+        }
+
+        private boolean hasSectionElements(String sectionName) {
+            for (ArgGroupSpec group : commandSpec.argGroups()) {
+                if (sectionName.equals(getHelpSection(group))) { return true; }
+            }
+            for (OptionSpec opt : commandSpec.options()) {
+                if (!opt.usageHelp() && sectionName.equals(getHelpSection(opt))) { return true; }
+            }
+            for (PositionalParamSpec param : commandSpec.positionalParameters()) {
+                if (sectionName.equals(getHelpSection(param))) { return true; }
+            }
+            for (Help sub : allCommands.values()) {
+                if (sectionName.equals(getHelpSection(sub.commandSpec()))) { return true; }
+            }
+            return false;
         }
 
         /**
