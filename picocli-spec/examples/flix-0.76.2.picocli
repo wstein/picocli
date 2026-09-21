@@ -62,7 +62,7 @@ definitions {
   // Only check/doc/format/test actually read cmdOpts.files (confirmed in Bootstrap.scala; see
   // examples/README.md) -- unlike flix-0.60.0.picocli, build/run/repl do NOT accept file
   // arguments in this version and so do not reference this positional.
-  positional files : File[] "input Flix source code files." arity=0..*
+  positional files : Path[] "input Flix source code files." arity=0..*
 
   // clean/outdated both call Bootstrap.bootstrap(cwd, githubToken) but never actually compile.
   bundle dependencyResolution {

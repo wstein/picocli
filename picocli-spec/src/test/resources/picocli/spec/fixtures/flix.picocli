@@ -1,11 +1,12 @@
 command flix "The Flix programming language" {
+  mixinStandardHelpOptions
   option -v, --verbose : boolean "Enable verbose output"
-  option -o, --output : String "Output directory" default=out
+  option -o, --output : Path "Output directory" default=out
   option -t, --target : String "Compilation target" required arity=1
 
   command build "Compile the project" {
     option --release : boolean "Optimize for release"
-    positional files : File "Input files to compile" arity=0..*
+    positional files : Path "Input files to compile" arity=0..*
   }
   command run "Run the project" {
     positional args : String "Program arguments" arity=0..*

@@ -1,6 +1,7 @@
 {
   "$schema": "https://wstein.github.io/picocli/spec/schema/command-spec.schema.json",
   "name": "flix",
+  "mixinStandardHelpOptions": true,
   "description": [
     "The Flix programming language"
   ],
@@ -21,7 +22,7 @@
         "-o",
         "--output"
       ],
-      "type": "String",
+      "type": "Path",
       "description": [
         "Output directory"
       ],
@@ -62,7 +63,7 @@
       "positionalParams": [
         {
           "paramLabel": "<files>",
-          "type": "File",
+          "type": "Path",
           "description": [
             "Input files to compile"
           ],
