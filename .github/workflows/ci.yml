@@ -21,7 +21,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     # This fork supports the LTS releases only: 8, 11, 17 and 21. Non-LTS and newer JDKs are
-    # deliberately not built (JDK 25, for one, cannot even start this repo's Gradle 8.14
+    # deliberately not built (JDK 25, for one, cannot even start this repo's older Gradle
     # wrapper: "Unsupported class file major version 69"). macOS stays non-blocking because
     # the hosted runners are the flaky part, not the code.
     continue-on-error: ${{ matrix.os == 'macos-latest' }}
