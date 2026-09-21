@@ -160,6 +160,7 @@ public class TestUtil {
         return original;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Set<T> setOf(T... elements) {
         return new HashSet<T>(Arrays.asList(elements));
     }

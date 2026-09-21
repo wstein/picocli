@@ -164,6 +164,7 @@ public class DynamicProxyConfigGenerator {
             return json(commandInterfaces, interfaces);
         }
 
+        @SuppressWarnings("unchecked")
         private static StringBuilder json(List<String>... stringLists) {
             StringBuilder result = new StringBuilder(1024);
             for (List<String> list : stringLists) {

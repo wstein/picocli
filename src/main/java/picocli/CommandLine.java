@@ -12539,6 +12539,7 @@ public class CommandLine {
                     throw new InitializationException("@picocli.CommandLine.Spec annotation is only supported on fields of type " + CommandSpec.class.getName());
                 }
             }
+            @SuppressWarnings("unchecked")
             private static void validateParentCommand(TypedMember member) {
                 assertNoDuplicateAnnotations(member, ParentCommand.class, Parameters.class, Option.class, Unmatched.class, Mixin.class, Spec.class, ArgGroup.class);
             }
