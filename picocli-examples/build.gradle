@@ -50,7 +50,10 @@ tasks.withType(GroovyCompile) {
     groovyClasspath += configurations.ivy
 }
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile.class).configureEach {
-    jvmTargetValidationMode = org.jetbrains.kotlin.gradle.dsl.jvm.JvmTargetValidationMode.WARNING
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+        freeCompilerArgs.add("-Xuse-fir-lt=false")
+    }
 }
 
 def generatedResources = "$buildDir/generated-resources/main"
