@@ -4857,6 +4857,11 @@ public class CommandLine {
          * @since 4.9.4 */
         String helpSection() default "";
 
+        /** Optional on-demand help section metadata configurations for this command.
+         * @return array of {@link HelpSection} declarations
+         * @since 4.9.4 */
+        HelpSection[] helpSections() default {};
+
         /** Set the base name of the ResourceBundle to find option and positional parameters descriptions, as well as
          * usage help message sections and section headings. <p>See {@link Messages} for more details and an example.</p>
          * @return the base name of the ResourceBundle for usage help strings
@@ -4938,6 +4943,35 @@ public class CommandLine {
          * @since 4.6 */
         Class<? extends IParameterPreprocessor> preprocessor() default NoOpParameterPreprocessor.class;
     }
+
+    /**
+     * Declares metadata for an on-demand help section, defining a section heading, description lines,
+     * and an empty fallback message displayed when the command contains no elements tagged with this section.
+     * @since 4.9.4
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    public @interface HelpSection {
+        /** The section name/tag matching {@link Option#helpSection()}, {@link Parameters#helpSection()}, or {@link Command#helpSection()}. */
+        String name();
+        /** The section heading displayed when this section is rendered on demand. */
+        String heading() default "";
+        /** Optional description lines displayed after the heading. */
+        String[] description() default {};
+        /** Message rendered when no options, positional parameters, or subcommands match this section on the command. */
+        String emptyMessage() default "";
+    }
+
+    /**
+     * Repeatable container for {@link HelpSection}.
+     * @since 4.9.4
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    public @interface HelpSections {
+        HelpSection[] value();
+    }
+
     /** A {@code Command} may define one or more {@code ArgGroups}: a group of options, positional parameters or a mixture of the two.
      * Groups can be used to:
      * <ul>
@@ -7392,12 +7426,39 @@ public class CommandLine {
                 return this;
             }
 
+            private final Map<String, HelpSectionSpec> helpSectionSpecs = new LinkedHashMap<String, HelpSectionSpec>();
+
+            /** Returns an unmodifiable map of registered help section specifications by section name.
+             * @return map of help section specifications
+             * @since 4.9.4 */
+            public Map<String, HelpSectionSpec> helpSectionSpecs() {
+                return Collections.unmodifiableMap(helpSectionSpecs);
+            }
+
+            /** Returns the registered help section specification for the given section name, or {@code null} if none is registered.
+             * @param sectionName the help section name
+             * @return the help section specification, or {@code null}
+             * @since 4.9.4 */
+            public HelpSectionSpec helpSectionSpec(String sectionName) {
+                return helpSectionSpecs.get(sectionName);
+            }
+
+            /** Registers an on-demand help section specification on this command.
+             * @param spec the help section specification
+             * @return this CommandSpec for method chaining
+             * @since 4.9.4 */
+            public CommandSpec addHelpSectionSpec(HelpSectionSpec spec) {
+                Assert.notNull(spec, "spec");
+                helpSectionSpecs.put(spec.name(), spec);
+                return this;
+            }
+
             /** Returns the set of all help section names present in this command, including options, arg groups,
              * positional parameters, and subcommands.
              * @return an unmodifiable set of help section names (excluding empty string)
              * @since 4.9.4 */
             public Set<String> helpSections() {
-                Set<String> result = new LinkedHashSet<String>();
+                Set<String> result = new LinkedHashSet<String>(helpSectionSpecs.keySet());
                 for (ArgGroupSpec group : argGroups()) {
                     String s = Help.getHelpSection(group);
                     if (s != null && !s.isEmpty()) { result.add(s); }
@@ -7657,6 +7718,7 @@ public class CommandLine {
                 aliases(cmd.aliases());
                 updateName(cmd.name());
                 updateHelpSection(cmd.helpSection());
+                updateHelpSections(cmd.helpSections());
                 updateVersion(cmd.version());
                 updateHelpCommand(cmd.helpCommand());
                 updateSubcommandsRepeatable(cmd.subcommandsRepeatable());
@@ -7690,6 +7752,17 @@ public class CommandLine {
             void initExitCodeOnExecutionException(int exitCode) { if (initializable(exitCodeOnExecutionException, exitCode, ExitCode.SOFTWARE)) { exitCodeOnExecutionException = exitCode; } }
             void updateName(String value)                   { if (isNonDefault(value, DEFAULT_COMMAND_NAME))                {name = value;} }
             void updateHelpSection(String value)            { if (value != null && !value.isEmpty())                        {helpSection = value;} }
+            void updateHelpSections(HelpSection[] sections) {
+                if (sections != null) {
+                    for (HelpSection hs : sections) {
+                        addHelpSectionSpec(HelpSectionSpec.builder(hs.name())
+                                .heading(hs.heading())
+                                .description(hs.description())
+                                .emptyMessage(hs.emptyMessage())
+                                .build());
+                    }
+                }
+            }
             void initModelTransformer(IModelTransformer value) { if (modelTransformer == null) {modelTransformer = value;}}
             void updateModelTransformer(Class<? extends IModelTransformer> value, IFactory factory) {
                 if (isNonDefault(value, NoOpModelTransformer.class)) { this.modelTransformer = DefaultFactory.create(factory, value); }
@@ -11334,6 +11407,70 @@ public class CommandLine {
                 /** Returns the list of program elements annotated with {@code {@literal @}Spec} configured for this group.
                  * @since 4.6 */
                 public List<IAnnotatedElement> specElements() { return specElements; }
+            }
+        }
+
+        /** Specification for an on-demand help section metadata, defining its heading, description,
+         * and empty fallback message.
+         * @since 4.9.4 */
+        public static class HelpSectionSpec {
+            private final String name;
+            private final String heading;
+            private final String[] description;
+            private final String emptyMessage;
+
+            public static Builder builder(String name) { return new Builder(name); }
+            public static Builder builder(HelpSectionSpec original) { return new Builder(original); }
+
+            public static class Builder {
+                private final String name;
+                private String heading = "";
+                private String[] description = new String[0];
+                private String emptyMessage = "";
+
+                public Builder(String name) {
+                    this.name = Assert.notNull(name, "name");
+                }
+                public Builder(HelpSectionSpec original) {
+                    this.name = original.name;
+                    this.heading = original.heading;
+                    this.description = original.description.clone();
+                    this.emptyMessage = original.emptyMessage;
+                }
+                public String name() { return name; }
+                public Builder heading(String heading) { this.heading = heading == null ? "" : heading; return this; }
+                public String heading() { return heading; }
+                public Builder description(String... description) { this.description = description == null ? new String[0] : description.clone(); return this; }
+                public String[] description() { return description.clone(); }
+                public Builder emptyMessage(String emptyMessage) { this.emptyMessage = emptyMessage == null ? "" : emptyMessage; return this; }
+                public String emptyMessage() { return emptyMessage; }
+                public HelpSectionSpec build() { return new HelpSectionSpec(this); }
+            }
+
+            private HelpSectionSpec(Builder builder) {
+                this.name = builder.name;
+                this.heading = builder.heading;
+                this.description = builder.description.clone();
+                this.emptyMessage = builder.emptyMessage;
+            }
+
+            public String name() { return name; }
+            public String heading() { return heading; }
+            public String[] description() { return description.clone(); }
+            public String emptyMessage() { return emptyMessage; }
+
+            public int hashCode() {
+                return 17 + 37 * Assert.hashCode(name) + 37 * Assert.hashCode(heading)
+                        + 37 * Arrays.hashCode(description) + 37 * Assert.hashCode(emptyMessage);
+            }
+            public boolean equals(Object obj) {
+                if (obj == this) { return true; }
+                if (!(obj instanceof HelpSectionSpec)) { return false; }
+                HelpSectionSpec other = (HelpSectionSpec) obj;
+                return Assert.equals(name, other.name)
+                        && Assert.equals(heading, other.heading)
+                        && Arrays.equals(description, other.description)
+                        && Assert.equals(emptyMessage, other.emptyMessage);
             }
         }
 
@@ -16652,6 +16789,7 @@ public class CommandLine {
          * @since 4.8 */
         public String renderHelpSection(String sectionName) {
             if (sectionName == null) { return ""; }
+            HelpSectionSpec sectionSpec = commandSpec.helpSectionSpec(sectionName);
             Set<ArgSpec> done = new HashSet<ArgSpec>();
             StringBuilder sb = new StringBuilder();
 
@@ -16722,6 +16860,33 @@ public class CommandLine {
                 }
                 sb.append(commandListHeading());
                 sb.append(commandList(sectionCommands));
+            }
+
+            if (sb.length() == 0) {
+                if (sectionSpec != null && sectionSpec.emptyMessage() != null && !sectionSpec.emptyMessage().isEmpty()) {
+                    String msg = sectionSpec.emptyMessage();
+                    return String.format(msg.endsWith("%n") || msg.endsWith("\n") ? msg : msg + "%n");
+                }
+                return "";
+            }
+
+            if (sectionSpec != null) {
+                StringBuilder header = new StringBuilder();
+                if (sectionSpec.heading() != null && !sectionSpec.heading().isEmpty()) {
+                    String formattedHeading = createHeading(sectionSpec.heading());
+                    if (!sb.toString().startsWith(formattedHeading)) {
+                        header.append(formattedHeading);
+                    }
+                }
+                if (sectionSpec.description() != null && sectionSpec.description().length > 0) {
+                    for (String line : sectionSpec.description()) {
+                        header.append(line).append(String.format("%n"));
+                    }
+                    header.append(String.format("%n"));
+                }
+                if (header.length() > 0) {
+                    sb.insert(0, header);
+                }
             }
 
             return sb.toString();

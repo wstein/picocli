@@ -207,4 +207,76 @@ public class TaggedHelpSectionTest {
         assertTrue(rendered.contains("Experimental Options:"));
         assertTrue(rendered.contains("exp-sub"));
     }
+
+    @Command(name = "custom-section",
+            helpSections = {
+                    @CommandLine.HelpSection(name = "preview",
+                            heading = "Preview Features:%n",
+                            description = { "These features are subject to change." },
+                            emptyMessage = "No preview features available.")
+            })
+    static class CustomSectionCmd implements Runnable {
+        @Option(names = "--foo", helpSection = "preview", description = "A preview option.")
+        String foo;
+
+        public void run() {}
+    }
+
+    @Test
+    public void testHelpSectionSpecCustomHeadingAndLooseOptions() {
+        CommandLine cmd = new CommandLine(new CustomSectionCmd());
+        CommandLine.Model.HelpSectionSpec sectionSpec = cmd.getCommandSpec().helpSectionSpec("preview");
+        assertNotNull(sectionSpec);
+        assertEquals("Preview Features:%n", sectionSpec.heading());
+        assertEquals("No preview features available.", sectionSpec.emptyMessage());
+        assertEquals(1, sectionSpec.description().length);
+        assertEquals("These features are subject to change.", sectionSpec.description()[0]);
+
+        StringWriter sw = new StringWriter();
+        cmd.printHelpSection("preview", new PrintWriter(sw));
+        String rendered = sw.toString();
+        assertTrue(rendered.contains("Preview Features:"));
+        assertTrue(rendered.contains("These features are subject to change."));
+        assertTrue(rendered.contains("--foo"));
+        assertTrue(rendered.contains("A preview option."));
+    }
+
+    @Command(name = "empty-section",
+            helpSections = {
+                    @CommandLine.HelpSection(name = "experimental", emptyMessage = "No experimental options for this command.")
+            })
+    static class EmptySectionCmd implements Runnable {
+        @Option(names = "--standard", description = "Standard.")
+        String std;
+
+        public void run() {}
+    }
+
+    @Test
+    public void testHelpSectionSpecEmptyFallbackMessage() {
+        CommandLine cmd = new CommandLine(new EmptySectionCmd());
+        String rendered = cmd.getHelp().renderHelpSection("experimental");
+        assertTrue(rendered.contains("No experimental options for this command."));
+
+        // Non-configured empty section returns empty string
+        String unconfigured = cmd.getHelp().renderHelpSection("nonexistent");
+        assertEquals("", unconfigured);
+    }
+
+    @Test
+    public void testHelpSectionSpecProgrammaticApi() {
+        CommandLine.Model.CommandSpec spec = CommandLine.Model.CommandSpec.create();
+        CommandLine.Model.HelpSectionSpec sectionSpec = CommandLine.Model.HelpSectionSpec.builder("perf")
+                .heading("Performance Tuning:%n")
+                .description("Tuning knobs.")
+                .emptyMessage("No performance tuning options.")
+                .build();
+        spec.addHelpSectionSpec(sectionSpec);
+
+        assertEquals(sectionSpec, spec.helpSectionSpec("perf"));
+        assertTrue(spec.helpSections().contains("perf"));
+
+        CommandLine cmd = new CommandLine(spec);
+        assertEquals(String.format("No performance tuning options.%n"), cmd.getHelp().renderHelpSection("perf"));
+    }
 }
