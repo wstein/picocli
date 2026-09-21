@@ -12,14 +12,14 @@ buildscript {
         classpath "org.asciidoctor:asciidoctor-gradle-jvm:$asciidoctorGradlePluginVersion"
         classpath 'org.asciidoctor:asciidoctorj-pdf:2.3.19'
         classpath "org.beryx:badass-jar:2.0.0"
-        classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:7.1.0'
+        classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:6.4.0'
         classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0"
         classpath "net.ltgt.gradle:gradle-errorprone-plugin:4.2.0"
     }
 }
 
 plugins {
-    id 'org.jreleaser' version '1.26.0'
+    id 'org.jreleaser' version '1.17.0'
 }
 
 group          = 'info.picocli'
@@ -118,10 +118,6 @@ allprojects {
     }
     tasks.withType(JavaCompile) {
         options.compilerArgs << '-Xlint:unchecked' << '-Xlint:deprecation'
-    }
-
-    tasks.withType(Test).configureEach {
-        failOnNoDiscoveredTests = false
     }
 
     javadoc.destinationDir = file("build/docs/apidocs")
