@@ -50,6 +50,12 @@ public class TaggedHelpSectionTest {
             public void run() {}
         }
 
+        @CommandLine.Parameters(index = "0", arity = "0..1", description = "Standard file argument.")
+        String stdFile;
+
+        @CommandLine.Parameters(index = "1", arity = "0..1", helpSection = "experimental", description = "Experimental file argument.")
+        String expFile;
+
         public void run() {}
     }
 
@@ -60,6 +66,9 @@ public class TaggedHelpSectionTest {
 
         OptionSpec option = OptionSpec.builder("--Xhelp").helpSection("experimental").build();
         assertEquals("experimental", option.helpSection());
+
+        CommandLine.Model.PositionalParamSpec param = CommandLine.Model.PositionalParamSpec.builder().paramLabel("<exp>").helpSection("experimental").build();
+        assertEquals("experimental", param.helpSection());
 
         CommandLine.Model.CommandSpec cmdSpec = CommandLine.Model.CommandSpec.create().helpSection("experimental");
         assertEquals("experimental", cmdSpec.helpSection());
@@ -76,6 +85,9 @@ public class TaggedHelpSectionTest {
         assertFalse(cmd.getCommandSpec().argGroups().isEmpty());
         ArgGroupSpec expGroup = cmd.getCommandSpec().argGroups().get(0);
         assertEquals("experimental", expGroup.helpSection());
+
+        assertEquals("", cmd.getCommandSpec().positionalParameters().get(0).helpSection());
+        assertEquals("experimental", cmd.getCommandSpec().positionalParameters().get(1).helpSection());
 
         CommandLine expSub = cmd.getSubcommands().get("exp-sub");
         assertNotNull(expSub);
@@ -109,6 +121,10 @@ public class TaggedHelpSectionTest {
         // Subcommands in standard help
         assertTrue(usage.contains("std-sub"));
         assertFalse("Standard help should exclude experimental subcommand", usage.contains("exp-sub"));
+
+        // Positional parameters in standard help
+        assertTrue(usage.contains("Standard file argument."));
+        assertFalse("Standard help should exclude experimental positional parameter", usage.contains("Experimental file argument."));
     }
 
     @Test
@@ -125,6 +141,10 @@ public class TaggedHelpSectionTest {
         assertTrue(usage.contains("Experimental Options:"));
         assertTrue(usage.contains("--Xalpha"));
         assertTrue(usage.contains("--Xbeta"));
+
+        // Experimental positional parameter rendered on demand
+        assertTrue("Experimental help should contain expFile", usage.contains("Experimental file argument."));
+        assertFalse("Experimental help should exclude standard positional parameter", usage.contains("Standard file argument."));
 
         // Experimental subcommand rendered on demand
         assertTrue("Experimental help should contain exp-sub", usage.contains("exp-sub"));
@@ -173,6 +193,13 @@ public class TaggedHelpSectionTest {
 
         java.util.Optional<String> sectionFromStd = spec.findHelpSectionForOption("--standard");
         assertFalse(sectionFromStd.isPresent());
+
+        java.util.Optional<String> sectionFromPos = spec.findHelpSectionForPositional("<expFile>");
+        assertTrue(sectionFromPos.isPresent());
+        assertEquals("experimental", sectionFromPos.get());
+
+        java.util.Optional<String> sectionFromStdPos = spec.findHelpSectionForPositional("<stdFile>");
+        assertFalse(sectionFromStdPos.isPresent());
 
         StringWriter sw = new StringWriter();
         cmd.printHelpSection("experimental", new PrintWriter(sw));

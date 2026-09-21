@@ -4326,6 +4326,13 @@ public class CommandLine {
          */
         boolean hidden() default false;
 
+        /** Optional help section tag for this positional parameter (e.g., {@code "experimental"}).
+         * Tagged positional parameters are excluded from the command's standard usage help parameter list,
+         * and rendered only when the matching help section is requested on demand.
+         * @return the help section tag for this positional parameter, or empty string if not tagged
+         * @since 4.9.4 */
+        String helpSection() default "";
+
         /** Returns the default value of this positional parameter, before splitting and type conversion.
          * <p>To get a {@code null} default value, omit specifying a default value or use the special value {@link Parameters#NULL_VALUE} -
          * for positional parameters of type {@code Optional<T>} that will result in the {@code Optional.empty()}
@@ -7386,7 +7393,7 @@ public class CommandLine {
             }
 
             /** Returns the set of all help section names present in this command, including options, arg groups,
-             * and subcommands.
+             * positional parameters, and subcommands.
              * @return an unmodifiable set of help section names (excluding empty string)
              * @since 4.9.4 */
             public Set<String> helpSections() {
@@ -7397,6 +7404,10 @@ public class CommandLine {
                 }
                 for (OptionSpec opt : options()) {
                     String s = Help.getHelpSection(opt);
+                    if (s != null && !s.isEmpty()) { result.add(s); }
+                }
+                for (PositionalParamSpec param : positionalParameters()) {
+                    String s = Help.getHelpSection(param);
                     if (s != null && !s.isEmpty()) { result.add(s); }
                 }
                 for (CommandLine sub : subcommands().values()) {
@@ -7415,6 +7426,27 @@ public class CommandLine {
                 for (OptionSpec opt : options()) {
                     if (opt.usageHelp() && sectionName.equals(Help.getHelpSection(opt))) {
                         return Optional.of(opt);
+                    }
+                }
+                return Optional.empty();
+            }
+
+            /** Finds the help section name associated with the positional parameter having the given label, or its enclosing group.
+             * @param paramLabel the param label (e.g., {@code "<file>"} or {@code "file"})
+             * @return an {@code Optional} containing the section name if tagged, or empty
+             * @since 4.9.4 */
+            public Optional<String> findHelpSectionForPositional(String paramLabel) {
+                if (paramLabel == null || paramLabel.isEmpty()) { return Optional.empty(); }
+                for (PositionalParamSpec param : positionalParameters()) {
+                    String raw = param.paramLabel();
+                    String unquoted = (raw != null && raw.startsWith("<") && raw.endsWith(">")) ? raw.substring(1, raw.length() - 1) : raw;
+                    if (paramLabel.equals(raw) || paramLabel.equals(unquoted)) {
+                        String s = Help.getHelpSection(param);
+                        if (s != null && !s.isEmpty()) { return Optional.of(s); }
+                        if (param.group() != null) {
+                            s = Help.getHelpSection(param.group());
+                            if (s != null && !s.isEmpty()) { return Optional.of(s); }
+                        }
                     }
                 }
                 return Optional.empty();
@@ -8947,6 +8979,7 @@ public class CommandLine {
             private final boolean hideParamSyntax;
             private final String[] description;
             private final String descriptionKey;
+            private final String helpSection;
             private final Help.Visibility showDefaultValue;
             private Messages messages;
             CommandSpec commandSpec;
@@ -9000,6 +9033,7 @@ public class CommandLine {
                 preprocessor = builder.preprocessor != null ? builder.preprocessor : new NoOpParameterPreprocessor();
                 showDefaultValue = builder.showDefaultValue == null ? Help.Visibility.ON_DEMAND : builder.showDefaultValue;
                 hidden = builder.hidden;
+                helpSection = builder.helpSection;
                 inherited = builder.inherited;
                 root = builder.root == null && ScopeType.INHERIT.equals(builder.scopeType) ? this : builder.root;
                 interactive = builder.interactive;
@@ -9232,6 +9266,11 @@ public class CommandLine {
              * @see Option#scope()
              * @since 4.6.0 */
             public ArgSpec root() { return root; }
+
+            /** Returns the optional help section tag for this argument, or empty string if untagged.
+             * @return the help section tag
+             * @since 4.9.4 */
+            public String helpSection() { return helpSection; }
 
             /** Returns the type to convert the option or positional parameter to before {@linkplain #setValue(Object) setting} the value.
              * This may be a container type like {@code List}, {@code Map}, or {@code Optional},
@@ -9578,6 +9617,7 @@ public class CommandLine {
                         && Assert.equals(this.descriptionKey, other.descriptionKey)
                         && Assert.equals(this.parameterConsumer, other.parameterConsumer)
                         && Assert.equals(this.preprocessor, other.preprocessor)
+                        && Assert.equals(this.helpSection, other.helpSection)
                         && this.typeInfo.equals(other.typeInfo)
                         && this.scopeType.equals(other.scopeType);
             }
@@ -9588,6 +9628,7 @@ public class CommandLine {
                         + 37 * Assert.hashCode(mapFallbackValue)
                         + 37 * Assert.hashCode(arity)
                         + 37 * Assert.hashCode(hidden)
+                        + 37 * Assert.hashCode(helpSection)
                         + 37 * Assert.hashCode(inherited)
                         + 37 * Assert.hashCode(paramLabel)
                         + 37 * Assert.hashCode(hideParamSyntax)
@@ -9658,6 +9699,7 @@ public class CommandLine {
                 private String splitRegex;
                 private String splitRegexSynopsisLabel;
                 private boolean hidden;
+                private String helpSection = "";
                 private ArgSpec root;
                 private boolean inherited;
                 private Class<?> type;
@@ -9698,6 +9740,7 @@ public class CommandLine {
                     splitRegex = original.splitRegex;
                     splitRegexSynopsisLabel = original.splitRegexSynopsisLabel;
                     hidden = original.hidden;
+                    helpSection = original.helpSection();
                     inherited = original.inherited;
                     root = original.root;
                     setTypeInfo(original.typeInfo);
@@ -9749,6 +9792,7 @@ public class CommandLine {
                     splitRegex = option.split();
                     splitRegexSynopsisLabel = option.splitSynopsisLabel();
                     hidden = option.hidden();
+                    helpSection = option.helpSection();
                     defaultValue = NULL_VALUE.equals(option.defaultValue()) ? null : option.defaultValue();
                     mapFallbackValue = NULL_VALUE.equals(option.mapFallbackValue()) ? null : option.mapFallbackValue();
                     originalDefaultValue = option.defaultValue();
@@ -9789,6 +9833,7 @@ public class CommandLine {
                         splitRegex = parameters.split();
                         splitRegexSynopsisLabel = parameters.splitSynopsisLabel();
                         hidden = parameters.hidden();
+                        helpSection = parameters.helpSection();
                         defaultValue = NULL_VALUE.equals(parameters.defaultValue()) ? null : parameters.defaultValue();
                         mapFallbackValue = NULL_VALUE.equals(parameters.mapFallbackValue()) ? null : parameters.mapFallbackValue();
                         originalDefaultValue = parameters.defaultValue();
@@ -10041,6 +10086,21 @@ public class CommandLine {
                 /** Sets whether this option should be excluded from the usage message, and returns this builder. */
                 public T hidden(boolean hidden)              { this.hidden = hidden; return self(); }
 
+                /** Returns the optional help section tag for this argument.
+                 * @return the help section tag
+                 * @since 4.9.4 */
+                public String helpSection() { return helpSection; }
+
+                /** Sets the optional help section tag for this argument.
+                 * @param helpSection the help section tag (e.g. {@code "experimental"})
+                 * @return this builder instance
+                 * @since 4.9.4 */
+                @SuppressWarnings("unchecked")
+                public T helpSection(String helpSection) {
+                    this.helpSection = helpSection == null ? "" : helpSection;
+                    return self();
+                }
+
                 /** Sets whether this option is inherited from a parent command, and returns this builder.
                  * @since 4.3.0 */
                 public T inherited(boolean inherited)        { this.inherited = inherited; return self(); }
@@ -10165,7 +10225,6 @@ public class CommandLine {
             private final String fallbackValue;
             private final String originalFallbackValue;
             private final int order;
-            private final String helpSection;
 
             public static OptionSpec.Builder builder(String name, String... names) {
                 String[] copy = new String[Assert.notNull(names, "names").length + 1];
@@ -10193,7 +10252,6 @@ public class CommandLine {
                 negatable = builder.negatable;
                 fallbackValue = builder.fallbackValue;
                 originalFallbackValue = builder.originalFallbackValue;
-                helpSection = builder.helpSection;
 
                 if (names.length == 0 || Arrays.asList(names).contains("")) {
                     throw new InitializationException("Invalid names: " + Arrays.toString(names));
@@ -10275,7 +10333,8 @@ public class CommandLine {
             /** Returns the optional help section tag of this option (may be {@code null} or empty).
              * @see Option#helpSection()
              * @since 4.8 */
-            public String helpSection() { return helpSection; }
+            @Override
+            public String helpSection() { return super.helpSection(); }
 
             public boolean equals(Object obj) {
                 if (obj == this) { return true; }
@@ -10287,7 +10346,6 @@ public class CommandLine {
                         && versionHelp == other.versionHelp
                         && order == other.order
                         && negatable == other.negatable
-                        && Assert.equals(helpSection, other.helpSection)
                         && Assert.equals(fallbackValue, other.fallbackValue)
                         && new HashSet<String>(Arrays.asList(names)).equals(new HashSet<String>(Arrays.asList(other.names)));
             }
@@ -10299,7 +10357,6 @@ public class CommandLine {
                         + 37 * Arrays.hashCode(names)
                         + 37 * Assert.hashCode(negatable)
                         + 37 * Assert.hashCode(fallbackValue)
-                        + 37 * Assert.hashCode(helpSection)
                         + 37 * order;
             }
 
@@ -10315,7 +10372,6 @@ public class CommandLine {
                 private String fallbackValue = DEFAULT_FALLBACK_VALUE;
                 private String originalFallbackValue = ArgSpec.UNSPECIFIED;
                 private int order = DEFAULT_ORDER;
-                private String helpSection = "";
 
                 private Builder(String[] names) { this.names = names; }
                 private Builder(OptionSpec original) {
@@ -10328,7 +10384,6 @@ public class CommandLine {
                     fallbackValue = original.fallbackValue;
                     originalFallbackValue = original.originalFallbackValue;
                     order = original.order;
-                    helpSection = original.helpSection;
                 }
                 private Builder(IAnnotatedElement member, IFactory factory) {
                     super(member.getAnnotation(Option.class), member, factory);
@@ -10341,7 +10396,6 @@ public class CommandLine {
                     fallbackValue = NULL_VALUE.equals(option.fallbackValue()) ? null : option.fallbackValue();
                     originalFallbackValue = option.fallbackValue();
                     order = option.order();
-                    helpSection = option.helpSection();
                 }
 
                 /** Returns a valid {@code OptionSpec} instance. */
@@ -10381,15 +10435,16 @@ public class CommandLine {
                 /** Returns the optional help section tag for this option.
                  * @see Option#helpSection()
                  * @since 4.8 */
-                public String helpSection() { return helpSection; }
+                @Override
+                public String helpSection() { return super.helpSection(); }
 
                 /** Sets the help section tag for this option.
                  * @param helpSection the help section tag
                  * @return this builder instance
                  * @since 4.8 */
+                @Override
                 public Builder helpSection(String helpSection) {
-                    this.helpSection = helpSection == null ? "" : helpSection;
-                    return this;
+                    return super.helpSection(helpSection);
                 }
 
                 /** Returns the position in the options list in the usage help message at which this option should be shown.
@@ -10550,6 +10605,15 @@ public class CommandLine {
                 @Override public PositionalParamSpec build() { return new PositionalParamSpec(this); }
                 /** Returns this builder. */
                 @Override protected Builder self()  { return this; }
+
+                /** Sets the optional help section tag for this positional parameter.
+                 * @param helpSection the help section tag (e.g. {@code "experimental"})
+                 * @return this builder instance
+                 * @since 4.9.4 */
+                @Override
+                public Builder helpSection(String helpSection) {
+                    return super.helpSection(helpSection);
+                }
 
                 /** Returns an index or range specifying which of the command line arguments should be assigned to this positional parameter.
                  * @see Parameters#index() */
@@ -16228,6 +16292,16 @@ public class CommandLine {
                 AT_FILE_POSITIONAL_PARAM.messages(commandSpec.usageMessage().messages());
             }
             positionals.removeAll(done);
+            String activeSection = activeHelpSection();
+            for (Iterator<PositionalParamSpec> iter = positionals.iterator(); iter.hasNext(); ) {
+                PositionalParamSpec positionalParam = iter.next();
+                String paramSection = getHelpSection(positionalParam);
+                if (activeSection == null) {
+                    if (paramSection != null && !paramSection.isEmpty()) { iter.remove(); }
+                } else if (!activeSection.equals(paramSection)) {
+                    iter.remove();
+                }
+            }
             for (PositionalParamSpec positionalParam : positionals) {
                 positionalParamText = concatPositionalText(" ", positionalParamText, colorScheme, positionalParam, parameterLabelRenderer());
             }
@@ -16333,9 +16407,20 @@ public class CommandLine {
                     result.removeAll(group.allPositionalParametersNested());
                 }
             }
+            String activeSection = activeHelpSection();
             for (Iterator<PositionalParamSpec> iter = result.iterator(); iter.hasNext(); ) {
-                if (iter.next().hidden()) {
+                PositionalParamSpec param = iter.next();
+                if (param.hidden()) {
                     iter.remove();
+                } else {
+                    String section = getHelpSection(param);
+                    if (activeSection == null) {
+                        if (section != null && !section.isEmpty()) {
+                            iter.remove();
+                        }
+                    } else if (!activeSection.equals(section)) {
+                        iter.remove();
+                    }
                 }
             }
             return result;
@@ -16484,6 +16569,22 @@ public class CommandLine {
             }
         }
 
+        /** Returns the help section name for the given argument, or {@code null} if untagged.
+         * @param arg the argument spec to inspect
+         * @return the help section name, or {@code null}
+         * @since 4.9.4 */
+        public static String getHelpSection(ArgSpec arg) {
+            if (arg == null) { return null; }
+            if (arg.helpSection() != null && !arg.helpSection().isEmpty()) {
+                return arg.helpSection();
+            }
+            String key = arg.descriptionKey();
+            if (key != null && key.startsWith("helpSection:")) {
+                return key.substring("helpSection:".length());
+            }
+            return null;
+        }
+
         /** Returns the help section name for the given group, or {@code null} if untagged.
          * @param group the arg group to inspect
          * @return the help section name, or {@code null}
@@ -16505,15 +16606,15 @@ public class CommandLine {
          * @return the help section name, or {@code null}
          * @since 4.8 */
         public static String getHelpSection(OptionSpec option) {
-            if (option == null) { return null; }
-            if (option.helpSection() != null && !option.helpSection().isEmpty()) {
-                return option.helpSection();
-            }
-            String key = option.descriptionKey();
-            if (key != null && key.startsWith("helpSection:")) {
-                return key.substring("helpSection:".length());
-            }
-            return null;
+            return getHelpSection((ArgSpec) option);
+        }
+
+        /** Returns the help section name for the given positional parameter, or {@code null} if untagged.
+         * @param positional the positional parameter to inspect
+         * @return the help section name, or {@code null}
+         * @since 4.9.4 */
+        public static String getHelpSection(PositionalParamSpec positional) {
+            return getHelpSection((ArgSpec) positional);
         }
 
         /** Returns the help section name for the given command, or {@code null} if untagged.
@@ -16578,6 +16679,18 @@ public class CommandLine {
                     sb.append(createHeading(group.heading()));
                 }
                 sb.append(groupLayout);
+            }
+
+            List<PositionalParamSpec> loosePositionals = new ArrayList<PositionalParamSpec>();
+            for (PositionalParamSpec param : commandSpec.positionalParameters()) {
+                if (param.group() == null && !done.contains(param) && sectionName.equals(getHelpSection(param))) {
+                    loosePositionals.add(param);
+                }
+            }
+            if (!loosePositionals.isEmpty()) {
+                Layout layout = createDefaultLayout();
+                layout.addAllPositionalParameters(loosePositionals, parameterLabelRenderer());
+                sb.append(layout);
             }
 
             List<OptionSpec> looseOptions = new ArrayList<OptionSpec>();
