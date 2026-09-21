@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v4.9.4] - 2026-09-21
+
+### Added
+- **Command-Level `helpSection`**:
+  - `@Command(helpSection = "...")` and `CommandSpec.helpSection(String)` allow tagging commands and subcommands with an on-demand help section name (e.g. `"experimental"`).
+  - Tagged subcommands are automatically omitted from the parent command's standard `--help` command list.
+  - When the corresponding section is triggered (e.g. `--Xhelp`), tagged subcommands are rendered in their own command list alongside tagged options and groups.
+- **Help Section Discovery & Trigger Lookup API**:
+  - `CommandSpec.helpSections()`: returns an unmodifiable `Set<String>` of all help section names in the command tree.
+  - `CommandSpec.findHelpSectionTrigger(String sectionName)`: returns `Optional<OptionSpec>` for the option marked `usageHelp=true` triggering that section.
+  - `CommandSpec.findHelpSectionForOption(String optionName)`: returns `Optional<String>` for the section name associated with an option or its parent group.
+  - `CommandLine.printHelpSection(String sectionName, PrintWriter out)` and `CommandLine.printHelpSection(String sectionName, PrintStream out)`: direct programmatic rendering of tagged help sections.
+- **DSL and JSON Schema Support for Command `helpSection`**:
+  - DSL syntax: `command <name> helpSection="<section>" ... { ... }`.
+  - JSON Schema: Added `"helpSection"` property to `command` definition in `command-spec.schema.json`.
+  - Bidirectional serialization and round-trip support in `CommandSpecDsl` and `CommandSpecJson`.
+
+---
+
 ## [v4.9.3] - 2026-09-21
 
 ### Added

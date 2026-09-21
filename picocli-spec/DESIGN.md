@@ -52,7 +52,7 @@ CommandSpecMerger   CommandSpecDsl.write()  CommandSpecJson.write()
 spec        := definitions? command
 definitions := 'definitions' '{' ( option | positional | bundle )* '}'
 bundle      := 'bundle' name '{' ( option | positional | group | use )* '}'
-command     := 'command' name [string] '{' member* '}'
+command     := 'command' name ['helpSection' '=' value] [string] '{' member* '}'
 member      := option | positional | group | use | command | 'mixinStandardHelpOptions'
 group       := 'group' ('exclusive' | 'cooperative') ['hidden'] ['helpSection' '=' value] ['multiplicity' '=' value] [string]
                '{' ( option | positional | group | use )* '}'
@@ -101,10 +101,10 @@ CLIs often share arguments across multiple commands or subcommands:
 A group marked `hidden` is flattened: its constituent members are registered directly on the enclosing command with `hidden = true`, and the group itself is not created as an `ArgGroupSpec`. This prevents picocli's usage help renderer from displaying empty synopsis brackets (`"[]"`) or orphaned section headings.
 
 ### Help Section Tagging (`helpSection`)
-Options and groups can be tagged with `helpSection="<sectionName>"`:
-- Flags are excluded from default `--help`.
-- Flags remain visible in shell autocompletion (`bash`, `fish`, `zsh`).
-- An option marked with `helpSection="<name>"` acts as an on-demand help trigger: invoking it prints only the tagged help section and exits cleanly.
+Options, groups, and subcommands can be tagged with `helpSection="<sectionName>"`:
+- Flags and tagged subcommands are excluded from default `--help`.
+- Flags and subcommands remain visible in shell autocompletion (`bash`, `fish`, `zsh`).
+- An option marked with `helpSection="<name>"` acts as an on-demand help trigger: invoking it prints only the tagged help section (options, groups, and subcommands) and exits cleanly.
 
 ---
 
@@ -118,6 +118,7 @@ The schema is formally maintained in [command-spec.schema.json](src/main/resourc
 |---|---|---|---|
 | `name` | `string` | inside `subcommands` | Command name. Optional at root. |
 | `description` | `string[]` | no | Array of description lines. |
+| `helpSection` | `string` | no | Help section tag (e.g. `"experimental"`). Excluded from standard help, rendered on demand. |
 | `mixinStandardHelpOptions` | `boolean` | no | Sets whether standard help options (`-h`, `--help`, `-V`, `--version`) should be mixed in (`spec.mixinStandardHelpOptions(true)`). Defaults to `false`. |
 | `options` | `(option \| string)[]` | no | Inlined options or references to `definitions.options`. |
 | `positionalParams` | `(positionalParam \| string)[]` | no | Inlined positionals or references to `definitions.positionalParams`. |
