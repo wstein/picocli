@@ -228,3 +228,24 @@ actually running the flix-0.76.2 jar):
   nothing. All three take `--github-token` directly (not through the `dependencyResolution`
   bundle): they call `Bootstrap.install`/`remove`/`upgrade` directly with just the token, never
   `Bootstrap.bootstrap`, so `--no-install` doesn't apply to them.
+
+## Working with Examples via `picospec`
+
+You can inspect, validate, convert, and generate shell completions for any of these spec files directly using the standalone `picocli-spec-tool` fat jar:
+
+```bash
+# Build the fat jar
+./gradlew :picocli-spec-tool:shadowJar
+
+# Preview the full usage help for flix v0.76.2
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar preview picocli-spec/examples/flix-0.76.2.picocli
+
+# Validate a spec file
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar validate picocli-spec/examples/flix-0.60.0.picocli
+
+# Generate fish shell autocompletion
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar completion picocli-spec/examples/flix-0.76.2.picocli --shell=fish
+
+# Convert a DSL spec to JSON
+java -jar picocli-spec-tool/build/libs/picocli-spec-tool-*-all.jar convert picocli-spec/examples/flix-0.76.2.picocli --to-json
+```
