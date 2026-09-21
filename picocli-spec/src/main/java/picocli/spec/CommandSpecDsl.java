@@ -98,6 +98,10 @@ public final class CommandSpecDsl {
             name = "command";
         }
         out.append(name);
+        String helpSection = Help.getHelpSection(spec);
+        if (helpSection != null && !helpSection.isEmpty()) {
+            out.append(" helpSection=").append(quote(helpSection));
+        }
         String desc = joinDescription(spec.usageMessage().description());
         if (desc != null && !desc.isEmpty()) {
             out.append(" ").append(quote(desc));
@@ -690,6 +694,11 @@ public final class CommandSpecDsl {
             expectKeyword("command");
             String name = expectWord();
             CommandSpec spec = CommandSpec.create().name(name);
+            while (checkWord("helpSection")) {
+                advance();
+                expect(TokenKind.EQUALS, "'='");
+                spec.helpSection(expectWordOrString());
+            }
             if (check(TokenKind.STRING)) {
                 spec.usageMessage().description(splitDescription(advance().text));
             }

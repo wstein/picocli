@@ -72,6 +72,10 @@ public class CommandSpecSchemaTest {
         Map<String, Object> prop = (Map<String, Object>) commandProperties.get("mixinStandardHelpOptions");
         assertEquals("boolean", prop.get("type"));
         assertEquals(Boolean.FALSE, prop.get("default"));
+
+        assertTrue(commandProperties.containsKey("helpSection"));
+        Map<String, Object> helpSecProp = (Map<String, Object>) commandProperties.get("helpSection");
+        assertEquals("string", helpSecProp.get("type"));
     }
 
     @Test

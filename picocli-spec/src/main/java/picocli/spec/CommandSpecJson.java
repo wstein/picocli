@@ -310,6 +310,10 @@ public final class CommandSpecJson {
         if (description != null) {
             spec.usageMessage().description(description);
         }
+        String helpSection = (String) json.get("helpSection");
+        if (helpSection != null) {
+            spec.helpSection(helpSection);
+        }
 
         ArgSink sink = new CommandArgSink(spec);
         addOptionsPositionalsAndUses(json, definitions, sink);
@@ -465,6 +469,10 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("name", spec.name());
         putDescriptionIfPresent(json, spec.usageMessage().description());
+        String helpSection = Help.getHelpSection(spec);
+        if (helpSection != null) {
+            json.put("helpSection", helpSection);
+        }
         if (spec.mixinStandardHelpOptions()) {
             json.put("mixinStandardHelpOptions", Boolean.TRUE);
         }

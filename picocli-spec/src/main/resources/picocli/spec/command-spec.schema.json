@@ -19,6 +19,10 @@
           "description": "The command's name. Optional at the document root (an unnamed root keeps picocli's own default); required on every entry inside \"subcommands\", since CommandSpecMerger and ordinary use both need it to address the subcommand."
         },
         "description": { "$ref": "#/$defs/descriptionLines" },
+        "helpSection": {
+          "type": "string",
+          "description": "Optional help section tag for this command (e.g. \"experimental\"). Tagged commands are excluded from the parent command's standard usage help and rendered only when the matching help section is requested on demand."
+        },
         "mixinStandardHelpOptions": {
           "type": "boolean",
           "default": false,

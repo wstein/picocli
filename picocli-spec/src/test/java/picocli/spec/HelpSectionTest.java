@@ -89,6 +89,36 @@ public class HelpSectionTest {
     }
 
     @Test
+    public void testCommandHelpSectionDslAndJsonRoundTrip() {
+        String dsl = "command myapp {\n" +
+                "  command exp-cmd helpSection=\"experimental\" \"An experimental subcommand\" {\n" +
+                "    option --foo : boolean\n" +
+                "  }\n" +
+                "  command std-cmd \"A standard subcommand\" {\n" +
+                "    option --bar : boolean\n" +
+                "  }\n" +
+                "}";
+
+        CommandSpec spec1 = CommandSpecDsl.parse(dsl);
+        CommandSpec expCmd = spec1.subcommands().get("exp-cmd").getCommandSpec();
+        assertEquals("experimental", expCmd.helpSection());
+        assertEquals("experimental", Help.getHelpSection(expCmd));
+
+        CommandSpec stdCmd = spec1.subcommands().get("std-cmd").getCommandSpec();
+        assertEquals("", stdCmd.helpSection());
+
+        String writtenDsl = CommandSpecDsl.write(spec1);
+        assertTrue(writtenDsl.contains("command exp-cmd helpSection=\"experimental\""));
+        CommandSpec specFromDsl = CommandSpecDsl.parse(writtenDsl);
+        assertEquals("experimental", specFromDsl.subcommands().get("exp-cmd").getCommandSpec().helpSection());
+
+        String json = CommandSpecJson.write(spec1);
+        assertTrue(json.contains("\"helpSection\": \"experimental\""));
+        CommandSpec specFromJson = CommandSpecJson.read(json);
+        assertEquals("experimental", specFromJson.subcommands().get("exp-cmd").getCommandSpec().helpSection());
+    }
+
+    @Test
     public void testStandardHelpSuppressesTaggedHelpSection() {
         CommandSpec spec = CommandSpecDsl.parse(TEST_DSL);
         CommandLine cmd = new CommandLine(spec);
