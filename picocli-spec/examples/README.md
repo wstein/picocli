@@ -1,8 +1,27 @@
 # Examples
 
 Real-world specs, kept here (not under `src/test/resources`) so they stay easy to find and read
-on GitHub as documentation in their own right. Each is still sanity-checked by a test in
-`src/test/java/picocli/spec/` (see `Flix0600ExampleTest` and `Flix0762ExampleTest`).
+on GitHub as documentation in their own right. Each is sanity-checked by a corresponding test in
+`src/test/java/picocli/spec/` (e.g. `Flix0600ExampleTest`, `Flix0670ExampleTest`, `Flix0762ExampleTest`).
+
+## Flix Version Progression (v0.60.0 – v0.76.2)
+
+Scanning git tags `v0.60.0` through `v0.76.2` in flix's repository (`Main.scala`, `Bootstrap.scala`,
+`Options.scala`, `TestMain.scala`) reveals that the CLI evolved across nine distinct version ranges.
+Each version range is represented by a dedicated `.picocli` spec file capturing the exact command set,
+options, and behavioral rules in effect for that range:
+
+| Version Range | Spec File | Tests | Key CLI Changes |
+|---|---|---|---|
+| `v0.60.0` – `v0.66.2` | `flix-0.60.0.picocli` | `Flix0600ExampleTest` | 14 subcommands, 14 experimental flags, `--args`, `--explain`, global `--listen` |
+| `v0.67.0` | `flix-0.67.0.picocli` | `Flix0670ExampleTest` | Adds `clean` subcommand |
+| `v0.67.1` – `v0.67.2` | `flix-0.67.1.picocli` | `Flix0671ExampleTest` | Adds `format` subcommand; restricts file arguments strictly to `check`/`doc`/`format`/`test`; drops `--args` in favor of `--`; removes 4 experimental flags (`Xfuzzer`, `Xprint-typer`, `Xchaos-monkey`, `Xiterations`) |
+| `v0.68.0` – `v0.72.0` | `flix-0.68.0.picocli` | `Flix0680ExampleTest` | Adds `eff-check` and `eff-lock` subcommands; removes `--explain` |
+| `v0.73.0` – `v0.75.1` | `flix-0.73.0.picocli` | `Flix0730ExampleTest` | Adds `--top` compiler profiling option to `compileOptions` |
+| `v0.75.2` | `flix-0.75.2.picocli` | `Flix0752ExampleTest` | Adds experimental `--Xnewmono` flag (11 experimental flags) |
+| `v0.75.3` | `flix-0.75.3.picocli` | `Flix0753ExampleTest` | Adds `build-classes` subcommand; updates `clean` description and `--Xprint-phases` description |
+| `v0.76.0` – `v0.76.1` | `flix-0.76.0.picocli` | `Flix0760ExampleTest` | Adds `stat` subcommand; adds experimental `--Xverify`; removes `--Xsummary` |
+| `v0.76.2` | `flix-0.76.2.picocli` | `Flix0762ExampleTest` | Adds package management commands (`install`, `remove`, `upgrade`); adds `--library` to `doc` |
 
 ## `flix-0.60.0.picocli`
 
