@@ -203,6 +203,10 @@ public final class CommandSpecDsl {
         if (positional.hidden()) {
             out.append(" hidden");
         }
+        String helpSection = Help.getHelpSection(positional);
+        if (helpSection != null && !helpSection.isEmpty()) {
+            out.append(" helpSection=").append(quote(helpSection));
+        }
         out.append("\n");
     }
 
@@ -960,7 +964,7 @@ public final class CommandSpecDsl {
             if (check(TokenKind.STRING)) {
                 builder.description(splitDescription(advance().text));
             }
-            while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit") || checkWord("hidden")) {
+            while (checkWord("default") || checkWord("required") || checkWord("arity") || checkWord("inherit") || checkWord("hidden") || checkWord("helpSection")) {
                 String attr = advance().text;
                 if ("required".equals(attr)) {
                     builder.required(true);
@@ -968,6 +972,9 @@ public final class CommandSpecDsl {
                     builder.scopeType(picocli.CommandLine.ScopeType.INHERIT);
                 } else if ("hidden".equals(attr)) {
                     builder.hidden(true);
+                } else if ("helpSection".equals(attr)) {
+                    expect(TokenKind.EQUALS, "'='");
+                    builder.helpSection(expectWordOrString());
                 } else {
                     expect(TokenKind.EQUALS, "'='");
                     String value = expectWordOrString();

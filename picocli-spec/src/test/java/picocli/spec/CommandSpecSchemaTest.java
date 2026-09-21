@@ -79,6 +79,18 @@ public class CommandSpecSchemaTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void positionalParamSchemaDeclaresHelpSection() {
+        Map<String, Object> schema = schema();
+        Map<String, Object> defs = (Map<String, Object>) schema.get("$defs");
+        Map<String, Object> paramProperties = (Map<String, Object>) ((Map<String, Object>) defs.get("positionalParam")).get("properties");
+
+        assertTrue(paramProperties.containsKey("helpSection"));
+        Map<String, Object> helpSecProp = (Map<String, Object>) paramProperties.get("helpSection");
+        assertEquals("string", helpSecProp.get("type"));
+    }
+
+    @Test
     public void schemaIsWellFormedJson() {
         Map<String, Object> schema = schema();
         assertEquals("https://json-schema.org/draft/2020-12/schema", schema.get("$schema"));

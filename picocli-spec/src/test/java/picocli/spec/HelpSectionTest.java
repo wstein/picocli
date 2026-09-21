@@ -7,6 +7,7 @@ import picocli.CommandLine.Help;
 import picocli.CommandLine.Model.ArgGroupSpec;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
+import picocli.CommandLine.Model.PositionalParamSpec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
@@ -116,6 +117,32 @@ public class HelpSectionTest {
         assertTrue(json.contains("\"helpSection\": \"experimental\""));
         CommandSpec specFromJson = CommandSpecJson.read(json);
         assertEquals("experimental", specFromJson.subcommands().get("exp-cmd").getCommandSpec().helpSection());
+    }
+
+    @Test
+    public void testPositionalParamHelpSectionDslAndJsonRoundTrip() {
+        String dsl = "command myapp {\n" +
+                "  positional exp-file : File \"An experimental file\" helpSection=\"experimental\"\n" +
+                "  positional std-file : File \"A standard file\"\n" +
+                "}";
+
+        CommandSpec spec1 = CommandSpecDsl.parse(dsl);
+        PositionalParamSpec expFile = spec1.positionalParameters().get(0);
+        assertEquals("experimental", expFile.helpSection());
+        assertEquals("experimental", Help.getHelpSection(expFile));
+
+        PositionalParamSpec stdFile = spec1.positionalParameters().get(1);
+        assertEquals("", stdFile.helpSection());
+
+        String writtenDsl = CommandSpecDsl.write(spec1);
+        assertTrue(writtenDsl.contains("helpSection=\"experimental\""));
+        CommandSpec specFromDsl = CommandSpecDsl.parse(writtenDsl);
+        assertEquals("experimental", specFromDsl.positionalParameters().get(0).helpSection());
+
+        String json = CommandSpecJson.write(spec1);
+        assertTrue(json.contains("\"helpSection\": \"experimental\""));
+        CommandSpec specFromJson = CommandSpecJson.read(json);
+        assertEquals("experimental", specFromJson.positionalParameters().get(0).helpSection());
     }
 
     @Test

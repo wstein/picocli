@@ -215,6 +215,10 @@
           "default": false,
           "description": "Excludes this positional param from default usage help while it remains fully functional. See CommandLine.Model.ArgSpec#hidden()."
         },
+        "helpSection": {
+          "type": "string",
+          "description": "Optional help section tag for this positional parameter (e.g. \"experimental\"). Tagged positional parameters are excluded from standard usage help and rendered only when the matching help section is requested on demand."
+        },
         "scope": { "$ref": "#/$defs/scope" }
       }
     },

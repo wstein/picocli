@@ -453,6 +453,8 @@ public final class CommandSpecJson {
         if (required != null) { builder.required((Boolean) required); }
         String arity = (String) json.get("arity");
         if (arity != null) { builder.arity(arity); }
+        String helpSection = (String) json.get("helpSection");
+        if (helpSection != null) { builder.helpSection(helpSection); }
         Object hidden = json.get("hidden");
         if (hidden != null) { builder.hidden((Boolean) hidden); }
         if (isInheritScope(json)) { builder.scopeType(picocli.CommandLine.ScopeType.INHERIT); }
@@ -534,6 +536,10 @@ public final class CommandSpecJson {
         Map<String, Object> json = new LinkedHashMap<String, Object>();
         json.put("paramLabel", positional.paramLabel());
         putCommonArgSpecFields(json, positional);
+        String helpSection = Help.getHelpSection(positional);
+        if (helpSection != null && !helpSection.isEmpty()) {
+            json.put("helpSection", helpSection);
+        }
         return json;
     }
 
