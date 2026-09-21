@@ -18,3 +18,4 @@ picocli.iml
 /picocli-tests-java567/gradle/wrapper/dists/**/*.lck
 /picocli-tests-java567/gradle/wrapper/dists/**/*.ok
 .metals/
+.vscode/
