@@ -34,6 +34,15 @@ public class PreviewTest {
         return out.toString("UTF-8");
     }
 
+    private static String render(CommandSpec spec, List<String> sections, String triggerOption, PreviewCommand.Format format)
+            throws UnsupportedEncodingException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
+        Preview.render(spec, writer, Ansi.OFF, sections, triggerOption, format);
+        writer.flush();
+        return out.toString("UTF-8");
+    }
+
     @Test
     public void printsTheRootCommandsUsageHelp() throws Exception {
         CommandSpec spec = CommandSpecDsl.parse(
@@ -163,5 +172,43 @@ public class PreviewTest {
         // PrintWriter under test) and the section content is not rendered here.
         String overridden = render(spec, Collections.singletonList("experimental"), "--does-not-exist");
         assertFalse(overridden.contains("--Xalpha"));
+    }
+
+    @Test
+    public void markdownFormatWrapsEachCommandInAFencedBlockWithAHelpPrompt() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo \"A demo tool.\" {\n" +
+                "  option --verbose : boolean \"be verbose.\"\n" +
+                "  command build \"Builds the thing.\" {}\n" +
+                "}");
+
+        String printed = render(spec, Collections.<String>emptyList(), null, PreviewCommand.Format.markdown);
+
+        assertTrue("root command's block should be prefixed with its qualified name",
+                printed.contains("```\n$ demo --help\n"));
+        assertTrue("subcommand's block should be prefixed with its own qualified name",
+                printed.contains("```\n$ demo build --help\n"));
+        assertTrue(printed.contains("--verbose"));
+        assertTrue(printed.contains("Builds the thing."));
+
+        int fenceCount = printed.split("```", -1).length - 1;
+        assertEquals("one opening and one closing fence per command", 4, fenceCount);
+    }
+
+    @Test
+    public void markdownFormatKeepsSectionContentInsideTheSameFencedBlock() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo {\n" +
+                "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+                "  group cooperative helpSection=\"experimental\" \"Experimental Options:%n\" {\n" +
+                "    option --Xalpha : boolean \"an experimental flag.\"\n" +
+                "  }\n" +
+                "}");
+
+        String printed = render(spec, Collections.singletonList("experimental"), null, PreviewCommand.Format.markdown);
+
+        int fenceCount = printed.split("```", -1).length - 1;
+        assertEquals("standard usage and the appended section share a single fenced block", 2, fenceCount);
+        assertTrue(printed.contains("--Xalpha"));
     }
 }
