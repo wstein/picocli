@@ -9,8 +9,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PreviewTest {
@@ -19,6 +22,14 @@ public class PreviewTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
         Preview.render(spec, writer, Ansi.OFF);
+        writer.flush();
+        return out.toString("UTF-8");
+    }
+
+    private static String render(CommandSpec spec, List<String> sections, String triggerOption) throws UnsupportedEncodingException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"), true);
+        Preview.render(spec, writer, Ansi.OFF, sections, triggerOption);
         writer.flush();
         return out.toString("UTF-8");
     }
@@ -86,5 +97,71 @@ public class PreviewTest {
 
         int occurrences = printed.split("Usage: demo a b", -1).length - 1;
         assertEquals(1, occurrences);
+    }
+
+    @Test
+    public void sectionOptionRendersTaggedSectionViaAutoDiscoveredTrigger() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo {\n" +
+                "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+                "  group cooperative helpSection=\"experimental\" \"Experimental Options:%n\" {\n" +
+                "    option --Xalpha : boolean \"an experimental flag.\"\n" +
+                "  }\n" +
+                "}");
+
+        String withoutSection = render(spec);
+        assertFalse("standard usage should hide on-demand experimental content", withoutSection.contains("--Xalpha"));
+
+        String withSection = render(spec, Collections.singletonList("experimental"), null);
+        assertTrue("--section should append the experimental content", withSection.contains("--Xalpha"));
+        assertTrue(withSection.contains("Experimental Options:"));
+    }
+
+    @Test
+    public void sectionOptionIsIgnoredForCommandsThatDoNotDeclareIt() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo {\n" +
+                "  option --verbose : boolean \"be verbose.\"\n" +
+                "}");
+
+        String printed = render(spec, Collections.singletonList("experimental"), null);
+
+        assertTrue(printed.contains("--verbose"));
+        assertFalse(printed.contains("Experimental"));
+    }
+
+    @Test
+    public void sectionWithoutUsageHelpTriggerFallsBackToDirectRendering() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo {\n" +
+                "  group cooperative helpSection=\"experimental\" \"Experimental Options:%n\" {\n" +
+                "    option --Xalpha : boolean \"an experimental flag.\"\n" +
+                "  }\n" +
+                "}");
+
+        String printed = render(spec, Collections.singletonList("experimental"), null);
+
+        assertTrue("no usageHelp trigger declared for this section; content should still render "
+                + "via the printHelpSection fallback", printed.contains("--Xalpha"));
+    }
+
+    @Test
+    public void triggerOptionOverridesAutomaticDiscoveryAndIsPassedVerbatim() throws Exception {
+        CommandSpec spec = CommandSpecDsl.parse(
+                "command demo {\n" +
+                "  option --Xhelp : boolean \"shows experimental options.\" helpSection=\"experimental\"\n" +
+                "  group cooperative helpSection=\"experimental\" \"Experimental Options:%n\" {\n" +
+                "    option --Xalpha : boolean \"an experimental flag.\"\n" +
+                "  }\n" +
+                "}");
+
+        String auto = render(spec, Collections.singletonList("experimental"), null);
+        assertTrue(auto.contains("--Xalpha"));
+
+        // A bogus override is passed to execute() verbatim instead of the auto-discovered
+        // "--Xhelp", so picocli reports an unmatched-argument error on stderr (not on the
+        // PrintWriter under test) and the section content is not rendered here.
+        String overridden = render(spec, Collections.singletonList("experimental"), "--does-not-exist");
+        assertFalse(overridden.contains("--Xalpha"));
     }
 }
