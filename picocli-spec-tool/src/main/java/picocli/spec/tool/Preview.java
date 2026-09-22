@@ -48,9 +48,8 @@ final class Preview {
         if (!done.add(cmd)) {
             return; // an alias resolves to the same CommandLine instance as its primary name; don't print it twice
         }
-        cmd.setColorScheme(CommandLine.Help.defaultColorScheme(ansi)); // keep execute()'s help rendering in sync with the --ansi setting used for usage(out, ansi) below
         cmd.usage(out, ansi);
-        renderRequestedSections(root, cmd, path, out, sections, triggerOption);
+        renderRequestedSections(root, cmd, path, out, ansi, sections, triggerOption);
         for (Map.Entry<String, CommandLine> entry : cmd.getSubcommands().entrySet()) {
             out.println();
             List<String> childPath = new ArrayList<String>(path);
@@ -59,7 +58,7 @@ final class Preview {
         }
     }
 
-    private static void renderRequestedSections(CommandLine root, CommandLine cmd, List<String> path, PrintWriter out,
+    private static void renderRequestedSections(CommandLine root, CommandLine cmd, List<String> path, PrintWriter out, Ansi ansi,
                                                   List<String> sections, String triggerOption) {
         CommandSpec spec = cmd.getCommandSpec();
         for (String section : sections) {
@@ -69,7 +68,7 @@ final class Preview {
             String trigger = triggerOption != null ? triggerOption : findTrigger(spec, section);
             out.println();
             if (trigger != null) {
-                renderViaExecute(root, cmd, path, out, trigger);
+                renderViaTrigger(root, cmd, path, out, ansi, trigger);
             } else {
                 cmd.printHelpSection(section, out); // no usageHelp trigger declared for this section; render its raw content directly
             }
@@ -82,20 +81,25 @@ final class Preview {
     }
 
     /**
-     * Executes the trigger option from the root command down the given subcommand path, so that
+     * Parses the trigger option from the root command down the given subcommand path -- so that
      * picocli's parent-chain bookkeeping (which requires every ancestor to have actually been
-     * parsed) stays consistent -- calling {@code execute()} directly on a subcommand's own,
-     * never-parsed-from-the-root {@code CommandLine} throws deep inside the parser.
+     * parsed) stays consistent -- then renders the leaf command's usage directly.
+     * <p>Deliberately uses {@code parseArgs} + {@code usage} rather than {@code execute}: the
+     * default {@code RunLast} execution strategy prints on-demand help through a legacy,
+     * {@code PrintStream}-based backwards-compatibility path (see
+     * {@code CommandLine#printHelpIfRequested(List, PrintStream, PrintStream, Help.ColorScheme)})
+     * that unconditionally overwrites every matched command's configured writer, silently
+     * discarding any {@code setOut} redirection made beforehand.
      */
-    private static void renderViaExecute(CommandLine root, CommandLine leaf, List<String> path, PrintWriter out, String trigger) {
-        PrintWriter previousOut = leaf.getOut(); // picocli prints on-demand help to the matched (leaf) command's own configured writer, not the root's
-        leaf.setOut(out);
+    private static void renderViaTrigger(CommandLine root, CommandLine leaf, List<String> path, PrintWriter out, Ansi ansi, String trigger) {
+        List<String> args = new ArrayList<String>(path);
+        args.add(trigger);
+        String[] argsArray = args.toArray(new String[0]);
         try {
-            List<String> args = new ArrayList<String>(path);
-            args.add(trigger);
-            root.execute(args.toArray(new String[0]));
-        } finally {
-            leaf.setOut(previousOut);
+            root.parseArgs(argsArray);
+            leaf.usage(out, ansi);
+        } catch (CommandLine.ParameterException ex) {
+            root.getErr().println(ex.getMessage());
         }
     }
 }
