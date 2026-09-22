@@ -16,6 +16,8 @@ import java.util.concurrent.Callable;
         description = "Prints the usage help message for the given spec, and every subcommand, recursively.")
 final class PreviewCommand implements Callable<Integer> {
 
+    enum Format { text, markdown }
+
     @Parameters(index = "0", paramLabel = "<spec-file>", description = "A .picocli or .json spec file.")
     File specFile;
 
@@ -32,12 +34,16 @@ final class PreviewCommand implements Callable<Integer> {
                     + "usageHelp option tagged with that section (e.g. \"--Xhelp\").")
     String triggerOption;
 
+    @Option(names = {"-f", "--format"},
+            description = "Output format: ${COMPLETION-CANDIDATES} (default: text).", defaultValue = "text")
+    Format format;
+
     @Spec
     CommandSpec self;
 
     public Integer call() throws Exception {
         CommandSpec spec = SpecLoader.load(specFile);
-        Preview.render(spec, self.commandLine().getOut(), ansi, sections, triggerOption);
+        Preview.render(spec, self.commandLine().getOut(), ansi, sections, triggerOption, format);
         self.commandLine().getOut().flush(); // PrintWriter autoFlush only triggers on println/printf/format
         return 0;
     }

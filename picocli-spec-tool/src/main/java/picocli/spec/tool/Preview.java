@@ -6,6 +6,7 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.OptionSpec;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -14,12 +15,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static picocli.spec.tool.PreviewCommand.Format;
+
 /**
  * Prints the usage help message for a {@link CommandSpec} and, recursively, every one of its
  * subcommands -- so an author can see exactly what CLI a picocli-spec file produces without
  * writing any Java or wiring up execution. Optionally also renders one or more of the command's
  * tagged on-demand {@linkplain CommandSpec#helpSections() help sections} (e.g. "experimental"),
- * for every command in the tree that declares that section.
+ * for every command in the tree that declares that section, and/or wraps each command's output
+ * in a fenced Markdown code block prefixed with the shell command that would produce it.
  */
 final class Preview {
 
@@ -27,7 +31,11 @@ final class Preview {
     }
 
     static void render(CommandSpec spec, PrintWriter out, Ansi ansi) {
-        render(spec, out, ansi, Collections.<String>emptyList(), null);
+        render(spec, out, ansi, Collections.<String>emptyList(), null, Format.text);
+    }
+
+    static void render(CommandSpec spec, PrintWriter out, Ansi ansi, List<String> sections, String triggerOption) {
+        render(spec, out, ansi, sections, triggerOption, Format.text);
     }
 
     /**
@@ -37,25 +45,57 @@ final class Preview {
      * @param triggerOption an explicit option to pass when rendering a section, overriding automatic
      *                      discovery of the {@code usageHelp} option tagged with that section; {@code null}
      *                      to auto-discover the trigger for each command
+     * @param format        {@link Format#text} to print plain usage help, or {@link Format#markdown} to wrap
+     *                      each command's output in a fenced code block prefixed with a {@code $ <qualified
+     *                      command name> --help} prompt line
      */
-    static void render(CommandSpec spec, PrintWriter out, Ansi ansi, List<String> sections, String triggerOption) {
+    static void render(CommandSpec spec, PrintWriter out, Ansi ansi, List<String> sections, String triggerOption, Format format) {
         CommandLine root = new CommandLine(spec);
-        render(root, root, Collections.<String>emptyList(), out, ansi, sections, triggerOption, new LinkedHashSet<CommandLine>());
+        render(root, root, Collections.<String>emptyList(), out, ansi, sections, triggerOption, format, new LinkedHashSet<CommandLine>());
     }
 
     private static void render(CommandLine root, CommandLine cmd, List<String> path, PrintWriter out, Ansi ansi,
-                                List<String> sections, String triggerOption, Set<CommandLine> done) {
+                                List<String> sections, String triggerOption, Format format, Set<CommandLine> done) {
         if (!done.add(cmd)) {
             return; // an alias resolves to the same CommandLine instance as its primary name; don't print it twice
         }
-        cmd.usage(out, ansi);
-        renderRequestedSections(root, cmd, path, out, ansi, sections, triggerOption);
+
+        if (format == Format.markdown) {
+            StringWriter buffer = new StringWriter();
+            PrintWriter bufferedOut = new PrintWriter(buffer);
+            cmd.usage(bufferedOut, ansi);
+            renderRequestedSections(root, cmd, path, bufferedOut, ansi, sections, triggerOption);
+            bufferedOut.flush();
+            writeMarkdownBlock(qualifiedName(root, path), buffer.toString(), out);
+        } else {
+            cmd.usage(out, ansi);
+            renderRequestedSections(root, cmd, path, out, ansi, sections, triggerOption);
+        }
+
         for (Map.Entry<String, CommandLine> entry : cmd.getSubcommands().entrySet()) {
             out.println();
             List<String> childPath = new ArrayList<String>(path);
             childPath.add(entry.getKey());
-            render(root, entry.getValue(), childPath, out, ansi, sections, triggerOption, done);
+            render(root, entry.getValue(), childPath, out, ansi, sections, triggerOption, format, done);
         }
+    }
+
+    private static String qualifiedName(CommandLine root, List<String> path) {
+        StringBuilder sb = new StringBuilder(root.getCommandSpec().name());
+        for (String name : path) {
+            sb.append(' ').append(name);
+        }
+        return sb.toString();
+    }
+
+    private static void writeMarkdownBlock(String qualifiedName, String content, PrintWriter out) {
+        out.println("```");
+        out.println("$ " + qualifiedName + " --help");
+        out.print(content);
+        if (content.length() > 0 && content.charAt(content.length() - 1) != '\n') {
+            out.println();
+        }
+        out.println("```");
     }
 
     private static void renderRequestedSections(CommandLine root, CommandLine cmd, List<String> path, PrintWriter out, Ansi ansi,
