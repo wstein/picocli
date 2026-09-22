@@ -8,6 +8,8 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 @Command(name = "preview", mixinStandardHelpOptions = true,
@@ -20,12 +22,22 @@ final class PreviewCommand implements Callable<Integer> {
     @Option(names = "--ansi", description = "Force ANSI colors on/off/auto (default: auto).", defaultValue = "AUTO")
     Ansi ansi;
 
+    @Option(names = {"-s", "--section"}, paramLabel = "<name>",
+            description = "Name of an on-demand help section to additionally render for every command that "
+                    + "declares it (e.g. \"experimental\"). Repeatable.")
+    List<String> sections = new ArrayList<String>();
+
+    @Option(names = "--trigger-option", paramLabel = "<option>",
+            description = "Option to pass when rendering a --section, overriding automatic discovery of the "
+                    + "usageHelp option tagged with that section (e.g. \"--Xhelp\").")
+    String triggerOption;
+
     @Spec
     CommandSpec self;
 
     public Integer call() throws Exception {
         CommandSpec spec = SpecLoader.load(specFile);
-        Preview.render(spec, self.commandLine().getOut(), ansi);
+        Preview.render(spec, self.commandLine().getOut(), ansi, sections, triggerOption);
         self.commandLine().getOut().flush(); // PrintWriter autoFlush only triggers on println/printf/format
         return 0;
     }
